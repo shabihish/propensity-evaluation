@@ -63,7 +63,7 @@ input_text = ("\n"
               "still only in the area of hardcore cybersecrity.\n")
 
 if __name__ == "__main__":
-    genai.configure(api_key="AIzaSyCFwTPOQ6st5hiNL_dV4EYRpV-HDvZPV68")
+    genai.configure(api_key="API_KEY")
 
     # Create the model
     generation_config = {
