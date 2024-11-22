@@ -80,7 +80,7 @@ if __name__ == "__main__":
         generation_config=generation_config,
     )
 
-    with open(os.path.join('gen-scenarios', 'curr_out.json'), 'r') as f:
+    with open(os.path.join('../../run/gen-scenarios', 'curr_out.json'), 'r') as f:
         prev_content = f.read()
 
     prev_content = [
@@ -103,5 +103,5 @@ if __name__ == "__main__":
     curr_time_str = str(datetime.datetime.now()).replace(' ', '-')
     out_fname = curr_time_str + '.json'
 
-    with open(os.path.join('gen-scenarios', out_fname), 'w') as f:
+    with open(os.path.join('../../run/gen-scenarios', out_fname), 'w') as f:
         f.write(response.text)
