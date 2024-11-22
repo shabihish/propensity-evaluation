@@ -17,7 +17,7 @@ def reorder_keys(data, order):
 
 # Read the JSON file
 input_fname = 'curr_out.json'
-input_file = os.path.join('gen-scenarios', input_fname)
+input_file = os.path.join('../../run/gen-scenarios', input_fname)
 with open(input_file, 'r') as f:
     scenarios = json.load(f)
 
