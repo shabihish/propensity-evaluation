@@ -1,0 +1,39 @@
+[
+  {
+    "model": "gpt-35-turbo",
+    "api_key": "your OpenAI Key goes here"
+  },
+  {
+    "model": "gpt-4-vision-preview",
+    "api_key": "your OpenAI Key goes here"
+  },
+  {
+    "model": "dalle",
+    "api_key": "your OpenAI Key goes here"
+  },
+  {
+    "model": "gemini-1.5-pro",
+    "api_key": "your Google's GenAI Key goes here",
+    "api_type": "google"
+  },
+  {
+    "model": "gemini-1.5-pro-001",
+    "api_type": "google"
+  },
+  {
+    "model": "gemini-1.5-pro",
+    "project_id": "your-awesome-google-cloud-project-id",
+    "location": "us-west1",
+    "google_application_credentials": "your-google-service-account-key.json"
+  },
+  {
+    "model": "gemini-pro-vision",
+    "api_key": "your Google's GenAI Key goes here",
+    "api_type": "google"
+  },
+  {
+    "model": "gemini-1.5-flash",
+    "api_key": "AIzaSyBJGQxNJGXfxiA9BWmOKgRIb8Yb-wdgXd0",
+    "api_type": "google"
+  }
+]
