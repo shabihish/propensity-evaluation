@@ -162,3 +162,9 @@ cython_debug/
 .idea
 
 run/
+exp
+*.bac
+output
+*.out
+outputs
+test*
