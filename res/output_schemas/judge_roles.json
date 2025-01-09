@@ -1,0 +1,30 @@
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "is_accepted": {
+            "type": "boolean"
+          },
+          "feedback": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "is_accepted",
+          "feedback"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}
