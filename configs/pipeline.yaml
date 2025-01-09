@@ -1,0 +1,67 @@
+#defaults:
+#  _self
+#  - sys_prompts: default
+
+seed: 42
+logs_dir: "logs"
+
+model:
+  #  model_provider: "openai"
+  model_provider: "gemini"
+  #  model_name: "llama3.1-8b-instruct"
+  model_name: "gemini-1.5-flash"
+  #  api_base: http://localhost:8000/v1
+  api_base: null
+  use_cache: false
+
+  temperature: 1.0
+
+n_initial_roles: 100
+n_min_initial_roles: 35
+n_roles: 20 # Number of roles selected out of the initial batch
+n_scenarios_per_role: 4
+
+n_retries: 3
+
+prompts:
+  base_dir: "res/prompts"
+  roles_agents: "${prompts.base_dir}/roles_agents.ini"
+  scenarios_agents: "${prompts.base_dir}/scenarios_agents.ini"
+  actors_agents: "${prompts.base_dir}/actors_agents.ini"
+  use_cases_agents: "${prompts.base_dir}/use_cases_agents.ini"
+  class_diagram_agents: "${prompts.base_dir}/class_diagram_agents.ini"
+  seq_diagram_agents: "${prompts.base_dir}/seq_diagram_agents.ini"
+
+  judge_agents: "${prompts.base_dir}/judge_agents.ini"
+
+
+output_schemas:
+  base_dir: "res/output_schemas"
+  roles_generation: "${output_schemas.base_dir}/roles_generation.json"
+  roles_revision: "${output_schemas.base_dir}/roles_revision.json"
+  scenarios_generation: "${output_schemas.base_dir}/scenarios_generation.json"
+  scenarios_revision: "${output_schemas.base_dir}/scenarios_revision.json"
+  actors_generation: "${output_schemas.base_dir}/actors_generation.json"
+  actors_revision: "${output_schemas.base_dir}/actors_revision.json"
+  use_cases_generation: "${output_schemas.base_dir}/use_cases_generation.json"
+  use_cases_revision: "${output_schemas.base_dir}/use_cases_revision.json"
+  class_diagram_generation: "${output_schemas.base_dir}/class_diagram_generation.json"
+  class_diagram_revision: "${output_schemas.base_dir}/class_diagram_revision.json"
+  seq_diagram_generation: "${output_schemas.base_dir}/seq_diagram_generation.json"
+  seq_diagram_revision: "${output_schemas.base_dir}/seq_diagram_revision.json"
+
+  judge_roles: "${output_schemas.base_dir}/judge_roles.json"
+  judge_scenarios: "${output_schemas.base_dir}/judge_scenarios.json"
+  judge_actors: "${output_schemas.base_dir}/judge_actors.json"
+  judge_use_cases: "${output_schemas.base_dir}/judge_use_cases.json"
+  judge_class_diagram: "${output_schemas.base_dir}/judge_class_diagram.json"
+  judge_seq_diagram: "${output_schemas.base_dir}/judge_seq_diagram.json"
+
+finalized_jsons:
+  base_dir: "output/finalized_jsons"
+  roles: "${finalized_jsons.base_dir}/roles.json"
+  scenarios: "${finalized_jsons.base_dir}/scenarios.json"
+  actors: "${finalized_jsons.base_dir}/actors.json"
+  use_cases: "${finalized_jsons.base_dir}/use_cases.json"
+  class_diagrams: "${finalized_jsons.base_dir}/class_diagrams.json"
+  seq_diagrams: "${finalized_jsons.base_dir}/seq_diagrams.json"
