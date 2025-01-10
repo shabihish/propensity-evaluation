@@ -1,5 +1,4 @@
 import logging
-import os
 import json
 import re
 from copy import deepcopy
@@ -8,21 +7,25 @@ from agents.api_conf import APIConfiguration
 from sim.base import Simulator
 from agents.agent import Agent
 
-from utils.litellm_utils import get_response_content, get_response_cost
 from utils.regex import remove_duplicate_names_by_prefix, apply_to_all_keys
-from sim.modules.utils import read_prompts, load_output_schemas, save_to_disk, json_obj_list_to_dict
+from sim.modules.utils import read_prompts, load_output_schemas, save_to_disk, run_agent_query
+from sim.modules.role_utils import validate_roles, RoleManager
+from sim.modules.scenario_utils import ScenarioManager
 
 
 class PipelineSimulator(Simulator):
     """Main system that orchestrates all components"""
 
-    def __init__(self, cfg, logger: logging.Logger, workspace_name: str, domain_name: str):
+    def __init__(self, cfg, logger: logging.Logger, workspace_name: str, workspace_alternative_forms: list,
+                 domain_name: str, domain_alternative_forms: list):
         super().__init__(cfg)
 
         self.cfg = cfg
         self.logger = logger
         self.workspace = workspace_name
+        self.workspace_alternative_forms = workspace_alternative_forms
         self.domain = domain_name
+        self.domain_alternative_forms = domain_alternative_forms
 
         self.n_initial_roles = cfg.n_initial_roles
         self.n_min_initial_roles = cfg.n_min_initial_roles
@@ -40,14 +43,39 @@ class PipelineSimulator(Simulator):
             use_cache=cfg.model.use_cache,
         )
 
-        # Roles agents
-        self.init_roles_agents(api_conf)
+        self.roles_manager = RoleManager(api_conf=api_conf, logger=logger,
+                                         workspace_name=self.workspace,
+                                         workspace_alternative_forms=self.workspace_alternative_forms,
+                                         domain_name=self.domain,
+                                         domain_alternative_forms=self.domain_alternative_forms,
+                                         output_schemas_conf=cfg.output_schemas,
+                                         prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
+                                         n_initial_roles=self.n_initial_roles, temperature=cfg.model.temperature)
 
-        # self.scenarios_generation_agent = Agent(
-        #     sys_prompt=load_sys_prompt(cfg.sys_prompts.scenarios_generation_agent),
+        self.scenario_manager = ScenarioManager(api_conf=api_conf, logger=logger,
+                                                workspace_name=self.workspace,
+                                                workspace_alternative_forms=self.workspace_alternative_forms,
+                                                domain_name=self.domain,
+                                                domain_alternative_forms=self.domain_alternative_forms,
+                                                output_schemas_conf=cfg.output_schemas,
+                                                prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
+                                                temperature=cfg.model.temperature,
+                                                generation_batch_size=cfg.scenario_gen_batch_size)
+
+        self.actor_manager = ActorManager(api_conf=api_conf, logger=logger,
+                                          workspace_name=self.workspace,
+                                          workspace_alternative_forms=self.workspace_alternative_forms,
+                                          domain_name=self.domain,
+                                          domain_alternative_forms=self.domain_alternative_forms,
+                                          output_schemas_conf=cfg.output_schemas,
+                                          prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
+                                          temperature=cfg.model.temperature, )
+
+        # self.actors_generation_agent = Agent(
+        #     sys_prompt=load_sys_prompt(cfg.sys_prompts.actors_generation_agent),
         #     api_conf=api_conf,
         #     output_schema=load_output_schemas(
-        #         cfg.output_schemas.scenarios_generation_agent),
+        #         cfg.output_schemas.actors_generation_agent),
         #     temperature=cfg.model.temperature)
         # self.scenarios_revision_agent = Agent(
         #     sys_prompt=load_sys_prompt(cfg.sys_prompts.scenarios_revision_agent),
@@ -105,55 +133,6 @@ class PipelineSimulator(Simulator):
         #         cfg.output_schemas.seq_diagram_revision_agent),
         #     temperature=cfg.model.temperature)
 
-        self.init_judge_agents(api_conf)
-
-    def init_roles_agents(self, api_conf):
-        # Roles generation agent
-        sys_prompt = read_prompts(self.cfg.prompts.roles_agents, key='SYS_GEN', context=vars(self), logger=self.logger)
-        output_schema = load_output_schemas(self.cfg.output_schemas.roles_generation)
-        self.roles_generation_agent = Agent(
-            api_conf=api_conf,
-            sys_prompt=sys_prompt,
-            output_schema=output_schema,
-            temperature=self.cfg.model.temperature)
-
-        # Roles revision agent
-        sys_prompt = read_prompts(self.cfg.prompts.roles_agents, key='SYS_REV', context=vars(self))
-        output_schema = load_output_schemas(self.cfg.output_schemas.roles_revision)
-        self.roles_revision_agent = Agent(
-            api_conf=api_conf,
-            sys_prompt=sys_prompt,
-            output_schema=output_schema,
-            temperature=self.cfg.model.temperature)
-
-    def init_judge_agents(self, api_conf):
-        # Roles verification judge
-        sys_prompt = read_prompts(self.cfg.prompts.judge_agents, key='SYS_ROLES_VERIF', context=vars(self),
-                                  logger=self.logger)
-        output_schema = load_output_schemas(self.cfg.output_schemas.judge_roles)
-        self.roles_verif_judge = Agent(
-            api_conf=api_conf,
-            sys_prompt=sys_prompt,
-            output_schema=output_schema,
-            temperature=self.cfg.model.temperature)
-
-    def run_agent_query(self, prompt, agent: Agent, to_json=False, json_transform_keys: list = None):
-        num_retries = self.n_retries
-        while num_retries >= 0:
-            try:
-                result = agent(prompt)
-
-                response = get_response_content(result, to_json=to_json)
-                if to_json:
-                    assert len(json_transform_keys) == 2
-                    response = response[json_transform_keys[0]]
-                    response = json_obj_list_to_dict(response, json_transform_keys[1])
-                return response
-            except Exception as e:
-                self.logger.error(f"Error in run_agent_query: {e}")
-                num_retries -= 1
-        raise RuntimeError(f"Failed to run LLM query after {self.n_retries + 1} tries.")
-
     def check_for_missing_fields(self, input_dict: dict, required_fields: list) -> dict:
         out = {}
         for obj in input_dict.values():
@@ -175,8 +154,9 @@ class PipelineSimulator(Simulator):
             prompt = read_prompts(self.cfg.prompts.roles_agents, key='USER_GEN',
                                   context={**vars(self), 'prev_roles': prev_roles}, logger=self.logger)
             try:
-                response = self.run_agent_query(prompt, self.roles_generation_agent, to_json=True,
-                                                json_transform_keys=['roles', 'name'])
+                response = run_agent_query(self.n_retries, self.logger, prompt, self.roles_generation_agent,
+                                           to_json=True,
+                                           json_transform_keys=['roles', 'name'])
                 self.validate_roles(response, required_fields=['name', 'description'], n_roles=0)
                 all_roles.update(response)
                 prev_roles = list(all_roles.keys())
@@ -259,8 +239,8 @@ class PipelineSimulator(Simulator):
                                   logger=self.logger)
 
             try:
-                response = self.run_agent_query(prompt, self.roles_revision_agent, to_json=True,
-                                                json_transform_keys=['roles', 'name'])
+                response = run_agent_query(self.n_retries, self.logger, prompt, self.roles_revision_agent, to_json=True,
+                                           json_transform_keys=['roles', 'name'])
                 self.validate_roles(response, required_fields=['name', 'description', 'change_log'], n_roles=0)
             except Exception as e:
                 self.logger.error(f"Error in revise_roles: {e}")
@@ -289,54 +269,46 @@ class PipelineSimulator(Simulator):
 
         return roles_with_feedback
 
-    def validate_roles(self, roles: dict, required_fields: list, n_roles: int):
-        if len(roles) < n_roles:
-            raise RuntimeError(f"Expected at least {n_roles} roles, got {len(roles)} roles.")
+    # def generate_scenarios(self, roles: dict) -> dict:
+    #     pass
+    #
+    # def revise_scenarios(self, scenarios: dict) -> dict:
+    #     pass
+    #
+    # def generate_actors(self, scenarios: dict) -> dict:
+    #     pass
+    #
+    # def revise_actors(self, actors: dict) -> dict:
+    #     pass
+    #
+    # def generate_use_cases(self, actors: dict) -> dict:
+    #     pass
+    #
+    # def revise_use_cases(self, use_cases: dict) -> dict:
+    #     pass
+    #
+    # def generate_class_diagram(self, use_cases: dict) -> dict:
+    #     pass
+    #
+    # def revise_class_diagram(self, class_diagram: dict) -> dict:
+    #     pass
+    #
+    # def generate_seq_diagram(self, class_diagram: dict) -> dict:
+    #     pass
+    #
+    # def revise_seq_diagram(self, seq_diagram: dict) -> dict:
+    #     pass
 
-        failed_roles = self.check_for_missing_fields(roles, required_fields)
-        if failed_roles:
-            raise RuntimeError(f"Roles missing some or all of the required fields: {failed_roles}.")
-
-    def generate_scenarios(self, roles: dict) -> dict:
-        pass
-
-    def revise_scenarios(self, scenarios: dict) -> dict:
-        pass
-
-    def generate_actors(self, scenarios: dict) -> dict:
-        pass
-
-    def revise_actors(self, actors: dict) -> dict:
-        pass
-
-    def generate_use_cases(self, actors: dict) -> dict:
-        pass
-
-    def revise_use_cases(self, use_cases: dict) -> dict:
-        pass
-
-    def generate_class_diagram(self, use_cases: dict) -> dict:
-        pass
-
-    def revise_class_diagram(self, class_diagram: dict) -> dict:
-        pass
-
-    def generate_seq_diagram(self, class_diagram: dict) -> dict:
-        pass
-
-    def revise_seq_diagram(self, seq_diagram: dict) -> dict:
-        pass
-
-    # def judge_roles(self, input_roles: dict) -> tuple:
+    # def judge_roles(self, input_scenarios: dict) -> tuple:
     #     """
     #     Validate the roles generated by the roles generation agent
-    #     :param input_roles: a dictionary of the generated roles
+    #     :param input_scenarios: a dictionary of the generated roles
     #     :param required_fields: a list of required fields in each role
     #     :return: is_accepted, feedback
     #     """
     #     # Run the judge model
     #     prompt = read_prompts(self.cfg.prompts.judge_agents, key='USER_ROLES_VERIF',
-    #                           context={'roles': str(input_roles)},
+    #                           context={'roles': str(input_scenarios)},
     #                           logger=self.logger)
     #     passes_requirements = False
     #     while not passes_requirements:
@@ -346,7 +318,7 @@ class PipelineSimulator(Simulator):
     #                                         json_transform_keys=['roles', 'name'])
     #
     #         is_accepted = True
-    #         out = deepcopy(input_roles)
+    #         out = deepcopy(input_scenarios)
     #         try:
     #             for role in out.values():
     #                 self.logger.debug(f"Checking feedback for role: {role['name']}")
@@ -361,90 +333,97 @@ class PipelineSimulator(Simulator):
     #             self.logger.error(f"Error in judge_roles: {e}")
     #     return is_accepted, out
 
-    def judge_roles(self, input_roles: dict) -> tuple:
-        """
-        Validate the roles generated by the roles generation agent
-        :param input_roles: a dictionary of the generated roles
-        :return: is_accepted, feedback
-        """
-        missing_roles = list(input_roles.keys())
-        out = deepcopy(input_roles)
-        passes_requirements = False
-
-        while not passes_requirements:
-            if missing_roles:
-                self.logger.debug(f"Missing roles: {missing_roles}")
-            prompt = read_prompts(self.cfg.prompts.judge_agents, key='USER_ROLES_VERIF',
-                                  context={'roles': str({name: input_roles[name] for name in missing_roles})},
-                                  logger=self.logger)
-            passes_requirements = True
-            response = self.run_agent_query(prompt, self.roles_verif_judge, to_json=True,
-                                            json_transform_keys=['roles', 'name'])
-
-            new_missing_roles = []
-            for role_name in missing_roles:
-                try:
-                    self.logger.debug(f"Checking feedback for role: {role_name}")
-                    if role_name not in response:
-                        new_missing_roles.append(role_name)
-                        passes_requirements = False
-                        continue
-                    out[role_name]['feedback'] = response[role_name]['feedback']
-                    out[role_name]['is_accepted'] = response[role_name]['is_accepted']
-                except Exception as e:
-                    new_missing_roles.append(role_name)
-                    passes_requirements = False
-                    self.logger.error(f"Error in judge_roles: {e}")
-
-            missing_roles = new_missing_roles
-
-        is_accepted = all(role['is_accepted'] for role in out.values())
-        return is_accepted, out
-
-    def generate_and_judge_initial_roles(self, logging=True) -> dict:
-        try:
-            with open(self.cfg.finalized_jsons.roles, 'r') as f:
-                curr_accepted_roles = json.load(f)
-            # if len(curr_accepted_roles) >= self.n_initial_roles:
-            #     return curr_accepted_roles
-        except FileNotFoundError as e:
-            self.logger.error(f"Error in generate_and_judge_initial_roles: {e}")
-            curr_accepted_roles = {}
-
-        accepted_roles = curr_accepted_roles
-        while True:
-            initial_role_names = list(curr_accepted_roles.keys()) if curr_accepted_roles else None
-            n_roles_to_generate = max(0, self.n_initial_roles - len(accepted_roles))
-            if logging:
-                self.logger.debug(f'Roles left to generate: {n_roles_to_generate}')
-
-            # Generate roles
-            generated_roles = self.generate_roles(n_roles=n_roles_to_generate, initial_role_names=initial_role_names)
-            if logging:
-                self.logger.debug(f'Generated roles_dict: {generated_roles}\n\n')
-
-            is_accepted, judged_roles = self.judge_roles(generated_roles)
-            curr_accepted_roles = {name: role for name, role in judged_roles.items() if role['is_accepted']}
-            if logging:
-                self.logger.debug(f'Output for judge_roles: {judged_roles}, {is_accepted}')
-
-            curr_accepted_roles = remove_duplicate_names_by_prefix(curr_accepted_roles, rf'{self.workspace}\s*', 'name',
-                                                                   flags=re.IGNORECASE)
-            curr_accepted_roles = remove_duplicate_names_by_prefix(curr_accepted_roles, rf'{self.domain}\s*', 'name',
-                                                                   flags=re.IGNORECASE)
-            curr_accepted_roles = apply_to_all_keys(curr_accepted_roles, func=str.title, key_to_update='name')
-            curr_accepted_roles = apply_to_all_keys(curr_accepted_roles, func=lambda x: re.sub(r'[-_]', ' ', x),
-                                                    key_to_update='name')
-
-            accepted_roles.update(curr_accepted_roles)
-            if logging:
-                self.logger.debug(f'Accepted role names: {list(accepted_roles.keys())}\n\n')
-
-            if len(accepted_roles) >= self.n_initial_roles:
-                break
-        save_to_disk(accepted_roles, self.cfg.finalized_jsons.roles)
-        return accepted_roles
+    # def judge_roles(self, input_scenarios: dict) -> tuple:
+    #     """
+    #     Validate the roles generated by the roles generation agent
+    #     :param input_scenarios: a dictionary of the generated roles
+    #     :return: is_accepted, feedback
+    #     """
+    #     missing_roles = list(input_scenarios.keys())
+    #     out = deepcopy(input_scenarios)
+    #     passes_requirements = False
+    #
+    #     while not passes_requirements:
+    #         if missing_roles:
+    #             self.logger.debug(f"Missing roles: {missing_roles}")
+    #         prompt = read_prompts(self.cfg.prompts.judge_agents, key='USER_ROLES_VERIF',
+    #                               context={'roles': str({name: input_scenarios[name] for name in missing_roles})},
+    #                               logger=self.logger)
+    #         passes_requirements = True
+    #         response = run_agent_query(self.n_retries, self.logger, prompt, self.roles_verif_judge, to_json=True,
+    #                                    json_transform_keys=['roles', 'name'])
+    #
+    #         new_missing_roles = []
+    #         for role_name in missing_roles:
+    #             try:
+    #                 self.logger.debug(f"Checking feedback for role: {role_name}")
+    #                 if role_name not in response:
+    #                     new_missing_roles.append(role_name)
+    #                     passes_requirements = False
+    #                     continue
+    #                 out[role_name]['feedback'] = response[role_name]['feedback']
+    #                 out[role_name]['is_accepted'] = response[role_name]['is_accepted']
+    #             except Exception as e:
+    #                 new_missing_roles.append(role_name)
+    #                 passes_requirements = False
+    #                 self.logger.error(f"Error in judge_roles: {e}")
+    #
+    #         missing_roles = new_missing_roles
+    #
+    #     is_accepted = all(role['is_accepted'] for role in out.values())
+    #     return is_accepted, out
+    #
+    # def generate_and_judge_initial_roles(self, logging=True) -> dict:
+    #     try:
+    #         with open(self.cfg.finalized_jsons.roles, 'r') as f:
+    #             curr_accepted_roles = json.load(f)
+    #         # if len(curr_accepted_roles) >= self.n_initial_roles:
+    #         #     return curr_accepted_roles
+    #     except FileNotFoundError as e:
+    #         self.logger.error(f"Error in generate_and_judge_initial_roles: {e}")
+    #         curr_accepted_roles = {}
+    #
+    #     accepted_roles = curr_accepted_roles
+    #     while True:
+    #         initial_role_names = list(curr_accepted_roles.keys()) if curr_accepted_roles else None
+    #         n_roles_to_generate = max(0, self.n_initial_roles - len(accepted_roles))
+    #         if logging:
+    #             self.logger.debug(f'Roles left to generate: {n_roles_to_generate}')
+    #
+    #         # Generate roles
+    #         generated_roles = self.generate_roles(n_roles=n_roles_to_generate, initial_role_names=initial_role_names)
+    #         if logging:
+    #             self.logger.debug(f'Generated roles_dict: {generated_roles}\n\n')
+    #
+    #         is_accepted, judged_roles = self.judge_roles(generated_roles)
+    #         curr_accepted_roles = {name: role for name, role in judged_roles.items() if role['is_accepted']}
+    #         if logging:
+    #             self.logger.debug(f'Output for judge_roles: {judged_roles}, {is_accepted}')
+    #
+    #         curr_accepted_roles = remove_duplicate_names_by_prefix(curr_accepted_roles, rf'{self.workspace}\s*', 'name',
+    #                                                                flags=re.IGNORECASE)
+    #         curr_accepted_roles = remove_duplicate_names_by_prefix(curr_accepted_roles, rf'{self.domain}\s*', 'name',
+    #                                                                flags=re.IGNORECASE)
+    #         curr_accepted_roles = apply_to_all_keys(curr_accepted_roles, func=str.title, key_to_update='name')
+    #         curr_accepted_roles = apply_to_all_keys(curr_accepted_roles, func=lambda x: re.sub(r'[-_]', ' ', x),
+    #                                                 key_to_update='name')
+    #
+    #         accepted_roles.update(curr_accepted_roles)
+    #         if logging:
+    #             self.logger.debug(f'Accepted role names: {list(accepted_roles.keys())}\n\n')
+    #
+    #         if len(accepted_roles) >= self.n_initial_roles:
+    #             break
+    #     save_to_disk(accepted_roles, self.cfg.finalized_jsons.roles)
+    #     return accepted_roles
 
     def run(self) -> None:
-        initial_roles = self.generate_and_judge_initial_roles(logging=True)
+        initial_roles = self.roles_manager.generate_and_judge_initial_roles(logging=True)
+        for role in initial_roles.values():
+            role.pop('is_accepted', None)
+            role.pop('feedback', None)
         self.logger.debug(f'Initial roles: {initial_roles}')
+
+        # initial_roles = {k: v for i, (k, v) in enumerate(initial_roles.items()) if i < 4}
+        scenarios = self.scenario_manager.generate_and_judge_scenarios(input_roles=initial_roles, logging=True)
+        self.logger.debug(f'Initial scenarios: {scenarios}')

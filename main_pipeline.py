@@ -1,5 +1,7 @@
-import hydra
 from dotenv import load_dotenv
+load_dotenv()
+
+import hydra
 import datasets
 import logging
 from colorama import Fore, Style
@@ -10,7 +12,9 @@ import logging
 from sim.pipeline_sim import PipelineSimulator
 
 WORKSPACE_NAME = 'datacenter'
+WORKSPACE_ALTERNATIVE_FORMS = ['data center', 'data-center']
 DOMAIN_NAME = 'cybersecurity'
+DOMAIN_ALTERNATIVE_FORMS = ['cyber security', 'cyber-security']
 
 # def setup_logger(name='colored_logger', log_file='app.log', level=logging.DEBUG):
 #     """Set up a logger with both file and console handlers"""
@@ -98,7 +102,8 @@ def setup_logger(log_file='app.log'):
 @hydra.main(config_path="configs", config_name="pipeline", version_base="1.2")
 def main(cfg) -> None:
     logger = setup_logger()
-    sim = PipelineSimulator(cfg, logger, WORKSPACE_NAME, DOMAIN_NAME)
+    sim = PipelineSimulator(cfg, logger, WORKSPACE_NAME, WORKSPACE_ALTERNATIVE_FORMS, DOMAIN_NAME,
+                            DOMAIN_ALTERNATIVE_FORMS)
 
     sim.run()
 
@@ -106,5 +111,4 @@ def main(cfg) -> None:
 # Example usage
 if __name__ == "__main__":
     # Load environment variables
-    load_dotenv()
     main()
