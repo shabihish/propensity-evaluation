@@ -2,6 +2,9 @@ import json
 import re
 import os
 
+from utils.litellm_utils import get_response_content
+from agents.agent import Agent
+
 
 def fill_prompt(prompt: str, fields: list, context: dict):
     for field in fields:
@@ -86,3 +89,53 @@ def save_to_disk(data: dict, file_path: str):
 def load_from_disk(file_path: str) -> dict:
     with open(file_path, 'r') as f:
         return json.load(f)
+
+
+def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, json_transform_keys: list = None):
+    num_retries = n_retries
+    # while num_retries >= 0:
+    #     try:
+    result = agent(prompt)
+
+    response = get_response_content(result, to_json=to_json)
+    if to_json:
+        assert len(json_transform_keys) == 2
+        response = response[json_transform_keys[0]]
+        response = json_obj_list_to_dict(response, json_transform_keys[1])
+    return response
+    #     except Exception as e:
+    #         logger.error(f"Error in run_agent_query: {e}")
+    #         num_retries -= 1
+    # raise RuntimeError(f"Failed to run LLM query after {n_retries + 1} tries.")
+
+
+def check_for_missing_fields(input_dict: dict, required_fields: list) -> dict:
+    out = {}
+    for obj in input_dict.values():
+        missing_fields = []
+        for required_field in required_fields:
+            if required_field not in obj:
+                missing_fields.append(required_field)
+        if missing_fields:
+            out[obj['name']] = {'name': obj['name'], 'missing_fields': missing_fields}
+    return out
+
+
+def capitalize_first_letter(text):
+    return ' '.join(word[0].upper() + word[1:] for word in text.split())
+
+
+def normalize_string(text, lower=True, remove_special_chars_punctuation=False):
+    # Convert to lowercase
+    text = text.lower()
+    # Remove leading and trailing whitespace
+    text = text.strip()
+    # Replace multiple spaces with a single space
+    text = re.sub(r'\s+', ' ', text)
+
+    text = re.sub(r'[-_]', ' ', text)
+
+    # Optionally, remove special characters or punctuation
+    if remove_special_chars_punctuation:
+        text = re.sub(r'[^\w\s]', '', text)
+    return text

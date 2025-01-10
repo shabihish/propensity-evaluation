@@ -18,10 +18,10 @@ def remove_duplicate_names_by_prefix(data: dict, prefix_pattern: str, key_to_upd
     return updated_data
 
 
-def apply_to_all_keys(data: dict, func, key_to_update: str = None) -> dict:
+def apply_to_all_keys(data: dict, func, key_to_update: str = None, **kwargs) -> dict:
     updated_data = {}
     for item_name, item in data.items():
-        modified_name = func(item_name)
+        modified_name = func(item_name, **kwargs)
 
         if key_to_update:
             item[key_to_update] = modified_name

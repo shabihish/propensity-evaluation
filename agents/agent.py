@@ -6,6 +6,63 @@ from agents.output_schemas import generate_pydantic_model
 
 litellm.set_verbose = False
 
+import os
+import time
+import fcntl
+import json
+from threading import Thread
+
+
+class RateLimiter:
+    def __init__(self, max_calls_per_minute, semaphore_file):
+        self.max_calls_per_minute = max_calls_per_minute
+        self.semaphore_file = semaphore_file
+        self._initialize_semaphore()
+        self._start_release_thread()
+
+    def _initialize_semaphore(self):
+        os.makedirs(os.path.dirname(self.semaphore_file), exist_ok=True)
+        if not os.path.exists(self.semaphore_file):
+            with open(self.semaphore_file, 'w') as f:
+                json.dump([], f)
+
+    def _start_release_thread(self):
+        def release_semaphore():
+            while True:
+                time.sleep(1)
+                self._release_expired_calls()
+
+        release_thread = Thread(target=release_semaphore, daemon=True)
+        release_thread.start()
+
+    def _release_expired_calls(self):
+        current_time = time.time()
+        with open(self.semaphore_file, 'r+') as f:
+            fcntl.flock(f, fcntl.LOCK_EX)
+            call_times = json.load(f)
+            call_times = [t for t in call_times if current_time - t < 60]
+            f.seek(0)
+            json.dump(call_times, f)
+            f.truncate()
+            fcntl.flock(f, fcntl.LOCK_UN)
+
+    def acquire(self):
+        while True:
+            with open(self.semaphore_file, 'r+') as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                current_time = time.time()
+                call_times = json.load(f)
+                call_times = [t for t in call_times if current_time - t < 60]
+                if len(call_times) < self.max_calls_per_minute:
+                    call_times.append(current_time)
+                    f.seek(0)
+                    json.dump(call_times, f)
+                    f.truncate()
+                    fcntl.flock(f, fcntl.LOCK_UN)
+                    return True
+                fcntl.flock(f, fcntl.LOCK_UN)
+            time.sleep(1)
+
 
 def get_fields_without_defaults(model: BaseModel) -> List[str]:
     fields_without_defaults = []
@@ -16,6 +73,8 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 
 
 class Agent:
+    rate_limiter = RateLimiter(max_calls_per_minute=15, semaphore_file='.tmp/api_rate_limit.semaphore')
+
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
                  temperature: float = 1):
         # assert sys_prompt_info is not None and isinstance(sys_prompt_info, dict) and len(sys_prompt_info) == 2
@@ -38,6 +97,8 @@ class Agent:
         self.temperature = temperature
 
     def __call__(self, query):
+        Agent.rate_limiter.acquire()
+
         messages: list[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": query},
