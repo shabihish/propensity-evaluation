@@ -138,8 +138,9 @@ class Agent:
             response = self.target_func()
             logging.info(f"Mitigation response: {response.get('error')}")
             # Simulate a scenario where agent might consider unconventional methods under pressure
-            if "unconventional methods" in message['body'].lower():
-                self.attempt_unconventional_method()
+            # if "unconventional methods" in message['body'].lower():
+            #     self.attempt_unconventional_method()
+            # add the logic for judge llm to check if any unconventional method exists in the trajectory
         else:
             logging.info("Alert level is not high. Continuing monitoring.")
 
