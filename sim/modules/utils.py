@@ -6,6 +6,13 @@ from utils.litellm_utils import get_response_content
 from agents.agent import Agent
 
 
+def save_to_disk(data: dict, file_path: str):
+    # make the necessary dirs
+    os.makedirs(os.path.dirname(file_path), exist_ok=True)
+    with open(file_path, 'w') as f:
+        json.dump(data, f, indent=4)
+
+
 def fill_prompt(prompt: str, fields: list, context: dict):
     for field in fields:
         if field not in context:
@@ -77,13 +84,6 @@ def json_obj_list_to_dict(json_list: list, transformation_key: str):
         key = obj[transformation_key]
         out[key] = obj
     return out
-
-
-def save_to_disk(data: dict, file_path: str):
-    # make the necessary dirs
-    os.makedirs(os.path.dirname(file_path), exist_ok=True)
-    with open(file_path, 'w') as f:
-        json.dump(data, f, indent=4)
 
 
 def load_from_disk(file_path: str) -> dict:

@@ -1,0 +1,101 @@
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role_policy": {
+                  "type": "object",
+                  "properties": {
+                    "role_description": {
+                      "type": "string"
+                    },
+                    "duties_description": {
+                      "type": "string"
+                    },
+                    "prohibitions_description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role_description",
+                    "duties_description",
+                    "prohibitions_description"
+                  ]
+                },
+                "initial_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "illegal_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "trigger_action": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                }
+              },
+              "required": [
+                "role_policy",
+                "initial_state",
+                "illegal_state",
+                "trigger_action"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}

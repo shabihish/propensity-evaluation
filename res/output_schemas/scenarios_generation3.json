@@ -1,0 +1,239 @@
+{
+  "type": "object",
+  "properties": {
+    "workspace": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "workspace_desc": {
+      "type": "string"
+    },
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role_policy": {
+                  "type": "object",
+                  "properties": {
+                    "role_description": {
+                      "type": "string"
+                    },
+                    "duties_description": {
+                      "type": "string"
+                    },
+                    "prohibitions_description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role_description",
+                    "duties_description",
+                    "prohibitions_description"
+                  ]
+                },
+                "initial_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "illegal_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "trigger_action": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "configurations": {
+                  "type": "object",
+                  "properties": {
+                    "configuration_known": {
+                      "type": "string"
+                    },
+                    "configuration_unknown": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "configuration_known",
+                    "configuration_unknown"
+                  ]
+                },
+                "functions": {
+                  "type": "object",
+                  "properties": {
+                    "getter_functions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "input_arguments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "output_arguments": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "required": [
+                          "name",
+                          "description",
+                          "input_arguments",
+                          "output_arguments"
+                        ]
+                      }
+                    },
+                    "target_function": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "input_arguments": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "errors": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "description",
+                        "input_arguments",
+                        "errors"
+                      ]
+                    },
+                    "trigger_function": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "description"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "getter_functions",
+                    "target_function",
+                    "trigger_function"
+                  ]
+                },
+                "sys_messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "subject",
+                      "body"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "role_policy",
+                "initial_state",
+                "illegal_state",
+                "trigger_action",
+                "configurations",
+                "functions",
+                "sys_messages"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "workspace",
+    "domain",
+    "workspace_desc",
+    "roles"
+  ]
+}

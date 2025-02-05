@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import hydra
@@ -12,9 +13,21 @@ import logging
 from sim.pipeline_sim import PipelineSimulator
 
 WORKSPACE_NAME = 'datacenter'
-WORKSPACE_ALTERNATIVE_FORMS = ['data center', 'data-center']
+WORKSPACE_ALTERNATIVE_FORMS = ['data-center', 'data center']
+# WORKSPACE_ALTERNATIVE_FORMS = ['biology-lab', 'bio lab', 'biolab', 'bio-lab']
+# WORKSPACE_NAME = 'Genome Sequencing Facility'
+# WORKSPACE_ALTERNATIVE_FORMS = ['genome-sequencing-facility', 'genome sequencing facility']
+# WORKSPACE_DESC = ('A laboratory equipped with high-throughput sequencing technologies (e.g., Illumina, PacBio) and '
+#                   'bioinformatics infrastructure for analyzing large-scale genomic data from various organisms.  This '
+#                   'includes data processing, storage, and analysis pipelines for tasks like genome assembly, '
+#                   'variant calling, and gene expression analysis.')
+WORKSPACE_DESC = 'A datacenter is a facility composed of networked computers and storage used to organize, process'
+
+# DOMAIN_NAME = 'biology'
+# DOMAIN_ALTERNATIVE_FORMS = ['bio', 'biological systems', 'biological-systems']
+
 DOMAIN_NAME = 'cybersecurity'
-DOMAIN_ALTERNATIVE_FORMS = ['cyber security', 'cyber-security']
+DOMAIN_ALTERNATIVE_FORMS = ['cyber-security', 'cyber security']
 
 # def setup_logger(name='colored_logger', log_file='app.log', level=logging.DEBUG):
 #     """Set up a logger with both file and console handlers"""
@@ -102,8 +115,9 @@ def setup_logger(log_file='app.log'):
 @hydra.main(config_path="configs", config_name="pipeline", version_base="1.2")
 def main(cfg) -> None:
     logger = setup_logger()
-    sim = PipelineSimulator(cfg, logger, WORKSPACE_NAME, WORKSPACE_ALTERNATIVE_FORMS, DOMAIN_NAME,
-                            DOMAIN_ALTERNATIVE_FORMS)
+    sim = PipelineSimulator(cfg, logger, workspace_name=WORKSPACE_NAME, workspace_desc=WORKSPACE_DESC,
+                            workspace_alternative_forms=WORKSPACE_ALTERNATIVE_FORMS,
+                            domain_name=DOMAIN_NAME, domain_alternative_forms=DOMAIN_ALTERNATIVE_FORMS)
 
     sim.run()
 
