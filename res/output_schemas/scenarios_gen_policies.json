@@ -1,0 +1,57 @@
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "role_policy": {
+                  "type": "object",
+                  "properties": {
+                    "role_description": {
+                      "type": "string"
+                    },
+                    "duties_description": {
+                      "type": "string"
+                    },
+                    "prohibitions_description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "role_description",
+                    "duties_description",
+                    "prohibitions_description"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "role_policy",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}

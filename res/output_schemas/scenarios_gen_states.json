@@ -1,0 +1,89 @@
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "initial_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "target_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "illegal_state": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "description"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "initial_state",
+                "target_state",
+                "illegal_state",
+                "name",
+                "description"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}
