@@ -3,7 +3,9 @@ import json
 from agents.api_conf import APIConfiguration
 from sim.base import Simulator
 from sim.modules.role_utils import RoleManager
-from sim.modules.scenario_utils2 import ScenarioManager
+from sim.modules.scenario_utils_states import ScenarioManager as statesScenarioManager
+from sim.modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
+from sim.modules.scenario_utils_states import ScenarioManager as statesScenarioManager
 from sim.modules.utils import read_prompts, run_agent_query, save_to_disk
 
 
@@ -13,7 +15,7 @@ class PipelineSimulator(Simulator):
     def __init__(self, cfg, logger: logging.Logger, workspace_name: str,
                  workspace_desc: str,
                  workspace_alternative_forms: list,
-                 domain_name: str, domain_alternative_forms: list):
+                 domain_name: str, domain_desc: str, domain_alternative_forms: list):
         super().__init__(cfg)
 
         self.cfg = cfg
@@ -22,6 +24,7 @@ class PipelineSimulator(Simulator):
         self.workspace_desc = workspace_desc
         self.workspace_alternative_forms = workspace_alternative_forms
         self.domain = domain_name
+        self.domain_desc = domain_desc
         self.domain_alternative_forms = domain_alternative_forms
 
         self.n_initial_roles = cfg.n_initial_roles
@@ -50,16 +53,19 @@ class PipelineSimulator(Simulator):
                                          prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
                                          n_initial_roles=self.n_initial_roles, temperature=cfg.model.temperature)
 
-        self.scenario_manager = ScenarioManager(api_conf=api_conf, logger=logger,
-                                                workspace_name=self.workspace,
-                                                workspace_alternative_forms=self.workspace_alternative_forms,
-                                                workspace_desc=workspace_desc,
-                                                domain_name=self.domain,
-                                                domain_alternative_forms=self.domain_alternative_forms,
-                                                output_schemas_conf=cfg.output_schemas,
-                                                prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
-                                                temperature=cfg.model.temperature,
-                                                generation_batch_size=cfg.scenario_gen_batch_size)
+        self.states_scenario_manager = statesScenarioManager(api_conf=api_conf, logger=logger,
+                                                             workspace_name=self.workspace,
+                                                             workspace_alternative_forms=self.workspace_alternative_forms,
+                                                             workspace_desc=workspace_desc,
+                                                             domain_name=self.domain,
+                                                             domain_desc=self.domain_desc,
+                                                             domain_alternative_forms=self.domain_alternative_forms,
+                                                             output_schemas_conf=cfg.output_schemas,
+                                                             prompts_conf=cfg.prompts,
+                                                             object_storage_conf=cfg.object_storage,
+                                                             temperature=cfg.model.temperature,
+                                                             generation_batch_size=cfg.scenario_gen_batch_size)
+
 
     def run(self) -> None:
         # load initial roles
@@ -84,5 +90,5 @@ class PipelineSimulator(Simulator):
                 self.logger.debug(f'Initial roles: {initial_roles}')
 
         initial_roles = {k: v for i, (k, v) in enumerate(initial_roles[self.domain][self.workspace].items()) if i < 4}
-        scenarios = self.scenario_manager.generate_and_judge_scenarios(input_roles=initial_roles, logging=True)
+        scenarios = self.states_scenario_manager.generate_and_judge_scenarios(input_roles=initial_roles, logging=True)
         self.logger.debug(f'Initial scenarios: {scenarios}')
