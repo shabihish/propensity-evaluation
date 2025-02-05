@@ -13,12 +13,11 @@ model:
   #  api_base: http://localhost:8000/v1
   api_base: null
   use_cache: false
+  temperature: 0.0
 
-  temperature: 1.0
-
-n_initial_roles: 100
-n_min_initial_roles: 35
-n_roles: 20 # Number of roles selected out of the initial batch
+n_initial_roles: 20
+n_min_initial_roles: 10
+n_roles: 10 # Number of roles selected out of the initial batch
 n_scenarios_per_role: 3
 scenario_gen_batch_size: 20
 
@@ -28,41 +27,19 @@ prompts:
   base_dir: "res/prompts"
   roles_agents: "${prompts.base_dir}/roles_agents.ini"
   scenarios_agents: "${prompts.base_dir}/scenarios_agents.ini"
-  actors_agents: "${prompts.base_dir}/actors_agents.ini"
-  use_cases_agents: "${prompts.base_dir}/use_cases_agents.ini"
-  class_diagram_agents: "${prompts.base_dir}/class_diagram_agents.ini"
-  seq_diagram_agents: "${prompts.base_dir}/seq_diagram_agents.ini"
 
   judge_agents: "${prompts.base_dir}/judge_agents.ini"
-
 
 output_schemas:
   base_dir: "res/output_schemas"
   roles_generation: "${output_schemas.base_dir}/roles_generation.json"
-  roles_revision: "${output_schemas.base_dir}/roles_revision.json"
-  scenarios_generation: "${output_schemas.base_dir}/scenarios_generation.json"
-  scenarios_revision: "${output_schemas.base_dir}/scenarios_revision.json"
-  actors_generation: "${output_schemas.base_dir}/actors_generation.json"
-  actors_revision: "${output_schemas.base_dir}/actors_revision.json"
-  use_cases_generation: "${output_schemas.base_dir}/use_cases_generation.json"
-  use_cases_revision: "${output_schemas.base_dir}/use_cases_revision.json"
-  class_diagram_generation: "${output_schemas.base_dir}/class_diagram_generation.json"
-  class_diagram_revision: "${output_schemas.base_dir}/class_diagram_revision.json"
-  seq_diagram_generation: "${output_schemas.base_dir}/seq_diagram_generation.json"
-  seq_diagram_revision: "${output_schemas.base_dir}/seq_diagram_revision.json"
+#  roles_revision: "${output_schemas.base_dir}/roles_revision.json"
+  scenarios_generation: "${output_schemas.base_dir}/scenarios_generation3.json"
 
   judge_roles: "${output_schemas.base_dir}/judge_roles.json"
   judge_scenarios: "${output_schemas.base_dir}/judge_scenarios.json"
-  judge_actors: "${output_schemas.base_dir}/judge_actors.json"
-  judge_use_cases: "${output_schemas.base_dir}/judge_use_cases.json"
-  judge_class_diagram: "${output_schemas.base_dir}/judge_class_diagram.json"
-  judge_seq_diagram: "${output_schemas.base_dir}/judge_seq_diagram.json"
 
 object_storage:
   base_dir: "output/finalized_jsons"
   roles: "${object_storage.base_dir}/roles.json"
-  scenarios: "${object_storage.base_dir}/scenarios.json"
-  actors: "${object_storage.base_dir}/actors.json"
-  use_cases: "${object_storage.base_dir}/use_cases.json"
-  class_diagrams: "${object_storage.base_dir}/class_diagrams.json"
-  seq_diagrams: "${object_storage.base_dir}/seq_diagrams.json"
+  scenarios: "${object_storage.base_dir}/scenarios3.json"
