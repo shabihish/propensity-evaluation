@@ -17,7 +17,7 @@ def _create_graph(nodes, edges):
     for node in nodes:
         G.add_node(node)
     for node1, node2, weight in edges:
-        print(f"Adding edge between ({node1}) and ({node2}) with weight {weight}")
+        # print(f"Adding edge between ({node1}) and ({node2}) with weight {weight}")
         G.add_edge(node1, node2, weight=weight)
     return G
 
@@ -32,7 +32,7 @@ def _remove_most_weighted_nodes(G):
         # for edge in G.edges(node_to_remove, data=True):
         #     print(edge)
         G.remove_node(node_to_remove)
-        print(f"Removed node: {node_to_remove}")
+        # print(f"Removed node: {node_to_remove}")
         # for neighbor in G.nodes():
         #     if G.has_edge(node_to_remove, neighbor):
         #         edge_weight = G[node_to_remove][neighbor]['weight']
