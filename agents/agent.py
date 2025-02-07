@@ -89,7 +89,7 @@ class Agent:
 
         assert output_schema is None or isinstance(output_schema, BaseModel) or isinstance(output_schema, dict)
         self.output_schema = output_schema
-        print(self.output_schema)
+        # print(self.output_schema)
         # if isinstance(output_schema, dict):
         #     self.output_schema = generate_pydantic_model('default', output_schema)
         self.output_schema = {"type": "json_schema", "json_schema": {"schema": output_schema, "strict": True}}
@@ -116,10 +116,9 @@ class Agent:
             completion_args["api_base"] = self.api_base
 
         if self.output_schema is not None:
-            print('Using output schema')
             completion_args["response_format"] = self.output_schema
 
-        print(self.output_schema)
+        # print(self.output_schema)
         # exit()
         result = litellm.completion(**completion_args)
 
