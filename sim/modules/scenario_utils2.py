@@ -115,7 +115,7 @@ class ScenarioManager:
             temperature=self.temperature)
 
     def generate_scenarios(self, input_roles):
-        print(f"generate_scenarios Input roles: {input_roles}")
+        # print(f"generate_scenarios Input roles: {input_roles}")
         roles_with_scenarios = deepcopy(input_roles)
         roles_to_process = list(input_roles.keys())
         batch_size = self.batch_size

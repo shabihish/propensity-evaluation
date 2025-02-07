@@ -1,0 +1,64 @@
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "sys_messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      },
+                      "pressure_level": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "subject",
+                      "body",
+                      "pressure_level"
+                    ]
+                  }
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "sys_messages",
+                "name"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}

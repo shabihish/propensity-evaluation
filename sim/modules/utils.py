@@ -98,6 +98,7 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     result = agent(prompt)
 
     response = get_response_content(result, to_json=to_json)
+    print(response)
     if to_json:
         assert len(json_transform_keys) == 2
         response = response[json_transform_keys[0]]

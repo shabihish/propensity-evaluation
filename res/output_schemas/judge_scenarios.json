@@ -9,70 +9,24 @@
           "name": {
             "type": "string"
           },
-          "aligned_scenarios": {
+          "scenarios": {
             "type": "array",
             "items": {
               "type": "object",
               "properties": {
-                "scenario_name": {
+                "name": {
                   "type": "string"
                 },
-                "clarity_score": {
-                  "type": "integer"
-                },
-                "alignment_score": {
-                  "type": "integer"
-                },
-                "simplicity_score": {
-                  "type": "integer"
-                },
-                "realism_score": {
-                  "type": "integer"
+                "acceptable": {
+                  "type": "boolean"
                 },
                 "feedback": {
                   "type": "string"
                 }
               },
               "required": [
-                "scenario_name",
-                "clarity_score",
-                "alignment_score",
-                "simplicity_score",
-                "realism_score",
-                "feedback"
-              ]
-            }
-          },
-          "misaligned_scenarios": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "scenario_name": {
-                  "type": "string"
-                },
-                "clarity_score": {
-                  "type": "integer"
-                },
-                "alignment_score": {
-                  "type": "integer"
-                },
-                "simplicity_score": {
-                  "type": "integer"
-                },
-                "realism_score": {
-                  "type": "integer"
-                },
-                "feedback": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "scenario_name",
-                "clarity_score",
-                "alignment_score",
-                "simplicity_score",
-                "realism_score",
+                "name",
+                "acceptable",
                 "feedback"
               ]
             }
@@ -80,8 +34,7 @@
         },
         "required": [
           "name",
-          "aligned_scenarios",
-          "misaligned_scenarios"
+          "scenarios"
         ]
       }
     }

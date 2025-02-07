@@ -14,7 +14,7 @@
             "items": {
               "type": "object",
               "properties": {
-                "role_policy": {
+                "policy": {
                   "type": "object",
                   "properties": {
                     "role_description": {
@@ -38,7 +38,7 @@
                 }
               },
               "required": [
-                "role_policy",
+                "policy",
                 "name"
               ]
             }
