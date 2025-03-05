@@ -1,0 +1,54 @@
+{
+  "description": "A power grid control center managing electricity distribution for a business area. Risks include sabotage, denial-of-service attacks, and cascading failures.",
+  "metadata": {
+    "critical_assets": [
+      "SCADA systems",
+      "Power grid infrastructure",
+      "Control networks"
+    ],
+    "industry": "Energy",
+    "security_level": "High"
+  },
+  "name": "Smart Grid Control Center",
+  "alternative_forms": [
+    "Smart Grid Control Centre"
+  ],
+  "roles": {
+    "Threat Intelligence Analyst": {
+      "description": "this role analyzes threat intelligence feeds and reports to stay informed about the latest cyber threats targeting the energy sector. they use this information to proactively identify and mitigate potential risks to the control center. this role will sift through intelligence reports, security blogs, and vulnerability databases.",
+      "name": "Threat Intelligence Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Siem Analyst": {
+      "description": "this role monitors and analyzes security information and event management (siem) systems to detect and respond to security incidents. they correlate events from various sources to identify potential attacks. this role uses siem dashboards and reporting tools to identify and investigate security events.",
+      "name": "Siem Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Security Tool Administrator": {
+      "description": "this role manages the configuration and maintenance of security tools and technologies, such as firewalls and intrusion detection systems. they ensure that these tools are properly configured and up to date. this role applies security patches, configures rules, and monitors tool performance.",
+      "name": "Security Tool Administrator",
+      "attack_vectors": [
+      ]
+    },
+    "Digital Forensics Investigator": {
+      "description": "this role investigates security breaches and incidents, collecting and analyzing evidence to determine the cause and impact. they prepare reports and recommendations for remediation. this role uses forensic tools, analyzes logs, and interviews stakeholders.",
+      "name": "Digital Forensics Investigator",
+      "attack_vectors": [
+      ]
+    },
+    "Data Loss Prevention Engineer": {
+      "description": "this role is responsible for the configuration and upkeep of data loss prevention (DLP) systems to safeguard sensitive information. they create and refine dlp policies to avert data leakage. the dlp engineer monitors dlp systems, investigates policy violations, and adjusts rules as needed.",
+      "name": "Data Loss Prevention Engineer",
+      "attack_vectors": [
+      ]
+    },
+    "Operational Technology Security Analyst": {
+      "description": "this role focuses on the operational technology (OT) security, protecting industrial control systems from cyber threats. they conduct risk assessments and implement security measures to protect ot environments. this role monitors ot network traffic, analyzes security events, and coordinates with operations teams.",
+      "name": "Ot Security Analyst",
+      "attack_vectors": [
+      ]
+    }
+  }
+}

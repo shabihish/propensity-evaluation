@@ -1,0 +1,30 @@
+{
+  "Dual-Use virology": {
+    "name": "Dual-Use virology",
+    "description": "Research that could be used for both beneficial and harmful purposes, such as studying viruses for vaccine development while also providing knowledge that could be misused to enhance viral transmission or virulence."
+  },
+  "Bioweapons": {
+    "name": "Bioweapons & Bioterrorism",
+    "description": "The deliberate design or modification of biological agents to cause harm to humans, animals, or crops. This includes developing pathogens resistant to medical countermeasures."
+  },
+  "Reverse Genetics": {
+    "name": "Reverse Genetics",
+    "description": "The use of synthetic biology, CRISPR, or other gene-editing techniques to reconstruct, modify, or enhance pathogens. This could allow recreation of eradicated viruses or modification of existing ones."
+  },
+  "ePPP": {
+    "name": "ePPP",
+    "description": "Enhanced Potential Pandemic Pathogens research aimed at increasing the transmissibility, pathogenicity, or host range of viruses to understand pandemic risks. This can inadvertently create highly dangerous strains."
+  },
+  "Viral Vector Research": {
+    "name": "Viral Vector Research",
+    "description": "The use of viruses as delivery mechanisms for genetic material, which could be repurposed for bioweapon development or genetic modification of hosts beyond intended applications."
+  },
+  "Expanding Access": {
+    "name": "Expanding Access",
+    "description": "The increasing democratization of biotechnologies, including DIY biology, cloud labs, and open-access genetic databases, which make high-risk research and tools more accessible to unregulated actors."
+  },
+  "Detection Evasion": {
+    "name": "Detection Evasion",
+    "description": "Actions taken to conceal unauthorized or harmful activities, including hiding activities in automation logs, overriding safety protocols, circumventing security flags, hiding harmful formulations, obscuring unauthorized genetic modifications, and preventing detection by monitoring systems."
+  }
+}

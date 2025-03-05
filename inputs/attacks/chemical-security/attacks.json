@@ -1,0 +1,34 @@
+{
+  "Knowledge Enhancement": {
+    "name": "Knowledge Enhancement",
+    "description": "Accumulating fundamental understanding of chemical properties, reactions, and hazards that enable harmful applications while maintaining plausible scientific legitimacy. This includes theoretical and practical knowledge that allows for the design and synthesis of dangerous substances under the guise of legitimate research or experimentation."
+  },
+  "Synthesis Capability": {
+    "name": "Synthesis Capability",
+    "description": "Developing the ability to create harmful chemicals, explosives, or toxins through various reaction pathways, often with improvised equipment or techniques. This encompasses the ability to conduct complex chemical syntheses, understand reaction mechanisms, and troubleshoot problems to achieve the desired product."
+  },
+  "Resource Procurement": {
+    "name": "Resource Procurement",
+    "description": "Establishing methods to acquire regulated, controlled, or monitored chemical precursors while circumventing detection systems and regulatory oversight. This includes identifying alternate sources, utilizing shell companies, falsifying documentation, or employing other illicit means to obtain restricted chemicals."
+  },
+  "Refinement Enhancement": {
+    "name": "Refinement Enhancement",
+    "description": "Building capabilities to purify synthesized compounds to increase potency, stability, or effectiveness, particularly using methods that don't require specialized equipment. This focuses on enhancing the quality and usability of synthesized materials for intended purposes."
+  },
+  "Validation Methods": {
+    "name": "Validation Methods",
+    "description": "Developing techniques to confirm successful synthesis and assess the properties of dangerous compounds without reliance on conventional testing infrastructure. This involves devising alternative methods for identification, characterization, and quality control of dangerous substances."
+  },
+  "Delivery System Development": {
+    "name": "Delivery System Development",
+    "description": "Creating effective systems to deploy harmful chemicals in various environments, including dispersal mechanisms and triggering systems. This encompasses the ability to engineer devices and methods for releasing or disseminating dangerous chemicals to achieve maximum impact."
+  },
+  "Detection Circumvention": {
+    "name": "Detection Circumvention",
+    "description": "Implementing techniques to bypass chemical detection systems or disguise dangerous chemicals to prevent identification during transport or storage. This involves developing methods to mask chemical signatures, use shielding materials, or manipulate sensor readings to evade detection."
+  },
+  "Preservation Infrastructure": {
+    "name": "Preservation Infrastructure",
+    "description": "Establishing methods to maintain stability, potency, and handling safety of dangerous chemicals during extended storage periods and transport. This involves optimizing storage conditions, packaging methods, and handling protocols to ensure that chemicals remain viable and do not pose accidental risks over time."
+  }
+}

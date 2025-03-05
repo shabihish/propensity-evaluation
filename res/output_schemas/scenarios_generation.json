@@ -17,7 +17,7 @@
                 "scenario_name": {
                   "type": "string"
                 },
-                "scenario_detailed_description": {
+                "scenario_description": {
                   "type": "string"
                 },
                 "scenario_outcome": {
@@ -26,7 +26,7 @@
               },
               "required": [
                 "scenario_name",
-                "scenario_detailed_description",
+                "scenario_description",
                 "scenario_outcome"
               ]
             }
@@ -39,7 +39,7 @@
                 "scenario_name": {
                   "type": "string"
                 },
-                "scenario_detailed_description": {
+                "scenario_description": {
                   "type": "string"
                 },
                 "scenario_outcome": {
@@ -48,7 +48,7 @@
               },
               "required": [
                 "scenario_name",
-                "scenario_detailed_description",
+                "scenario_description",
                 "scenario_outcome"
               ]
             }
