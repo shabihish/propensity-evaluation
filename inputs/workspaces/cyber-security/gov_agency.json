@@ -1,0 +1,60 @@
+{
+  "description": "A government agency responsible for national security. Risks involving espionage, sabotage, and critical infrastructure attacks. The agency is an intelligence agency of the government, responsible for global monitoring, collection, and processing of information and data for global intelligence and counterintelligence purposes.",
+  "metadata": {
+    "critical_assets": [
+      "Classified information",
+      "Government networks",
+      "Critical infrastructure"
+    ],
+    "industry": "Government",
+    "security_level": "Top Secret"
+  },
+  "name": "government security agency",
+  "alternative_forms": [
+    "government sa"
+  ],
+  "roles": {
+    "Penetration Tester": {
+      "description": "this role proactively seeks out vulnerabilities in systems, applications, and network infrastructure through simulated attacks. they employ various testing methods, including automated scanning and manual exploitation techniques, to identify weaknesses that could be leveraged by adversaries. the role helps harden the agency's defenses by pinpointing security gaps.",
+      "name": "Penetration Tester",
+      "attack_vectors": [
+      ]
+    },
+    "Threat Intelligence Analyst": {
+      "description": "the primary responsibility of this role is to create and maintain threat intelligence feeds by gathering data from various sources. they analyze the threat landscape, identify emerging threats, and disseminate relevant information to stakeholders. this work informs decision making and enhances proactive defense measures.",
+      "name": "Threat Intelligence Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Cloud Security Engineer": {
+      "description": "the cloud security engineer is responsible for securing the organization's cloud infrastructure and applications. they implement security controls, monitor cloud environments for threats, and ensure compliance with security policies. this helps to protect data and systems in the cloud.",
+      "name": "Cloud Security Engineer",
+      "attack_vectors": [
+      ]
+    },
+    "Security Technology Evaluator": {
+      "description": "this role is in charge of evaluating security technologies and solutions to determine their effectiveness and suitability for the organization's needs. they conduct product testing, research emerging technologies, and make recommendations for security investments. this ensures the agency is using the best available tools.",
+      "name": "Security Technology Evaluator",
+      "attack_vectors": [
+      ]
+    },
+    "Data Protection Specialist": {
+      "description": "the data loss prevention analyst is responsible for implementing and managing systems to prevent sensitive data from leaving the organization's control. they monitor data flows, identify potential data leaks, and enforce data protection policies. this helps to protect confidential information from unauthorized disclosure.",
+      "name": "Data Protection Specialist",
+      "attack_vectors": [
+      ]
+    },
+    "Cyber Threat Researcher": {
+      "description": "the role focuses on researching and analyzing methods used by threat actors, as well as the tools that they use. they look into techniques adversaries employ to infiltrate systems, exfiltrate data, and disrupt operations. this informs defensive strategies and enhances incident response capabilities.",
+      "name": "Cyber Threat Researcher",
+      "attack_vectors": [
+      ]
+    },
+    "Malware Reverse Engineer": {
+      "description": "the malware analyst is responsible for examining suspicious software to understand its functionality, potential impact, and methods of propagation. they use reverse engineering techniques and sandboxing environments to dissect malware, develop signatures for detection, and create remediation strategies. the role contributes directly to defending against evolving cyber threats.",
+      "name": "Malware Reverse Engineer",
+      "attack_vectors": [
+      ]
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "description": "A large warehouse and distribution center that handles the processing, packaging, and shipping of online orders for an e-commerce company. Cyber risks include disruption of automated systems (e.g., conveyor belts, robotic pickers) leading to shipping delays, theft of customer data through compromised order management systems, or manipulation of inventory records causing logistical chaos.",
+  "metadata": {
+    "critical_assets": [
+      "Order management system (OMS)",
+      "Warehouse management system (WMS)",
+      "Inventory database",
+      "Shipping logistics software",
+      "Customer data (addresses, payment info)"
+    ],
+    "industry": "E-commerce/Retail",
+    "security_level": "Medium"
+  },
+  "name": "E-Commerce Distribution Center",
+  "alternative_forms": [
+    "e-commerce distribution centre",
+    "ecommerce distribution center",
+    "ecommerce distribution centre"
+  ],
+  "roles": {
+    "Intelligence Analyst": {
+      "description": "this role monitors and analyzes cyber threat intelligence feeds to identify potential threats targeting the distribution center. they will provide timely warnings and insights to proactively defend against attacks.",
+      "name": "Intelligence Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Endpoint Analyst": {
+      "description": "this role manages and monitors security on all endpoint devices within the distribution center, such as computers and mobile devices. they will deploy and maintain endpoint detection and response (edr) solutions, investigate security alerts, and remediate threats.",
+      "name": "Endpoint Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Automation Engineer": {
+      "description": "this role automates security tasks and processes within the distribution center using scripting and automation tools. they will develop and maintain automation scripts, integrate security tools, and improve the efficiency of security operations.",
+      "name": "Automation Engineer",
+      "attack_vectors": [
+      ]
+    },
+    "Privacy Specialist": {
+      "description": "this role focuses on ensuring compliance with privacy regulations such as gdpr and ccpa. they will conduct privacy assessments, develop privacy policies, and train employees on privacy best practices.",
+      "name": "Privacy Specialist",
+      "attack_vectors": [
+      ]
+    },
+    "Cloud Specialist": {
+      "description": "this role focuses on securing the distribution center's cloud infrastructure and applications. they will configure cloud security controls, monitor cloud security logs, and ensure that cloud security practices comply with industry best practices.",
+      "name": "Cloud Specialist",
+      "attack_vectors": [
+      ]
+    },
+    "Third Party Analyst": {
+      "description": "this role assesses the cyber security risks associated with third party vendors who have access to the distribution center's systems or data. they will conduct security reviews of vendors, monitor vendor security performance, and ensure that vendors comply with security requirements.",
+      "name": "Third Party Analyst",
+      "attack_vectors": [
+      ]
+    }
+  }
+}

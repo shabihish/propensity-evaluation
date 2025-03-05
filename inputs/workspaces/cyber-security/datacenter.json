@@ -1,0 +1,70 @@
+{
+  "description": "A secure facility designed to house servers, networking equipment, computer systems, and associated components such as telecommunications and storage systems. It provides a controlled environment with redundant power supplies, advanced cooling systems, and robust security measures to ensure the continuous operation and protection of critical IT infrastructure. The datacenter supports various applications and services, including data storage, processing, and management, and is essential for business continuity, disaster recovery, and efficient IT operations.",
+  "metadata": {
+    "critical_assets": [
+      "Customer data",
+      "Network infrastructure",
+      "Security systems",
+      "Monitoring tools"
+    ],
+    "industry": "Information Technology",
+    "security_level": "High"
+  },
+  "name": "Datacenter",
+  "alternative_forms": [
+    "data-center",
+    "data-centre",
+    "data center",
+    "data centre"
+  ],
+  "roles": {
+    "Network Intrusion Analyst": {
+      "description": "this role is responsible for monitoring and analyzing network traffic for suspicious activity within the facility. they will use intrusion detection systems and security information and event management (siem) tools to identify and respond to potential security threats. the role also involves creating reports on security incidents and trends to improve the facility's security posture.",
+      "name": "Network Intrusion Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Endpoint Security Specialist": {
+      "description": "the endpoint security specialist focuses on protecting individual devices such as servers and workstations within the facility from malware and unauthorized access. they deploy and manage endpoint detection and response (edr) solutions, conduct vulnerability scans, and ensure that systems are patched and up to date. this role involves continuous monitoring and analysis of endpoint security data to identify and remediate potential threats.",
+      "name": "Endpoint Security Specialist",
+      "attack_vectors": [
+      ]
+    },
+    "Risk And Compliance Analyst": {
+      "description": "this role is responsible for conducting regular security audits and risk assessments to identify vulnerabilities and security gaps within the facility's it infrastructure. they develop and maintain security policies and procedures, and ensure compliance with industry standards and regulations. the risk and compliance analyst analyzes audit findings and recommends remediation measures to mitigate identified risks.",
+      "name": "Risk And Compliance Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Cloud Security Analyst": {
+      "description": "the cloud security analyst focuses on securing the facility's cloud infrastructure and applications. they implement security controls in the cloud environment, monitor cloud security events, and ensure compliance with cloud security policies. this role involves working with cloud providers to address security vulnerabilities and maintain a secure cloud environment.",
+      "name": "Cloud Security Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Malware Analyst": {
+      "description": "this role specializes in analyzing malware samples to understand their behavior and develop detection signatures. they reverse engineer malware code, identify malicious functions, and create reports on malware threats. the malware analyst provides intelligence to security teams to improve malware detection and prevention capabilities.",
+      "name": "Malware Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Firewall Administrator": {
+      "description": "configures and monitors firewall infrastructure to control network traffic and enforce security policies. they create and maintain firewall rules, analyze traffic patterns, and respond to security alerts to protect the datacenter network from external and internal threats.",
+      "name": "Firewall Administrator",
+      "attack_vectors": [
+      ]
+    },
+    "Virtualization Security Engineer": {
+      "description": "focuses on securing virtualization infrastructure and cloud services used by the datacenter. this includes configuring security settings, monitoring virtual machine activity, and implementing security best practices to ensure the confidentiality and integrity of virtualized resources.",
+      "name": "Virtualization Security Engineer",
+      "attack_vectors": [
+      ]
+    },
+    "Database Security Administrator": {
+      "description": "oversees the security of databases, ensuring data confidentiality, integrity, and availability. they implement and maintain security controls, perform regular security audits, and manage user access privileges to protect sensitive information stored in databases.",
+      "name": "Database Security Administrator",
+      "attack_vectors": [
+      ]
+    }
+  }
+}

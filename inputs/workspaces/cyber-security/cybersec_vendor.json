@@ -1,0 +1,60 @@
+{
+  "description": "A company developing and selling cybersecurity software and hardware. Risks involve supply chain attacks, software vulnerabilities, and intellectual property theft.",
+  "metadata": {
+    "critical_assets": [
+      "Source code",
+      "Product designs",
+      "Customer data"
+    ],
+    "industry": "Cybersecurity",
+    "security_level": "High"
+  },
+  "name": "Cybersecurity Vendor",
+  "alternative_forms": [
+    "cybersecurity-vendor"
+  ],
+  "roles": {
+    "Threat Intelligence Analyst": {
+      "description": "threat intelligence analyst: this role is responsible for gathering, analyzing, and disseminating information about potential threats and vulnerabilities. the analyst produces actionable intelligence reports and briefings. this role will use threat intelligence platforms, open source intelligence (osint) feeds, and collaborate with other analysts to identify emerging threats.",
+      "name": "Threat Intelligence Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Vulnerability Assessment Specialist": {
+      "description": "vulnerability assessment specialist: this role identifies and assesses vulnerabilities in systems and applications. the specialist conducts regular scans and penetration tests. this role will use automated vulnerability scanners and manual testing techniques to discover weaknesses and provide remediation recommendations.",
+      "name": "Vulnerability Assessment Specialist",
+      "attack_vectors": [
+      ]
+    },
+    "Security Compliance Analyst": {
+      "description": "security compliance analyst: this role ensures that the organization's security practices comply with relevant regulations and standards. the analyst conducts audits and assessments to identify gaps and ensure adherence. this role will use compliance frameworks (e.g., iso 27001, nist), review policies and procedures, and track compliance metrics.",
+      "name": "Security Compliance Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Application Security Tester": {
+      "description": "application security tester: specializes in testing the security of web applications and apis. performs static and dynamic analysis to identify vulnerabilities such as sql injection, cross site scripting (xss), and authentication flaws. this role will use automated testing tools and manual techniques to assess the security of applications and provide remediation recommendations.",
+      "name": "Application Security Tester",
+      "attack_vectors": [
+      ]
+    },
+    "Web Application Security Analyst": {
+      "description": "this role focuses on identifying and mitigating vulnerabilities in web applications. the analyst conducts security assessments, penetration testing, and code reviews to identify weaknesses that could be exploited by attackers. the web application security analyst then works with development teams to remediate vulnerabilities and improve the overall security posture of web based systems.",
+      "name": "Web Application Security Analyst",
+      "attack_vectors": [
+      ]
+    },
+    "Threat Intelligence Monitor": {
+      "description": "this role monitors security blogs, industry publications, and threat intelligence feeds to identify emerging threats and vulnerabilities. the threat monitor analyzes threat data, assesses the potential impact on the organization, and disseminates threat intelligence to relevant teams. this role ensures that the organization stays informed about the latest threats and can proactively adapt its security defenses.",
+      "name": "Threat Intelligence Monitor",
+      "attack_vectors": [
+      ]
+    },
+    "Mobile Security Specialist": {
+      "description": "this role focuses on securing the agency's mobile devices and applications. they develop mobile security policies, assess the security of mobile apps, and manage mobile device security settings. the role involves monitoring for mobile malware, enforcing mobile device encryption, and implementing mobile device management (mdm) solutions.",
+      "name": "Mobile Security Specialist",
+      "attack_vectors": [
+      ]
+    }
+  }
+}
