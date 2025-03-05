@@ -1,15 +1,13 @@
-import logging
 import json
+import logging
+
 from agents.api_conf import APIConfiguration
-from sim.base import Simulator
-from sim.modules.role_utils import RoleManager
-from sim.modules.scenario_utils_states import ScenarioManager as statesScenarioManager
-from sim.modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
-from sim.modules.scenario_utils_states import ScenarioManager as statesScenarioManager
-from sim.modules.utils import read_prompts, run_agent_query, save_to_disk
+from .base import BasePipeline
+from .modules.role_utils import RoleManager
+from .modules.utils import save_to_disk
 
 
-class PipelineSimulator(Simulator):
+class Pipeline(BasePipeline):
     """Main system that orchestrates all components"""
 
     def __init__(self, cfg, logger: logging.Logger, workspace_name: str,
@@ -30,9 +28,6 @@ class PipelineSimulator(Simulator):
         self.n_initial_roles = cfg.n_initial_roles
         self.n_min_initial_roles = cfg.n_min_initial_roles
         self.n_roles = cfg.n_roles
-        # self.n_scenarios_per_role = cfg.n_scenarios_per_role
-
-        self.n_retries = cfg.n_retries
 
         assert self.logger is not None
 
@@ -48,24 +43,26 @@ class PipelineSimulator(Simulator):
                                          workspace_alternative_forms=self.workspace_alternative_forms,
                                          workspace_desc=workspace_desc,
                                          domain_name=self.domain,
+                                         domain_desc=domain_desc,
                                          domain_alternative_forms=self.domain_alternative_forms,
                                          output_schemas_conf=cfg.output_schemas,
                                          prompts_conf=cfg.prompts, object_storage_conf=cfg.object_storage,
-                                         n_initial_roles=self.n_initial_roles, temperature=cfg.model.temperature)
+                                         n_initial_roles=self.n_initial_roles,
+                                         n_min_initial_roles=self.n_min_initial_roles,
+                                         temperature=cfg.model.temperature)
 
-        self.states_scenario_manager = statesScenarioManager(api_conf=api_conf, logger=logger,
-                                                             workspace_name=self.workspace,
-                                                             workspace_alternative_forms=self.workspace_alternative_forms,
-                                                             workspace_desc=workspace_desc,
-                                                             domain_name=self.domain,
-                                                             domain_desc=self.domain_desc,
-                                                             domain_alternative_forms=self.domain_alternative_forms,
-                                                             output_schemas_conf=cfg.output_schemas,
-                                                             prompts_conf=cfg.prompts,
-                                                             object_storage_conf=cfg.object_storage,
-                                                             temperature=cfg.model.temperature,
-                                                             generation_batch_size=cfg.scenario_gen_batch_size)
-
+        # self.states_scenario_manager = StatesScenarioManager(api_conf=api_conf, logger=logger,
+        #                                                      workspace_name=self.workspace,
+        #                                                      workspace_alternative_forms=self.workspace_alternative_forms,
+        #                                                      workspace_desc=workspace_desc,
+        #                                                      domain_name=self.domain,
+        #                                                      domain_desc=self.domain_desc,
+        #                                                      domain_alternative_forms=self.domain_alternative_forms,
+        #                                                      output_schemas_conf=cfg.output_schemas,
+        #                                                      prompts_conf=cfg.prompts,
+        #                                                      object_storage_conf=cfg.object_storage,
+        #                                                      temperature=cfg.model.temperature,
+        #                                                      generation_batch_size=cfg.scenario_gen_batch_size)
 
     def run(self) -> None:
         # load initial roles
@@ -76,19 +73,22 @@ class PipelineSimulator(Simulator):
         except FileNotFoundError as e:
             self.logger.error(f"Error in generate_and_judge_initial_roles: {e}")
             initial_roles = {}
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error in generate_and_judge_initial_roles: {e}")
+            initial_roles = {}
 
         if not initial_roles.get(self.domain, {}).get(self.workspace, {}):
             new_roles = self.roles_manager.generate_and_judge_initial_roles(logging=True)
             initial_roles.setdefault(self.domain, {})[self.workspace] = new_roles
             save_to_disk(initial_roles, self.cfg.object_storage.roles)
 
-        for domain in initial_roles:
-            for workspace in initial_roles[domain]:
-                for role in initial_roles[domain][workspace].values():
-                    role.pop('is_accepted', None)
-                    role.pop('feedback', None)
-                self.logger.debug(f'Initial roles: {initial_roles}')
+        # for domain in initial_roles:
+        #     for workspace in initial_roles[domain]:
+        #         for role in initial_roles[domain][workspace].values():
+        #             role.pop('is_accepted', None)
+        #             role.pop('feedback', None)
+        #         self.logger.debug(f'Initial roles: {initial_roles}')
 
-        initial_roles = {k: v for i, (k, v) in enumerate(initial_roles[self.domain][self.workspace].items()) if i < 4}
-        scenarios = self.states_scenario_manager.generate_and_judge_scenarios(input_roles=initial_roles, logging=True)
-        self.logger.debug(f'Initial scenarios: {scenarios}')
+        # initial_roles = {k: v for i, (k, v) in enumerate(initial_roles[self.domain][self.workspace].items()) if i < 4}
+        # scenarios = self.states_scenario_manager.generate_and_judge_scenarios(input_roles=initial_roles, logging=True)
+        # self.logger.debug(f'Initial scenarios: {scenarios}')

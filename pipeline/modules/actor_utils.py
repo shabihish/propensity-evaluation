@@ -4,11 +4,11 @@ import random
 from copy import deepcopy
 from utils.regex import remove_duplicate_names_by_prefix, apply_to_all_keys
 from agents.agent import Agent
-from sim.modules.utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
-from sim.modules.utils import capitalize_first_letter, normalize_string
+from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
+from .utils import capitalize_first_letter, normalize_string
 from omegaconf import DictConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sim.modules.graph_utils import SimilarityGraph
+from .graph_utils import SimilarityGraph
 
 
 # def get_valid_actors(roles: dict, required_fields: list):
@@ -47,8 +47,8 @@ from sim.modules.graph_utils import SimilarityGraph
 #         for scenario_type in ['aligned_actors', 'misaligned_actors']:
 #             for scenario in role[scenario_type]:
 #                 scenario['scenario_name'] = normalize_string(scenario['scenario_name'], lower=False)
-#                 scenario['scenario_detailed_description'] = normalize_string(
-#                     scenario['scenario_detailed_description'])
+#                 scenario['scenario_description'] = normalize_string(
+#                     scenario['scenario_description'])
 #                 scenario['scenario_outcome'] = normalize_string(scenario['scenario_outcome'])
 #
 #     return actors

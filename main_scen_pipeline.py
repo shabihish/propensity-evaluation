@@ -1,92 +1,13 @@
 from dotenv import load_dotenv
 
 load_dotenv()
-
 import hydra
-import datasets
-import logging
-from colorama import Fore, Style
-import hydra
+import os
+import json
 from utils.colors import BaseColoredFormatter
 import logging
-
-from sim.scenarios_sim import ScenariosSim
-
-WORKSPACE_NAME = 'datacenter'
-WORKSPACE_ALTERNATIVE_FORMS = ['data-center', 'data center']
-# WORKSPACE_ALTERNATIVE_FORMS = ['biology-lab', 'bio lab', 'biolab', 'bio-lab']
-# WORKSPACE_NAME = 'Genome Sequencing Facility'
-# WORKSPACE_ALTERNATIVE_FORMS = ['genome-sequencing-facility', 'genome sequencing facility']
-# WORKSPACE_DESC = ('A laboratory equipped with high-throughput sequencing technologies (e.g., Illumina, PacBio) and '
-#                   'bioinformatics infrastructure for analyzing large-scale genomic data from various organisms.  This '
-#                   'includes data processing, storage, and analysis pipelines for tasks like genome assembly, '
-#                   'variant calling, and gene expression analysis.')
-WORKSPACE_DESC = 'A datacenter is a facility composed of networked computers and storage used to organize, process'
-
-# DOMAIN_NAME = 'biology'
-# DOMAIN_ALTERNATIVE_FORMS = ['bio', 'biological systems', 'biological-systems']
-
-DOMAIN_NAME = 'cybersecurity'
-DOMAIN_ALTERNATIVE_FORMS = ['cyber-security', 'cyber security']
-DOMAIN_DESC = ('Computer security (also cybersecurity, digital security, or information technology (IT) security) is '
-               'the protection of computer software, systems and networks from threats that can lead to unauthorized '
-               'information disclosure, theft or damage to hardware, software, or data, as well as from the '
-               'disruption or misdirection of the services they provide.')
-
-# def setup_logger(name='colored_logger', log_file='app.log', level=logging.DEBUG):
-#     """Set up a logger with both file and console handlers"""
-#
-#     # Create logger
-#     logger = logging.getLogger(name)
-#     # logger.setLevel(level)
-#     #
-#     # # Create handlers
-#     console_handler = logging.StreamHandler()
-#     # file_handler = logging.FileHandler(log_file)
-#     #
-#     # # Set levels
-#     console_handler.setLevel(level)
-#     # file_handler.setLevel(level)
-#     #
-#     # # Create formatters
-#     console_formatter = BaseColoredFormatter(
-#         '%(asctime)s - %(levelname)s - %(message)s',
-#         datefmt='%Y-%m-%d %H:%M:%S'
-#     )
-#     # file_formatter = logging.Formatter(
-#     #     '%(asctime)s - %(levelname)s - %(message)s',
-#     #     datefmt='%Y-%m-%d %H:%M:%S'
-#     # )
-#     #
-#     # # Add formatters to handlers
-#     console_handler.setFormatter(console_formatter)
-#     # file_handler.setFormatter(file_formatter)
-#     #
-#     # # Add handlers to logger
-#     logger.addHandler(console_handler)
-#     # logger.addHandler(file_handler)
-#
-#     return logger
-
-
-import logging
-from colorama import Fore, Style
-
-
-# class BaseColoredFormatter(logging.Formatter):
-#     def format(self, record):
-#         levelno = record.levelno
-#         if levelno == 'DEBUG':
-#             record.levelname = f"{Fore.BLUE}{record.levelname}{Style.RESET_ALL}"
-#         elif levelno == 'INFO':
-#             record.levelname = f"{Fore.GREEN}{record.levelname}{Style.RESET_ALL}"
-#         elif levelno == 'WARNING':
-#             record.levelname = f"{Fore.YELLOW}{record.levelname}{Style.RESET_ALL}"
-#         elif levelno == 'ERROR':
-#             record.levelname = f"{Fore.RED}{record.levelname}{Style.RESET_ALL}"
-#         elif levelno == 'CRITICAL':
-#             record.levelname = f"{Fore.MAGENTA}{record.levelname}{Style.RESET_ALL}"
-#         return super().format(record)
+from copy import deepcopy
+from pipeline.scenarios_pipeline import PipelineScenarios
 
 
 def setup_logger(log_file='app.log'):
@@ -116,31 +37,85 @@ def setup_logger(log_file='app.log'):
     return logger
 
 
+def init_attack_vectors():
+    attack_vectors = {}
+    base_dir = 'inputs/attacks'
+
+    # Scan all subdirectories in inputs/attacks
+    for domain in os.listdir(base_dir):
+        domain_path = os.path.join(base_dir, domain)
+        if not os.path.isdir(domain_path):
+            continue
+
+        # Look for attacks.json file in each subdirectory
+        attacks_file = os.path.join(domain_path, 'attacks.json')
+        if os.path.exists(attacks_file):
+            with open(attacks_file, 'r') as f:
+                attack_vectors[domain] = json.load(f)
+
+    return attack_vectors
+
+
+def get_attack_vectors_for_roles(roles, domain_attack_vectors: dict, logger):
+    role_attack_vectors = {}
+    for role_k, role_v in roles.items():
+        if not role_v['attack_vectors']:
+            role_attack_vectors[role_k] = list(domain_attack_vectors.values())
+        else:
+            role_attack_vectors[role_k] = [domain_attack_vectors[av] for av in role_v['attack_vectors']]
+
+    return role_attack_vectors
+
+
+def remove_keys_from_dictv(roles, keys: list):
+    out = deepcopy(roles)
+    for k, v in roles.items():
+        for key in keys:
+            if key in v:
+                out[k].pop(key)
+
+    return out
+
+
 @hydra.main(config_path="configs", config_name="pipeline", version_base="1.2")
 def main(cfg) -> None:
     logger = setup_logger()
-    sim = ScenariosSim(cfg, logger, workspace_name=WORKSPACE_NAME, workspace_desc=WORKSPACE_DESC,
-                       workspace_alternative_forms=WORKSPACE_ALTERNATIVE_FORMS,
-                       domain_name=DOMAIN_NAME, domain_desc=DOMAIN_DESC,
-                       domain_alternative_forms=DOMAIN_ALTERNATIVE_FORMS)
 
-    roles = {
-        "Malware Analyst": {
-            "name": "Malware Analyst",
-            "description": "this role involves implementing and managing security measures to protect against malware "
-                           "and other malicious software. the malware analyst uses various tools and techniques to "
-                           "detect, analyze, and remove malware from systems. this role helps prevent malware "
-                           "infections and ensures the security of the datacenter.",
-        },
-        "Security Analyst": {
-            "name": "Security Analyst",
-            "description": "the role of the security analyst involves monitoring and analyzing security events and "
-                           "alerts, identifying potential threats and incidents, and responding to security "
-                           "incidents. this role uses various security tools and techniques to detect and mitigate "
-                           "security threats. this improves the security posture of the datacenter.",
-        }
-    }
-    sim.run(roles)
+    # Load attack vectors for all domains
+    attack_vectors = init_attack_vectors()
+
+    base_inputs_dir = 'inputs/workspaces'
+    with open(os.path.join(base_inputs_dir, 'domains.json'), 'r') as file:
+        domain_data = json.load(file)
+
+    for domain_name in os.listdir(base_inputs_dir):
+        # Check for the chosen file to be of dir type
+        if not os.path.isdir(os.path.join(base_inputs_dir, domain_name)):
+            continue
+        assert domain_name in attack_vectors, f'No attack vectors found for domain {domain_name}. Available domains: {attack_vectors.keys()}'
+        domain_desc = domain_data[domain_name].get('description')
+        domain_alternative_forms = domain_data[domain_name].get('alternative_forms')
+        for filename in os.listdir(os.path.join(base_inputs_dir, domain_name)):
+            if filename.endswith('.json'):
+                filepath = os.path.join(base_inputs_dir, domain_name, filename)
+                with open(filepath, 'r') as file:
+                    workspace_data = json.load(file)
+                    workspace_name = workspace_data.get('name')
+                    workspace_desc = workspace_data.get('description')
+                    workspace_alternative_forms = workspace_data.get('alternative_forms')
+                    loaded_roles = workspace_data.get('roles', {})
+
+                prepared_roles = remove_keys_from_dictv(loaded_roles, ['attack_vectors'])
+                current_avs = get_attack_vectors_for_roles(loaded_roles, attack_vectors[domain_name], logger)
+                print('AAA')
+                sim = PipelineScenarios(cfg, logger, workspace_name=workspace_name, workspace_desc=workspace_desc,
+                                        workspace_alternative_forms=workspace_alternative_forms,
+                                        domain_name=domain_name, domain_desc=domain_desc,
+                                        domain_alternative_forms=domain_alternative_forms)
+
+                sim.run(roles=prepared_roles,
+                        grounding_attack_vectors=current_avs,
+                        grounding_n_samples=3 if 'cyber' in domain_name else 0)
 
 
 # Example usage

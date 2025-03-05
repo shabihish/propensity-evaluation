@@ -6,8 +6,8 @@ from omegaconf import DictConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 from agents.agent import Agent
-from sim.modules.graph_utils import SimilarityGraph
-from sim.modules.utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
+from .graph_utils import SimilarityGraph
+from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
 
 
 def get_valid_scenarios(roles: dict, required_fields: list):
@@ -42,8 +42,8 @@ def normalize_scenarios(scenarios: dict) -> dict:
     #     for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
     #         for scenario in role[scenario_type]:
     #             scenario['scenario_name'] = normalize_string(scenario['scenario_name'], lower=False)
-    #             scenario['scenario_detailed_description'] = normalize_string(
-    #                 scenario['scenario_detailed_description'])
+    #             scenario['scenario_description'] = normalize_string(
+    #                 scenario['scenario_description'])
     #             scenario['scenario_outcome'] = normalize_string(scenario['scenario_outcome'])
 
     return scenarios

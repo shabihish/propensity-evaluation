@@ -1,13 +1,15 @@
 import json
 import re
 from copy import deepcopy
-from utils.regex import remove_duplicate_names_by_prefix, apply_to_all_keys
-from agents.agent import Agent
-from sim.modules.utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas
-from sim.modules.utils import capitalize_first_letter, normalize_string
+
 from omegaconf import DictConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sim.modules.graph_utils import SimilarityGraph
+
+from agents.agent import Agent
+from utils.regex import remove_duplicate_names_by_prefix, apply_to_all_keys
+from .graph_utils import SimilarityGraph
+from .utils import capitalize_first_letter, normalize_string
+from .utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas
 
 
 def validate_roles(roles: dict, required_fields: list, n_roles: int):
@@ -21,23 +23,39 @@ def validate_roles(roles: dict, required_fields: list, n_roles: int):
 
 class RoleManager:
     def __init__(self, api_conf, logger, workspace_name, workspace_alternative_forms: list, workspace_desc: str,
-                 domain_name,
+                 domain_name: str,
+                 domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, object_storage_conf: DictConfig,
-                 n_initial_roles, temperature):
+                 n_initial_roles, n_min_initial_roles, temperature):
         self.api_conf = api_conf
         self.logger = logger
         self.prompts_conf = prompts_conf
         self.output_schemas_conf = output_schemas_conf
         self.object_storage_conf = object_storage_conf
         self.n_initial_roles = n_initial_roles
+        self.n_min_initial_roles = n_min_initial_roles
         self.temperature = temperature
 
-        self.set_workspace_domain(workspace_name, workspace_alternative_forms, workspace_desc, domain_name,
+        # Validate the fields
+        self.validate_fields()
+
+        self.set_workspace_domain(workspace_name, workspace_alternative_forms, workspace_desc, domain_name, domain_desc,
                                   domain_alternative_forms)
         self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
 
+    def validate_fields(self):
+        assert self.api_conf is not None
+        assert self.logger is not None
+        assert self.prompts_conf is not None
+        assert self.output_schemas_conf is not None
+        assert self.object_storage_conf is not None
+        assert self.n_initial_roles is not None and self.n_initial_roles > 0
+        assert self.n_min_initial_roles is not None and self.n_min_initial_roles > 0
+        assert self.temperature is not None
+
     def set_workspace_domain(self, workspace_name, workspace_alternative_forms, workspace_desc, domain_name,
+                             domain_desc,
                              domain_alternative_forms):
         self.workspace = workspace_name
         self.workspace_alternative_forms = workspace_alternative_forms
@@ -45,6 +63,7 @@ class RoleManager:
 
         self.domain = domain_name
         self.domain_alternative_forms = domain_alternative_forms
+        self.domain_desc = domain_desc
 
         self.roles_generation_agent = self._init_roles_generation_agent()
         # self.roles_revision_agent = self._init_roles_revision_agent()
@@ -55,6 +74,7 @@ class RoleManager:
         sys_prompt = read_prompts(self.prompts_conf.roles_agents, key='SYS_GEN',
                                   context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
                                            'domain': self.domain,
+                                           'domain_desc': self.domain_desc,
                                            'n_initial_roles': self.n_initial_roles}, logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.roles_generation)
         return Agent(
@@ -67,7 +87,7 @@ class RoleManager:
         # Roles revision agent
         sys_prompt = read_prompts(self.prompts_conf.roles_agents, key='SYS_REV',
                                   context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
-                                           'domain': self.domain}, logger=self.logger)
+                                           'domain': self.domain, 'domain_desc': self.domain_desc}, logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.roles_revision)
         return Agent(
             api_conf=self.api_conf,
@@ -78,7 +98,7 @@ class RoleManager:
     def _init_roles_verif_judge(self):
         sys_prompt = read_prompts(self.prompts_conf.judge_agents, key='SYS_ROLES_VERIF',
                                   context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
-                                           'domain': self.domain},
+                                           'domain': self.domain, 'domain_desc': self.domain_desc},
                                   logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.judge_roles)
         return Agent(
@@ -146,7 +166,7 @@ class RoleManager:
 
         while not passes_requirements:
             if missing_roles:
-                self.logger.debug(f"Missing roles: {missing_roles}")
+                self.logger.debug(f"Judge missing roles: {missing_roles}")
             prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_ROLES_VERIF',
                                   context={'roles': str({name: input_roles[name] for name in missing_roles})},
                                   logger=self.logger)
@@ -190,21 +210,21 @@ class RoleManager:
 
         accepted_roles = {}
         while True:
-            initial_role_names = list(curr_accepted_roles.keys()) if curr_accepted_roles else None
+            initial_role_names = list(accepted_roles.keys()) if accepted_roles else None
             n_roles_to_generate = max(0, self.n_initial_roles - len(accepted_roles))
             if logging:
                 self.logger.debug(f'Roles left to generate: {n_roles_to_generate}')
-            if len(accepted_roles) >= self.n_initial_roles:
+            if len(accepted_roles) >= self.n_min_initial_roles:
                 break
 
             generated_roles = self.generate_roles(n_roles=n_roles_to_generate, initial_role_names=initial_role_names)
             if logging:
-                self.logger.debug(f'Generated roles_dict: {generated_roles}\n\n')
+                self.logger.debug(f'Generated roles_dict:\n{json.dumps(generated_roles, indent=2)}\n')
 
             is_accepted, judged_roles = self.judge_roles(generated_roles)
             curr_accepted_roles = {name: role for name, role in judged_roles.items() if role['is_accepted']}
             if logging:
-                self.logger.debug(f'Output for judge_roles: {judged_roles}, {is_accepted}')
+                self.logger.debug(f'Judged roles: {json.dumps(judged_roles)}')
 
             # Make sure to remove similar ones between the generated and previously accepted roles
             temp_curr_accepted_roles = deepcopy(curr_accepted_roles)

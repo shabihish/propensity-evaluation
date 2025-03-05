@@ -1,9 +1,9 @@
 import json
-import re
 import os
+import re
 
-from utils.litellm_utils import get_response_content
 from agents.agent import Agent
+from utils.litellm_utils import get_response_content
 
 
 def save_to_disk(data: dict, file_path: str):
@@ -32,7 +32,7 @@ def read_prompts(file_path: str, key: str, delimiter: str = r'\[{}\]', context: 
 
     # Match everything from the key until the next delimiter or end of file
     assert '(' not in key and ')' not in key, "Key should not contain parentheses"
-    pattern = rf'{delimiter.format(key)}\s*?fields\s*:(.*?)\n(.*?)(?={delimiter.format(r'.*?')}|\Z)'
+    pattern = rf"{delimiter.format(key)}\s*?fields\s*:(.*?)\n(.*?)(?={delimiter.format(r'.*?')}|\Z)"
     pattern = re.compile(pattern, re.IGNORECASE | re.DOTALL)
     matches = pattern.findall(content)
 
@@ -98,7 +98,6 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     result = agent(prompt)
 
     response = get_response_content(result, to_json=to_json)
-    print(response)
     if to_json:
         assert len(json_transform_keys) == 2
         response = response[json_transform_keys[0]]
