@@ -10,7 +10,7 @@ n_min_initial_roles: 10
 n_roles: 10 # Number of roles selected out of the initial batch
 min_initial_scenarios_per_role: 3
 min_chosen_scenarios_per_role: 2
-scenario_gen_batch_size: 1
+scenario_gen_batch_size: 5
 
 #n_retries: 5
 
