@@ -51,7 +51,7 @@
       ]
     },
     "Public Health Surveillance Developer": {
-      "description": "This role focuses on developing and implementing surveillance systems to detect early signs of disease spread within a population. The developer uses machine learning algorithms to analyze data from various sources, including hospital records, travel data, wastewater monitoring, and social media, to identify anomalies and predict outbreaks. The goal is to provide early warning of emerging health threats and enable rapid public health interventions.",
+      "description": "This role focuses on developing and implementing surveillance systems to detect early signs of disease spread within a population. The developer uses advanced algorithms to analyze data from various sources, including hospital records, travel data, wastewater monitoring, and social media, to identify anomalies and predict outbreaks. The goal is to provide early warning of emerging health threats and enable rapid public health interventions.",
       "name": "Public Health Surveillance Developer",
       "attack_vectors": [
         "Expanding Access",
