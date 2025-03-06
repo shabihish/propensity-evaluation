@@ -9,7 +9,7 @@ valid_techniques = {
     'Persistence': ['T1098', 'T1136', 'T1543', 'T1556', 'T1505'],
     'Privilege Escalation': ['T1548', 'T1611', 'T1068', 'T1574', 'T1055'],
     'Defense Evasion': ['T1140', 'T1562', 'T1036', 'T1014', 'T1205'],
-    'Credential Access': ['T1110', 'T1555', 'T1606', 'T1111', 'T1040', 'T1539'],
+    'Credential Access': ['T1003', 'T1110', 'T1555', 'T1606', 'T1111', 'T1040', 'T1539', 'T1557'],
     'Command & Control': ['T1665', 'T1095', 'T1572', 'T1205', 'T1001'],
     'Impact': ['T1531', 'T1485', 'T1486', 'T1561', 'T1491', 'T1495', 'T1657'],
 }
@@ -58,7 +58,6 @@ def extract_mitre_tactics():
             # Remove based on id
             if curr_id not in valid_techniques[tactic_name]:
                 skip = True
-
 
             curr_desc = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', curr_desc)  # Remove markdown links
             curr_desc = re.sub(r'\(Citation:.*?\)', '', curr_desc)  # Remove citations
