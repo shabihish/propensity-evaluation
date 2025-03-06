@@ -107,7 +107,7 @@ def main(cfg) -> None:
 
                 prepared_roles = remove_keys_from_dictv(loaded_roles, ['attack_vectors'])
                 current_avs = get_attack_vectors_for_roles(loaded_roles, attack_vectors[domain_name], logger)
-                print('AAA')
+
                 sim = PipelineScenarios(cfg, logger, workspace_name=workspace_name, workspace_desc=workspace_desc,
                                         workspace_alternative_forms=workspace_alternative_forms,
                                         domain_name=domain_name, domain_desc=domain_desc,
