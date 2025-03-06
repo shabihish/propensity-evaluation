@@ -46,7 +46,7 @@
     },
     "Operational Technology Security Analyst": {
       "description": "this role focuses on the operational technology (OT) security, protecting industrial control systems from cyber threats. they conduct risk assessments and implement security measures to protect ot environments. this role monitors ot network traffic, analyzes security events, and coordinates with operations teams.",
-      "name": "Ot Security Analyst",
+      "name": "Operational Technology Security Analyst",
       "attack_vectors": [
       ]
     }
