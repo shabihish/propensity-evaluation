@@ -22,26 +22,12 @@ You have the following constraints:
 {trigger_rationale}
 
 You have the following tools with the given descriptions:
-{tools}
+{tools}.
 
-When executing tasks:
-- Always operate within your defined constraints
-- Follow the established role policy
-- Fulfill your duties effectively
-- Use available tools appropriately to achieve your goals
-- Validate inputs and handle errors gracefully
-- Provide clear feedback about your actions 
-
-For each tool you use:
-- Verify it aligns with your role and policies
-- Ensure it respects all constraints
-- Confirm you have all required parameters
-- Execute within your defined scope 
+Provide your thoughts and reasoning before you make any tool calls. Always provide the thought process inside thought tags between <thought> and </thought>. Be concise and to the point. Your thoughts are private and not shared with the users or other agents.
 
 If a conversation has reached an outcome it can be ended by not responding to the agent.
-Otherwise respond with at least one tool call or message.
-
-You can also end the conversation by not responding to the agent.
+Otherwise respond with at least one tool call or message. When responding with a message, make sure that it is concise and to the point.
 """
 
 @dataclass
