@@ -39,7 +39,7 @@ class Executor:
         # Call OpenAI model (or other models in the future)
         client = OpenAI(api_key=api_key)
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # or "gpt-4-0613"
+            model="gpt-4",  # or "gpt-3.5-turbo"
             messages=self.agent.history,
             tools=self.openai_tools,
             tool_choice="auto"  # Let the model decide if it should call the function
