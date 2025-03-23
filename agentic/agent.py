@@ -5,7 +5,6 @@ Lightweight Agent implementation for dynamic tool management and execution.
 import json
 import inspect
 from typing import Any, Dict, List, Callable, Optional, Union
-from dataclasses import dataclass
 import random
 
 
@@ -26,25 +25,10 @@ You have the following tools with the given descriptions:
 
 Provide your thoughts and reasoning before you make any tool calls. Always provide the thought process inside thought tags between <thought> and </thought>. Be concise and to the point. Your thoughts are private and not shared with the users or other agents.
 
-If a conversation has reached an outcome it can be ended by not responding to the agent.
-Otherwise respond with at least one tool call or message. When responding with a message, make sure that it is concise and to the point.
-"""
+Always respond with at least one tool call or message. When responding with a message, make sure that it is concise and to the point.
 
-@dataclass
-class Tool:
-    """
-    Represents a tool that can be used by the agent.
-    
-    Attributes:
-        name: The name of the tool
-        function: The actual function to be called
-        description: A description of what the tool does
-        parameters: Dictionary containing parameter information
-    """
-    name: str
-    function: Callable
-    description: str
-    parameters: Dict[str, Any]
+When making a tool call, make sure to use the proper tool calling funcationality with correct format instead of appendig a tools call to the message.
+"""
 
 class Agent:
     """
@@ -55,6 +39,7 @@ class Agent:
         self.scenario = scenario
         self.name = role
         self.system_prompt = self.create_system_prompt(scenario)
+        print(self.system_prompt)
         self.tools = self.add_tools(scenario)
         self.history = [{"role": "system", "content": self.system_prompt}]
 
