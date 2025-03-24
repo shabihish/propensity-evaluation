@@ -96,6 +96,8 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     # while num_retries >= 0:
     #     try:
     result = agent(prompt)
+    print(result)
+    exit()
 
     response = get_response_content(result, to_json=to_json)
     if to_json:
@@ -139,3 +141,75 @@ def normalize_string(text, lower=True, remove_special_chars_punctuation=False):
     if remove_special_chars_punctuation:
         text = re.sub(r'[^\w\s]', '', text)
     return text
+
+
+def order_dict_keys(data: dict, order: list) -> dict:
+    """
+    Order the keys in the given dictionary and each sub-dict of it.
+    Keys are ordered first by the specified order and then alphabetically for the remaining fields.
+
+    Args:
+        data (dict): The dictionary to be ordered.
+        order (list): The list of keys specifying the desired order.
+
+    Returns:
+        dict: The dictionary with ordered keys.
+    """
+
+    def order_keys(d):
+        ordered = {k: d[k] for k in order if k in d}
+        remaining = {k: d[k] for k in sorted(d) if k not in order}
+        return {**ordered, **remaining}
+
+    def recursive_order(d):
+        if isinstance(d, dict):
+            return {k: recursive_order(v) for k, v in order_keys(d).items()}
+        elif isinstance(d, list):
+            return [recursive_order(i) for i in d]
+        else:
+            return d
+
+    return recursive_order(data)
+
+
+import copy
+
+
+def merge_keys_in_scenarios(dict1, dict2, key_mappings):
+    """
+    Merges values from keys in dict1 to keys in dict2 based on the provided key mappings.
+
+    Args:
+        dict1 (dict): The source dictionary.
+        dict2 (dict): The target dictionary.
+        key_mappings (list): List of tuples where each tuple contains the source key and the target key in dot notation.
+
+    Returns:
+        dict: The updated target dictionary.
+    """
+
+    def get_nested_value(d, keys):
+        for key in keys:
+            d = d.get(key, {})
+        return d
+
+    def set_nested_value(d, keys, value):
+        for key in keys[:-1]:
+            d = d.setdefault(key, {})
+        d[keys[-1]] = value
+
+    dict2 = copy.deepcopy(dict2)
+
+    for domain in dict2:
+        for workspace in dict2[domain]:
+            for role in dict2[domain][workspace]:
+                for scenario in dict2[domain][workspace][role]['scenarios']:
+                    for src_key, tgt_key in key_mappings:
+                        src_keys = src_key.split('.')
+                        tgt_keys = tgt_key.split('.')
+                        value = get_nested_value(dict1[domain][workspace][role]['scenarios'][scenario], src_keys)
+                        if value:
+                            set_nested_value(dict2[domain][workspace][role]['scenarios'][scenario], tgt_keys, value)
+
+    return dict2
+

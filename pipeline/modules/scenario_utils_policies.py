@@ -95,9 +95,13 @@ class ScenarioManager:
         self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
 
     def _init_scenarios_generation_agent(self):
+        general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
+                                    context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
+                                             'domain': self.domain, 'domain_desc': self.domain_desc},
+                                    logger=self.logger)
+
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='SYS_GEN',
-                                  context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
-                                           'domain': self.domain, 'domain_desc': self.domain_desc}, logger=self.logger)
+                                  context={'general_body': general_body}, logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies)
         return Agent(
             api_conf=self.api_conf,
@@ -156,9 +160,9 @@ class ScenarioManager:
     #     return valid_scenarios
 
     def generate_scenarios(self, input_roles: dict):
-        # print(f"generate_scenarios Input roles: {input_roles}")
         roles_with_scenarios = deepcopy(input_roles)
-        roles_to_process = list(input_roles.keys())
+        curr_input_roles = deepcopy(input_roles)
+        roles_to_process = list(curr_input_roles.keys())
         batch_size = self.batch_size
 
         while roles_to_process:
@@ -168,7 +172,7 @@ class ScenarioManager:
             batch_roles = roles_to_process[:batch_size]
             random.shuffle(batch_roles)
             prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='USER_GEN',
-                                  context={'roles': {role: input_roles[role] for role in batch_roles}},
+                                  context={'roles': {role: curr_input_roles[role] for role in batch_roles}},
                                   logger=self.logger)
             try:
                 response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
@@ -184,7 +188,7 @@ class ScenarioManager:
                 # Run validity checks
                 response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
                 response = {k: v for k, v in response.items() if set(x['name'] for x in v['scenarios']) ==
-                            set(input_roles[k]['scenarios'].keys())}
+                            set(curr_input_roles[k]['scenarios'].keys())}
                 for role in response:
                     response[role]['scenarios'] = json_obj_list_to_dict(response[role]['scenarios'], 'name')
 
@@ -192,9 +196,14 @@ class ScenarioManager:
                     self.logger.debug(f"Valid generated scenarios: {response}")
 
                 for role in response.values():
-                    if role['name'] in input_roles:
-                        roles_with_scenarios[role['name']].update(role)
+                    if set(role['scenarios'].keys()) == set(curr_input_roles[role['name']]['scenarios'].keys()):
                         roles_to_process.remove(role['name'])
+                        # Preserve existing fields and update with new ones
+                        for scenario_name, new_scenario in role['scenarios'].items():
+                            if scenario_name in roles_with_scenarios[role['name']]['scenarios']:
+                                existing_scenario = roles_with_scenarios[role['name']]['scenarios'][scenario_name]
+                                existing_scenario.update(new_scenario)  # Keep old fields, add/update new ones
+
             except Exception as e:
                 self.logger.error(f"Error in generate_scenarios: {e}")
                 self.logger.error(traceback.format_exc())
@@ -255,15 +264,7 @@ class ScenarioManager:
         for role_v in input_roles.values():
             assert isinstance(role_v['scenarios'], dict)
 
-        curr_accepted_scenarios = {}
-        # try:
-        #     with open(self.object_storage_conf.scenarios_policies, 'r') as f:
-        #         curr_accepted_scenarios = json.load(f)
-        #         curr_accepted_scenarios = normalize_scenarios(curr_accepted_scenarios)
-        # except FileNotFoundError as e:
-        #     self.logger.error(f"Error in generate_and_judge_initial_scenarios: {e}")
-
-        accepted_scenarios = curr_accepted_scenarios
+        accepted_scenarios = {}
         missing_scenarios = list(set(input_roles.keys()) - set(accepted_scenarios.keys()))
         n_tries_for_role = 0
         while True:

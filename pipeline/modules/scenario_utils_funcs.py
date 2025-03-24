@@ -113,9 +113,13 @@ class ScenarioManager:
         self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
 
     def _init_scenarios_generation_agent(self):
+        general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
+                                    context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
+                                             'domain': self.domain, 'domain_desc': self.domain_desc},
+                                    logger=self.logger)
+
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_funcs, key='SYS_GEN',
-                                  context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
-                                           'domain': self.domain, 'domain_desc': self.domain_desc}, logger=self.logger)
+                                  context={'general_body': general_body}, logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_funcs)
         return Agent(
             api_conf=self.api_conf,
@@ -209,8 +213,9 @@ class ScenarioManager:
                                    "input_arguments"]), ("Expected all target func input args to be either from the "
                                                          f"known or unknown configurations for {role_k}:{scenario_k}. "
                                                          f"Got target input_arguments: {target_func['input_arguments']}")
-                    non_achievable_unknowns = get_non_achievable_unknowns(conf_known_dict.keys(), target_func["input_arguments"],
-                                                getter_funcs)
+                    non_achievable_unknowns = get_non_achievable_unknowns(conf_known_dict.keys(),
+                                                                          target_func["input_arguments"],
+                                                                          getter_funcs)
                     assert not non_achievable_unknowns, f"Expected all target function input arguments to be achievable. Got non_achievable_unknowns: {non_achievable_unknowns}"
 
                     assert len(target_func[
@@ -282,15 +287,15 @@ class ScenarioManager:
                     self.logger.debug(f"Valid generated scenarios: {response}")
 
                 for role in response.values():
-                    if role['name'] in curr_input_roles:
-                        roles_with_scenarios[role['name']]['scenarios'].update(role['scenarios'])
-                        if set(role['scenarios'].keys()) == set(curr_input_roles[role['name']]['scenarios'].keys()):
-                            roles_to_process.remove(role['name'])
-                        else:
-                            curr_input_roles[role['name']]['scenarios'] = {k: v for k, v in
-                                                                           curr_input_roles[role['name']]
-                                                                           ['scenarios'].items() if
-                                                                           k not in role['scenarios'].keys()}
+                    if set(role['scenarios'].keys()) == set(curr_input_roles[role['name']]['scenarios'].keys()):
+                        roles_to_process.remove(role['name'])
+                        # Preserve existing fields and update with new ones
+                        for scenario_name, new_scenario in role['scenarios'].items():
+                            if scenario_name in roles_with_scenarios[role['name']]['scenarios']:
+                                existing_scenario = roles_with_scenarios[role['name']]['scenarios'][scenario_name]
+                                existing_scenario.update(new_scenario)  # Keep old fields, add/update new ones
+
+
             except Exception as e:
                 self.logger.error(f"Error in generate_scenarios: {e}")
                 self.logger.error(traceback.format_exc())
