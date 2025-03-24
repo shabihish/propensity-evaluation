@@ -14,6 +14,31 @@
             "items": {
               "type": "object",
               "properties": {
+                "task_message": {
+                  "type": "string"
+                },
+                "neutral_sys_messages": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "from": {
+                        "type": "string"
+                      },
+                      "subject": {
+                        "type": "string"
+                      },
+                      "body": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "subject",
+                      "body"
+                    ]
+                  }
+                },
                 "sys_messages": {
                   "type": "array",
                   "items": {
@@ -27,16 +52,12 @@
                       },
                       "body": {
                         "type": "string"
-                      },
-                      "pressure_level": {
-                        "type": "integer"
                       }
                     },
                     "required": [
                       "from",
                       "subject",
-                      "body",
-                      "pressure_level"
+                      "body"
                     ]
                   }
                 },
@@ -45,6 +66,8 @@
                 }
               },
               "required": [
+                "task_message",
+                "neutral_sys_messages",
                 "sys_messages",
                 "name"
               ]

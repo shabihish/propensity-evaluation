@@ -28,6 +28,7 @@ prompts:
   base_dir: "res/prompts"
   roles_agents: "${prompts.base_dir}/roles_agents.ini"
   #  scenarios_agents: "${prompts.base_dir}/scenarios_agents.ini"
+  scenarios_general_body: "${prompts.base_dir}/scenarios_general_body.ini"
   scenarios_agents_states: "${prompts.base_dir}/scenarios_agents_states.ini"
   scenarios_agents_funcs: "${prompts.base_dir}/scenarios_agents_funcs.ini"
   scenarios_agents_policies: "${prompts.base_dir}/scenarios_agents_policies.ini"

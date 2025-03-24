@@ -81,6 +81,12 @@ def remove_keys_from_dictv(roles, keys: list):
 def main(cfg) -> None:
     logger = setup_logger()
 
+    loaded_workspaces = ['bio-security.Pandemic Response & Biosecurity Center',
+                         'bio-security.BSL-3/BSL-4 High-Containment Laboratory',
+                         'chemical-security.Independent Contract Research Organization',
+                         'chemical-security.Pharmaceutical Development Company',
+                         'cyber-security.Datacenter',
+                         'cyber-security.Mission Control Center']
     # Load attack vectors for all domains
     attack_vectors = init_attack_vectors()
 
@@ -104,6 +110,10 @@ def main(cfg) -> None:
                     workspace_desc = workspace_data.get('description')
                     workspace_alternative_forms = workspace_data.get('alternative_forms')
                     loaded_roles = workspace_data.get('roles', {})
+
+                if loaded_workspaces and f'{domain_name}.{workspace_name}' not in loaded_workspaces:
+                    logger.info(f'Skipping workspace {domain_name}.{workspace_name}')
+                    continue
 
                 prepared_roles = remove_keys_from_dictv(loaded_roles, ['attack_vectors'])
                 current_avs = get_attack_vectors_for_roles(loaded_roles, attack_vectors[domain_name], logger)
