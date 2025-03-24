@@ -8,7 +8,7 @@ from .modules.scenario_utils_funcs import ScenarioManager as FuncsScenarioManage
 from .modules.scenario_utils_messages import ScenarioManager as MessagesScenarioManager
 from .modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
 from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
-from .modules.utils import save_to_disk
+from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
 
 
 class PipelineScenarios(BasePipeline):
@@ -95,7 +95,8 @@ class PipelineScenarios(BasePipeline):
                                                                  prompts_conf=cfg.prompts,
                                                                  object_storage_conf=cfg.object_storage,
                                                                  temperature=cfg.model.temperature,
-                                                                 generation_batch_size=cfg.scenario_gen_batch_size)
+                                                                 generation_batch_size=max(1,
+                                                                                           cfg.scenario_gen_batch_size // 2))
 
     def update_scenarios(self, prev_roles_with_scenarios: dict, new_roles_with_scenarios: dict) -> dict:
         out = deepcopy(prev_roles_with_scenarios)
@@ -108,26 +109,72 @@ class PipelineScenarios(BasePipeline):
                     out[role_k]['scenarios'][scenario_name].update(scenario)
         return out
 
-    def remove_existing_scenario_judgements(self, roles: dict, judgment_fields: list) -> dict:
-        out_workspace = deepcopy(roles[self.domain][self.workspace])
-        for role_k in out_workspace:
-            for scenario_k, scenario_v in out_workspace[role_k]['scenarios'].items():
-                for field in judgment_fields:
-                    if field in scenario_v:
-                        out_workspace[role_k]['scenarios'][scenario_k].pop(field)
-                    else:
-                        self.logger.debug(
-                            f"Field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
-        roles[self.domain][self.workspace] = out_workspace
-        return roles
+    def remove_fields_from_scenarios(self, roles: dict, fields_list: list) -> dict:
+        """Remove fields from scenarios across all domains and workspaces.
 
-    def run(self, roles: dict, grounding_attack_vectors, grounding_n_samples, force_overwrite=False):
+        This function traverses a nested dictionary structure of scenarios and removes specified fields
+        at any level of nesting. The fields to remove are specified using dot notation.
+
+        Args:
+            roles (dict): Dictionary containing all roles and their scenarios. Expected structure:
+                {domain: {workspace: {role: {scenarios: {scenario_name: {...}}}}}}
+            fields_list (list): List of fields to remove, supporting dot notation for nested fields.
+                Examples:
+                - ['acceptable'] removes top-level 'acceptable' field
+                - ['subset.field'] removes 'field' inside 'subset' dictionary
+                - ['a.b.c'] removes 'c' from nested structure a->b->c
+
+        Returns:
+            dict: Copy of the input dictionary with specified fields removed from all scenarios
+
+        Note:
+            - Missing fields or paths are logged at debug level and skipped
+            - The original dictionary is not modified; a deep copy is returned
+        """
+        roles_out = deepcopy(roles)
+
+        for domain in roles_out:
+            for workspace in roles_out[domain]:
+                for role_k in roles_out[domain][workspace]:
+                    for scenario_k, scenario_v in roles_out[domain][workspace][role_k]['scenarios'].items():
+                        for field in fields_list:
+                            if '.' in field:
+                                # Handle nested fields
+                                parts = field.split('.')
+                                curr_dict = scenario_v
+                                found = True
+
+                                # Traverse the nested structure
+                                for part in parts[:-1]:
+                                    if not isinstance(curr_dict, dict) or part not in curr_dict:
+                                        found = False
+                                        break
+                                    curr_dict = curr_dict[part]
+
+                                if found and isinstance(curr_dict, dict) and parts[-1] in curr_dict:
+                                    curr_dict.pop(parts[-1])
+                                else:
+                                    self.logger.debug(
+                                        f"Nested field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
+                            else:
+                                # Handle top-level fields
+                                if field in scenario_v:
+                                    roles_out[domain][workspace][role_k]['scenarios'][scenario_k].pop(field)
+                                else:
+                                    self.logger.debug(
+                                        f"Field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
+
+        return roles_out
+
+    def run_gen_states(self, roles, grounding_attack_vectors, grounding_n_samples, force_overwrite):
         curr_roles_with_scenarios = {}
         try:
             with open(self.cfg.object_storage.scenarios_states, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError:
-            self.logger.info("No existing scenarios file found. Creating new one.")
+            self.logger.error(f"No existing scenarios file found: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error decoding scenarios file: {e}")
 
         # Check if we need to generate scenarios for this domain/workspace
         should_generate = force_overwrite
@@ -136,8 +183,8 @@ class PipelineScenarios(BasePipeline):
                     self.workspace not in curr_roles_with_scenarios.get(self.domain, {})):
                 should_generate = True
                 self.logger.info(
-                    f"No existing scenarios for domain {self.domain} and workspace {self.workspace}. Generating new ones.")
-
+                    f"No existing scenarios for domain {self.domain} and workspace {self.workspace}. Generating new "
+                    f"ones.")
         if should_generate:
             new_roles_with_scenarios = self.states_scenario_manager.generate_and_judge_scenarios(
                 input_roles=roles,
@@ -160,73 +207,210 @@ class PipelineScenarios(BasePipeline):
                     curr_roles_with_scenarios[self.domain][self.workspace],
                     new_roles_with_scenarios
                 )
+        return curr_roles_with_scenarios
 
-            save_to_disk(curr_roles_with_scenarios, self.cfg.object_storage.scenarios_states)
+    def run_gen_funcs(self, input_roles, force_overwrite=False):
+        curr_roles_with_scenarios = {}
+        try:
+            with open(self.cfg.object_storage.scenarios_funcs, 'r') as f:
+                curr_roles_with_scenarios = json.load(f)
+        except FileNotFoundError as e:
+            self.logger.error(f"No existing scenarios_funcs file found: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error decoding scenarios_funcs file: {e}")
 
-        # Run the functions scenarios
-        # curr_roles_with_scenarios = self.remove_existing_scenario_judgements(curr_roles_with_scenarios,
-        #                                                                      judgment_fields=['acceptable', 'feedback'])
-        # funcs_scenarios = {}
-        #
-        # force_overwrite = True
-        # if not force_overwrite:
-        #     try:
-        #         with open(self.cfg.object_storage.scenarios_funcs, 'r') as f:
-        #             funcs_scenarios = json.load(f)
-        #             curr_roles_with_scenarios = funcs_scenarios
-        #     except FileNotFoundError as e:
-        #         self.logger.error(f"Could not find scenarios_funcs file: {e}")
-        # if not funcs_scenarios:
-        #     print("Running func-scenarios-gen...")
-        #     roles = curr_roles_with_scenarios[self.domain][self.workspace]
-        #     new_roles_with_scenarios = self.funcs_scenario_manager.generate_and_judge_scenarios(input_roles=roles,
-        #                                                                                         logging=True)
-        #     self.logger.debug(f'New scenarios: {new_roles_with_scenarios}')
-        #     curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
-        #         curr_roles_with_scenarios[self.domain][self.workspace], new_roles_with_scenarios)
-        #     save_to_disk(curr_roles_with_scenarios, self.cfg.object_storage.scenarios_funcs)
-        #
-        # force_overwrite = False
-        # # Run the policies scenarios
-        # curr_roles_with_scenarios = self.remove_existing_scenario_judgements(curr_roles_with_scenarios,
-        #                                                                      judgment_fields=['acceptable', 'feedback'])
-        # policies_scenarios = {}
-        # if not force_overwrite:
-        #     try:
-        #         with open(self.cfg.object_storage.scenarios_policies, 'r') as f:
-        #             policies_scenarios = json.load(f)
-        #             curr_roles_with_scenarios = policies_scenarios
-        #     except FileNotFoundError as e:
-        #         self.logger.error(f"Could not find scenarios_policies file: {e}")
-        # if not policies_scenarios:
-        #     print("Running policies-scenarios-gen...")
-        #     roles = curr_roles_with_scenarios[self.domain][self.workspace]
-        #     new_roles_with_scenarios = self.policies_scenario_manager.generate_and_judge_scenarios(input_roles=roles,
-        #                                                                                            logging=True)
-        #     self.logger.debug(f'New scenarios: {new_roles_with_scenarios}')
-        #     curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
-        #         curr_roles_with_scenarios[self.domain][self.workspace], new_roles_with_scenarios)
-        #     save_to_disk(curr_roles_with_scenarios, self.cfg.object_storage.scenarios_policies)
-        #
+        # Determine if scenarios need to be generated
+        should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in
+                           curr_roles_with_scenarios.get(self.domain, {}))
+
+        if should_generate:
+            new_roles_with_scenarios = self.funcs_scenario_manager.generate_and_judge_scenarios(
+                input_roles=input_roles[self.domain][self.workspace],
+                logging=True)
+
+            # Check if all the generated scenarios have functions and configurations generated for them
+            should_add = True
+            if set(new_roles_with_scenarios.keys()) != set(
+                    input_roles.get(self.domain).get(self.workspace).keys()):
+                should_add = False
+            else:
+                for role in new_roles_with_scenarios:
+                    for scenario in new_roles_with_scenarios[role]['scenarios']:
+                        curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
+                        if 'functions' not in curr_scen or 'configurations' not in curr_scen:
+                            should_add = False
+                            break
+                    if not should_add:
+                        break
+
+            if should_add:  # Only add if functions and configurations were actually generated
+                if self.domain not in curr_roles_with_scenarios:
+                    curr_roles_with_scenarios[self.domain] = {}
+                if self.workspace not in curr_roles_with_scenarios[self.domain]:
+                    curr_roles_with_scenarios[self.domain][self.workspace] = {}
+
+                curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
+                    curr_roles_with_scenarios[self.domain].get(self.workspace, {}),
+                    new_roles_with_scenarios)
+            else:
+                self.logger.error(f"Generated functions/configurations are incomplete. Skipping update.")
+
+        return curr_roles_with_scenarios
+
+    def run_gen_policies(self, input_roles, force_overwrite=False):
+        curr_roles_with_scenarios = {}
+        try:
+            with open(self.cfg.object_storage.scenarios_policies, 'r') as f:
+                curr_roles_with_scenarios = json.load(f)
+        except FileNotFoundError as e:
+            self.logger.error(f"Could not find scenarios_policies file: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error decoding scenarios_policies file: {e}")
+
+        # Determine if scenarios need to be generated
+        should_generate = force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in curr_roles_with_scenarios.get(
+            self.domain, {})
+
+        if should_generate:
+            self.logger.info("Running policies scenarios generation...")
+            new_roles_with_scenarios = self.policies_scenario_manager.generate_and_judge_scenarios(
+                input_roles=input_roles[self.domain][self.workspace],
+                logging=True
+            )
+
+            # Check if all the generated scenarios have policies generated for them
+            should_add = True
+            if set(new_roles_with_scenarios.keys()) != set(input_roles.get(self.domain).get(self.workspace).keys()):
+                should_add = False
+            else:
+                for role in new_roles_with_scenarios:
+                    for scenario in new_roles_with_scenarios[role]['scenarios']:
+                        curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
+                        if 'policy' not in curr_scen:
+                            should_add = False
+                            break
+                    if not should_add:
+                        break
+
+            if should_add:  # Only add if policies were actually generated
+                if self.domain not in curr_roles_with_scenarios:
+                    curr_roles_with_scenarios[self.domain] = {}
+                if self.workspace not in curr_roles_with_scenarios[self.domain]:
+                    curr_roles_with_scenarios[self.domain][self.workspace] = {}
+
+                curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
+                    curr_roles_with_scenarios[self.domain].get(self.workspace, {}),
+                    new_roles_with_scenarios
+                )
+            else:
+                self.logger.error(f"Generated policies are incomplete. Skipping update.")
+
+        return curr_roles_with_scenarios
+
+    def run_gen_messages(self, input_roles, force_overwrite=False):
+        curr_roles_with_scenarios = {}
+        try:
+            with open(self.cfg.object_storage.scenarios_messages, 'r') as f:
+                curr_roles_with_scenarios = json.load(f)
+        except FileNotFoundError as e:
+            self.logger.error(f"Could not find scenarios_messages file: {e}")
+        except json.JSONDecodeError as e:
+            self.logger.error(f"Error decoding scenarios_messages file: {e}")
+
+        # Determine if scenarios need to be generated
+        should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or
+                           self.workspace not in curr_roles_with_scenarios.get(self.domain, {}))
+
+        if should_generate:
+            self.logger.info("Running messages scenarios generation...")
+            new_roles_with_scenarios = self.messages_scenario_manager.generate_and_judge_scenarios(
+                input_roles=input_roles[self.domain][self.workspace],
+                logging=True
+            )
+
+            should_add = True
+            if set(new_roles_with_scenarios.keys()) != set(input_roles.get(self.domain).get(self.workspace).keys()):
+                should_add = False
+            else:
+                for role in new_roles_with_scenarios:
+                    for scenario in new_roles_with_scenarios[role]['scenarios']:
+                        curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
+                        if 'sys_messages' not in curr_scen:
+                            should_add = False
+                            break
+                    if not should_add:
+                        break
+
+            if should_add:  # Only add if policies were actually generated
+                if self.domain not in curr_roles_with_scenarios:
+                    curr_roles_with_scenarios[self.domain] = {}
+                if self.workspace not in curr_roles_with_scenarios[self.domain]:
+                    curr_roles_with_scenarios[self.domain][self.workspace] = {}
+
+                curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
+                    curr_roles_with_scenarios[self.domain].get(self.workspace, {}),
+                    new_roles_with_scenarios
+                )
+            else:
+                self.logger.error(f"Generated policies are incomplete. Skipping update.")
+
+        return curr_roles_with_scenarios
+
+    def run(self, roles: dict, grounding_attack_vectors, grounding_n_samples, force_overwrite=False):
+        # Generate the initial scenarios with states
+        curr_roles_with_states = self.run_gen_states(roles, grounding_attack_vectors, grounding_n_samples,
+                                                     force_overwrite)
+        curr_roles_with_states = order_dict_keys(curr_roles_with_states,
+                                                 ['name', 'description', 'scenarios', 'initial_state',
+                                                  'target_state', 'illegal_state'])
+        save_to_disk(curr_roles_with_states, self.cfg.object_storage.scenarios_states)
+
+        # Generate the functions and configurations for the scenarios
+        curr_roles_with_funcs_pre = self.remove_fields_from_scenarios(curr_roles_with_states,
+                                                                      fields_list=['acceptable', 'feedback',
+                                                                                   'illegal_state.deviation_description',
+                                                                                   'attack_vector'])
+
+        curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_funcs_pre)
+        curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs,
+                                                ['name', 'description', 'scenarios', 'initial_state',
+                                                 'target_state', 'illegal_state', 'configurations', 'functions',
+                                                 'getter_functions', 'target_function', 'trigger_function',
+                                                 'input_arguments', 'output_arguments', 'errors'])
+
+        save_to_disk(curr_roles_with_funcs, self.cfg.object_storage.scenarios_funcs)
+
+        # Run the policies scenarios
+        curr_roles_with_funcs_pre = self.remove_fields_from_scenarios(curr_roles_with_funcs,
+                                                                      fields_list=['acceptable', 'feedback'])
+        curr_roles_with_funcs_pre = merge_keys_in_scenarios(curr_roles_with_states, curr_roles_with_funcs_pre,
+                                                            key_mappings=[
+                                                                ('illegal_state.deviation_description',
+                                                                 'illegal_state.deviation_description')])
+
+        curr_roles_with_policies = self.run_gen_policies(curr_roles_with_funcs_pre)
+        curr_roles_with_policies = order_dict_keys(curr_roles_with_policies,
+                                                   ['name', 'description', 'scenarios', 'initial_state',
+                                                    'target_state', 'illegal_state', 'policy', 'role_description',
+                                                    'duties_description', 'prohibitions_description', 'configurations',
+                                                    'functions', 'getter_functions', 'target_function',
+                                                    'trigger_function', 'input_arguments', 'output_arguments',
+                                                    'errors'])
+
+        save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
+
         # # Run the messages scenarios
-        # curr_roles_with_scenarios = self.remove_existing_scenario_judgements(curr_roles_with_scenarios,
-        #                                                                      judgment_fields=['acceptable', 'feedback'])
-        #
-        # messages_scenarios = {}
-        # if not force_overwrite:
-        #     try:
-        #         with open(self.cfg.object_storage.scenarios_messages, 'r') as f:
-        #             messages_scenarios = json.load(f)
-        #             curr_roles_with_scenarios = messages_scenarios
-        #     except FileNotFoundError as e:
-        #         self.logger.error(f"Could not find scenarios_messages file: {e}")
-        # if not messages_scenarios:
-        #     print("Running _messages-scenarios-gen...")
-        #     roles = curr_roles_with_scenarios[self.domain][self.workspace]
-        #     new_roles_with_scenarios = self.messages_scenario_manager.generate_and_judge_scenarios(
-        #         input_roles=roles,
-        #         logging=True)
-        #     self.logger.debug(f'New scenarios: {new_roles_with_scenarios}')
-        #     curr_roles_with_scenarios[self.domain][self.workspace] = self.update_scenarios(
-        #         curr_roles_with_scenarios[self.domain][self.workspace], new_roles_with_scenarios)
-        #     save_to_disk(curr_roles_with_scenarios, self.cfg.object_storage.scenarios_messages)
+        curr_roles_with_policies_pre = self.remove_fields_from_scenarios(curr_roles_with_policies,
+                                                                         fields_list=['acceptable', 'feedback'])
+
+        curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies_pre)
+        curr_roles_with_messages = order_dict_keys(curr_roles_with_messages,
+                                                   ['name', 'description', 'scenarios', 'initial_state',
+                                                    'target_state', 'illegal_state', 'policy', 'role_description',
+                                                    'duties_description', 'prohibitions_description', 'configurations',
+                                                    'functions', 'getter_functions', 'target_function',
+                                                    'trigger_function', 'input_arguments', 'output_arguments',
+                                                    'errors', 'task_message', 'neutral_sys_messages','sys_messages', 'from', 'subject',
+                                                    'body', 'pressure_level'])
+
+        save_to_disk(curr_roles_with_messages, self.cfg.object_storage.scenarios_messages)

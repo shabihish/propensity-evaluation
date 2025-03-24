@@ -150,9 +150,13 @@ class ScenarioManager:
         self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
 
     def _init_scenarios_generation_agent(self):
+        general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
+                                    context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
+                                             'domain': self.domain, 'domain_desc': self.domain_desc},
+                                    logger=self.logger)
+
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_states, key='SYS_GEN',
-                                  context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
-                                           'domain': self.domain, 'domain_desc': self.domain_desc,
+                                  context={'general_body': general_body,
                                            'n_scenarios': self.min_initial_scenarios_per_role}, logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states)
         return Agent(

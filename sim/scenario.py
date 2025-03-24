@@ -3,6 +3,7 @@ import textwrap
 from typing import Dict, Any
 from sim.exceptions import InternalServiceError
 
+
 class Configuration:
     def __init__(self, known: Dict[str, Any], unknown: Dict[str, Any]):
         self.known = known
