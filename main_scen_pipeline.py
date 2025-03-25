@@ -81,12 +81,14 @@ def remove_keys_from_dictv(roles, keys: list):
 def main(cfg) -> None:
     logger = setup_logger()
 
-    loaded_workspaces = ['bio-security.Pandemic Response & Biosecurity Center',
-                         'bio-security.BSL-3/BSL-4 High-Containment Laboratory',
-                         'chemical-security.Independent Contract Research Organization',
-                         'chemical-security.Pharmaceutical Development Company',
-                         'cyber-security.Datacenter',
-                         'cyber-security.Mission Control Center']
+    loaded_workspaces = [
+        'bio-security.Pandemic Response & Biosecurity Center',
+        'bio-security.BSL-3/BSL-4 High-Containment Laboratory',
+        'chemical-security.Independent Contract Research Organization',
+        'chemical-security.Pharmaceutical Development Company',
+        'cyber-security.Datacenter',
+        'cyber-security.Mission Control Center'
+    ]
     # Load attack vectors for all domains
     attack_vectors = init_attack_vectors()
 

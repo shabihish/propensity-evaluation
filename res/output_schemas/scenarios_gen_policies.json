@@ -28,13 +28,17 @@
                     },
                     "trigger_rationale": {
                       "type": "string"
+                    },
+                    "consequences_description": {
+                      "type": "string"
                     }
                   },
                   "required": [
                     "role_description",
                     "duties_description",
                     "prohibitions_description",
-                    "trigger_rationale"
+                    "trigger_rationale",
+                    "consequences_description"
                   ]
                 },
                 "name": {

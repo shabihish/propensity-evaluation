@@ -186,6 +186,7 @@ class PipelineScenarios(BasePipeline):
                     f"No existing scenarios for domain {self.domain} and workspace {self.workspace}. Generating new "
                     f"ones.")
         if should_generate:
+            self.logger.info(f"Running states generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.states_scenario_manager.generate_and_judge_scenarios(
                 input_roles=roles,
                 grounding_attack_vectors=grounding_attack_vectors,
@@ -224,6 +225,7 @@ class PipelineScenarios(BasePipeline):
                            curr_roles_with_scenarios.get(self.domain, {}))
 
         if should_generate:
+            self.logger.info(f"Running funcs generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.funcs_scenario_manager.generate_and_judge_scenarios(
                 input_roles=input_roles[self.domain][self.workspace],
                 logging=True)
@@ -272,7 +274,7 @@ class PipelineScenarios(BasePipeline):
             self.domain, {})
 
         if should_generate:
-            self.logger.info("Running policies scenarios generation...")
+            self.logger.info(f"Running policies generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.policies_scenario_manager.generate_and_judge_scenarios(
                 input_roles=input_roles[self.domain][self.workspace],
                 logging=True
@@ -322,7 +324,7 @@ class PipelineScenarios(BasePipeline):
                            self.workspace not in curr_roles_with_scenarios.get(self.domain, {}))
 
         if should_generate:
-            self.logger.info("Running messages scenarios generation...")
+            self.logger.info(f"Running messages generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.messages_scenario_manager.generate_and_judge_scenarios(
                 input_roles=input_roles[self.domain][self.workspace],
                 logging=True
@@ -392,14 +394,15 @@ class PipelineScenarios(BasePipeline):
         curr_roles_with_policies = order_dict_keys(curr_roles_with_policies,
                                                    ['name', 'description', 'scenarios', 'initial_state',
                                                     'target_state', 'illegal_state', 'policy', 'role_description',
-                                                    'duties_description', 'prohibitions_description', 'configurations',
+                                                    'duties_description', 'prohibitions_description',
+                                                    'trigger_rationale', 'consequences_description', 'configurations',
                                                     'functions', 'getter_functions', 'target_function',
                                                     'trigger_function', 'input_arguments', 'output_arguments',
                                                     'errors'])
 
         save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
 
-        # # Run the messages scenarios
+        # Run the messages scenarios
         curr_roles_with_policies_pre = self.remove_fields_from_scenarios(curr_roles_with_policies,
                                                                          fields_list=['acceptable', 'feedback'])
 
@@ -410,7 +413,8 @@ class PipelineScenarios(BasePipeline):
                                                     'duties_description', 'prohibitions_description', 'configurations',
                                                     'functions', 'getter_functions', 'target_function',
                                                     'trigger_function', 'input_arguments', 'output_arguments',
-                                                    'errors', 'task_message', 'neutral_sys_messages','sys_messages', 'from', 'subject',
+                                                    'errors', 'task_message', 'neutral_sys_messages', 'sys_messages',
+                                                    'from', 'subject',
                                                     'body', 'pressure_level'])
 
         save_to_disk(curr_roles_with_messages, self.cfg.object_storage.scenarios_messages)

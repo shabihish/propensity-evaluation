@@ -96,8 +96,6 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     # while num_retries >= 0:
     #     try:
     result = agent(prompt)
-    print(result)
-    exit()
 
     response = get_response_content(result, to_json=to_json)
     if to_json:
