@@ -52,10 +52,10 @@ class Pipeline(BasePipeline):
                                          temperature=cfg.model.temperature)
 
         # self.states_scenario_manager = StatesScenarioManager(api_conf=api_conf, logger=logger,
-        #                                                      workspace_name=self.workspace,
+        #                                                      workspace=self.workspace,
         #                                                      workspace_alternative_forms=self.workspace_alternative_forms,
         #                                                      workspace_desc=workspace_desc,
-        #                                                      domain_name=self.domain,
+        #                                                      domain=self.domain,
         #                                                      domain_desc=self.domain_desc,
         #                                                      domain_alternative_forms=self.domain_alternative_forms,
         #                                                      output_schemas_conf=cfg.output_schemas,

@@ -98,7 +98,7 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     result = agent(prompt)
 
     response = get_response_content(result, to_json=to_json)
-    if to_json:
+    if to_json and json_transform_keys:
         assert len(json_transform_keys) == 2
         response = response[json_transform_keys[0]]
         response = json_obj_list_to_dict(response, json_transform_keys[1])

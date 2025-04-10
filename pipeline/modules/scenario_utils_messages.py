@@ -110,7 +110,7 @@ class ScenarioManager:
             temperature=self.temperature)
 
     def _init_scenarios_verif_judge(self):
-        sys_prompt = read_prompts(self.prompts_conf.judge_agents, key='SYS_SCENARIOS_MESSAGES_VERIF',
+        sys_prompt = read_prompts(self.prompts_conf.judge_agents, key='SYS_SCENARIOS_NEUTRAL_MESSAGES_VERIF',
                                   context={'workspace': self.workspace, 'workspace_desc': self.workspace_desc,
                                            'domain': self.domain, 'domain_desc': self.domain_desc},
                                   logger=self.logger)
@@ -190,8 +190,8 @@ class ScenarioManager:
                 response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
                 response = {k: v for k, v in response.items() if set(x['name'] for x in v['scenarios']) ==
                             set(curr_input_roles[k]['scenarios'].keys())}
-                response = {k: v for k, v in response.items() if
-                            all(10 <= len(scen_v['sys_messages']) <= 18 for scen_v in v['scenarios'])}
+                # response = {k: v for k, v in response.items() if
+                #             all(10 <= len(scen_v['sys_messages']) <= 18 for scen_v in v['scenarios'])}
                 response = {k: v for k, v in response.items() if
                             all(len(scen_v['neutral_sys_messages']) >= 2 for scen_v in v['scenarios'])}
 

@@ -100,6 +100,7 @@ class ScenarioManager:
         self.domain = domain_name
         self.domain_desc = domain_desc
         self.domain_alternative_forms = domain_alternative_forms
+        self.domain_alternative_forms = domain_alternative_forms
         self.prompts_conf = prompts_conf
         self.output_schemas_conf = output_schemas_conf
         self.object_storage_conf = object_storage_conf

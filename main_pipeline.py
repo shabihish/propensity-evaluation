@@ -40,9 +40,9 @@ def setup_logger(log_file='app.log'):
 def main(cfg) -> None:
     logger = setup_logger()
 
-    # sim = Pipeline(cfg, logger, workspace_name=WORKSPACE_NAME, workspace_desc=WORKSPACE_DESC,
+    # sim = Pipeline(cfg, logger, workspace=WORKSPACE_NAME, workspace_desc=WORKSPACE_DESC,
     #                         workspace_alternative_forms=WORKSPACE_ALTERNATIVE_FORMS,
-    #                         domain_name=DOMAIN_NAME, domain_alternative_forms=DOMAIN_ALTERNATIVE_FORMS)
+    #                         domain=DOMAIN_NAME, domain_alternative_forms=DOMAIN_ALTERNATIVE_FORMS)
     #
     # sim.run()
 
@@ -65,11 +65,11 @@ def main(cfg) -> None:
                     workspace_alternative_forms = workspace_data.get('alternative_forms')
                     roles = workspace_data.get('roles', {})
 
-                    # print(f'{workspace_name}:\troles: {len(roles.keys())}')
-                    # print(workspace_name, workspace_desc, workspace_alternative_forms, '\n')
-                    # sim = Pipeline(cfg, logger, workspace_name=workspace_name, workspace_desc=workspace_desc,
+                    # print(f'{workspace}:\troles: {len(roles.keys())}')
+                    # print(workspace, workspace_desc, workspace_alternative_forms, '\n')
+                    # sim = Pipeline(cfg, logger, workspace=workspace, workspace_desc=workspace_desc,
                     #                workspace_alternative_forms=workspace_alternative_forms,
-                    #                domain_name=domain_name, domain_desc=domain_desc,
+                    #                domain=domain, domain_desc=domain_desc,
                     #                domain_alternative_forms=domain_alternative_forms)
                     # sim.run()
 
