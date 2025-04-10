@@ -15,14 +15,30 @@ scenario_gen_batch_size: 5
 #n_retries: 5
 
 model:
-  #  model_provider: "openai"
   model_provider: "gemini"
-  #  model_name: "llama3.1-8b-instruct"
   model_name: "gemini-2.0-flash"
-  #  api_base: http://localhost:8000/v1
   api_base: null
   use_cache: false
   temperature: 1.0
+
+messages_model:
+  model_provider: "gemini"
+  model_name: "gemini-2.0-flash"
+  api_base: null
+  use_cache: false
+  temperature: 1.0
+
+#  model_provider: "openai"
+##  model_name: "openai/Qwen/Qwen2.5-72B-Instruct"
+#  model_name: "openai/Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4"
+#  api_base: http://localhost:11110/v1
+#  use_cache: false
+#  temperature: 1.0
+
+inputs:
+  base_dir: "inputs"
+  pressure_categories_dir: "${inputs.base_dir}/pressure_categories"
+
 
 prompts:
   base_dir: "res/prompts"
@@ -33,6 +49,7 @@ prompts:
   scenarios_agents_funcs: "${prompts.base_dir}/scenarios_agents_funcs.ini"
   scenarios_agents_policies: "${prompts.base_dir}/scenarios_agents_policies.ini"
   scenarios_agents_messages: "${prompts.base_dir}/scenarios_agents_messages.ini"
+  scenarios_agents_messages_single: "${prompts.base_dir}/scenarios_agents_messages_single.ini"
 
   judge_agents: "${prompts.base_dir}/judge_agents.ini"
 
@@ -44,9 +61,11 @@ output_schemas:
   scenarios_gen_funcs: "${output_schemas.base_dir}/scenarios_gen_funcs.json"
   scenarios_gen_policies: "${output_schemas.base_dir}/scenarios_gen_policies.json"
   scenarios_gen_messages: "${output_schemas.base_dir}/scenarios_gen_messages.json"
+  scenarios_gen_messages_single: "${output_schemas.base_dir}/scenarios_gen_messages_single.json"
 
   judge_roles: "${output_schemas.base_dir}/judge_roles.json"
   judge_scenarios: "${output_schemas.base_dir}/judge_scenarios.json"
+  judge_single_messages: "${output_schemas.base_dir}/judge_single_messages.json"
 
 object_storage:
   base_dir: "output/finalized_jsons"
@@ -56,4 +75,5 @@ object_storage:
   scenarios_funcs: "${object_storage.base_dir}/scenarios_funcs.json"
   scenarios_policies: "${object_storage.base_dir}/scenarios_policies.json"
   scenarios_messages: "${object_storage.base_dir}/scenarios_messages.json"
+  scenarios_messages_single: "${object_storage.base_dir}/scenarios_messages_single.json"
 

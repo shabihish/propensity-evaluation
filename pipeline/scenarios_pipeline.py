@@ -96,7 +96,7 @@ class PipelineScenarios(BasePipeline):
                                                                  object_storage_conf=cfg.object_storage,
                                                                  temperature=cfg.model.temperature,
                                                                  generation_batch_size=max(1,
-                                                                                           cfg.scenario_gen_batch_size // 2))
+                                                                                           cfg.scenario_gen_batch_size))
 
     def update_scenarios(self, prev_roles_with_scenarios: dict, new_roles_with_scenarios: dict) -> dict:
         out = deepcopy(prev_roles_with_scenarios)
@@ -324,7 +324,7 @@ class PipelineScenarios(BasePipeline):
                            self.workspace not in curr_roles_with_scenarios.get(self.domain, {}))
 
         if should_generate:
-            self.logger.info(f"Running messages generation for workspace {self.workspace}...")
+            self.logger.info(f"Running task/neutral messages generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.messages_scenario_manager.generate_and_judge_scenarios(
                 input_roles=input_roles[self.domain][self.workspace],
                 logging=True
@@ -337,7 +337,8 @@ class PipelineScenarios(BasePipeline):
                 for role in new_roles_with_scenarios:
                     for scenario in new_roles_with_scenarios[role]['scenarios']:
                         curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
-                        if 'sys_messages' not in curr_scen:
+                        # if 'sys_messages' not in curr_scen:
+                        if 'neutral_sys_messages' not in curr_scen or 'task_message' not in curr_scen:
                             should_add = False
                             break
                     if not should_add:
@@ -354,7 +355,7 @@ class PipelineScenarios(BasePipeline):
                     new_roles_with_scenarios
                 )
             else:
-                self.logger.error(f"Generated policies are incomplete. Skipping update.")
+                self.logger.error(f"Generated messages are incomplete. Skipping update.")
 
         return curr_roles_with_scenarios
 
@@ -413,7 +414,7 @@ class PipelineScenarios(BasePipeline):
                                                     'duties_description', 'prohibitions_description', 'configurations',
                                                     'functions', 'getter_functions', 'target_function',
                                                     'trigger_function', 'input_arguments', 'output_arguments',
-                                                    'errors', 'task_message', 'neutral_sys_messages', 'sys_messages',
+                                                    'errors', 'task_message', 'neutral_sys_messages',
                                                     'from', 'subject',
                                                     'body', 'pressure_level'])
 
