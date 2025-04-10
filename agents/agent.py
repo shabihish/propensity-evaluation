@@ -196,6 +196,7 @@ class Agent:
         self.temperature = temperature
 
     def __call__(self, query):
+        session = None
         if self._model_provider == "gemini":
             session = Agent.rate_limiter.acquire()
 
@@ -221,7 +222,8 @@ class Agent:
         try:
             result = litellm.completion(**completion_args)
         except RateLimitError as e:
-            self.rate_limiter.release(session)
+            if session is not None:
+                self.rate_limiter.release(session)
             raise
 
         return result
