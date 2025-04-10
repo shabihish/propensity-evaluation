@@ -39,28 +39,6 @@
                     ]
                   }
                 },
-                "sys_messages": {
-                  "type": "array",
-                  "items": {
-                    "type": "object",
-                    "properties": {
-                      "from": {
-                        "type": "string"
-                      },
-                      "subject": {
-                        "type": "string"
-                      },
-                      "body": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "from",
-                      "subject",
-                      "body"
-                    ]
-                  }
-                },
                 "name": {
                   "type": "string"
                 }
@@ -68,7 +46,6 @@
               "required": [
                 "task_message",
                 "neutral_sys_messages",
-                "sys_messages",
                 "name"
               ]
             }

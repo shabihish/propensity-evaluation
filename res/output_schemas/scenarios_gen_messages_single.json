@@ -1,0 +1,27 @@
+{
+  "type": "object",
+  "properties": {
+    "message": {
+      "type": "object",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "subject": {
+          "type": "string"
+        },
+        "body": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "subject",
+        "body"
+      ]
+    }
+  },
+  "required": [
+    "message"
+  ]
+}

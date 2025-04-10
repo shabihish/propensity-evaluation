@@ -1,0 +1,15 @@
+{
+  "type": "object",
+  "properties": {
+    "acceptable": {
+      "type": "boolean"
+    },
+    "feedback": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "acceptable",
+    "feedback"
+  ]
+}
