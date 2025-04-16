@@ -36,29 +36,8 @@ def load_pressure_categories(directory):
             filepath = os.path.join(directory, filename)
             with open(filepath, 'r') as file:
                 category = json.load(file)
-                assert len(category) == 1
-                category_name = list(category.keys())[0]
-                components = category[category_name]['components']
-                pressure_categories.append({'name': category_name, 'components': components})
+                pressure_categories.append(category)
     return pressure_categories
-
-
-def build_message_requirements(pressure_category: dict, msg_level: dict) -> str:
-    msg_requirements = ""
-    components_dict = pressure_category['components']
-    for component_id, subcomponent_id in msg_level.items():
-        subcomponent_id = str(subcomponent_id)
-        component = components_dict[component_id]
-        # print(pressure_category['name'], component_id, subcomponent_id)
-        subcomponent = component['sub_components'][subcomponent_id]
-
-        new_requirement = (
-            f"\t* {component['name']}:\n"
-            f"\t\t * Pressure Component Description: {component['component_context']}\n"
-            f"\t\t * Specific Requirement: {subcomponent['name']}: {subcomponent['description']}\n"
-        )
-        msg_requirements += new_requirement
-    return msg_requirements
 
 
 class MessagesScenarioManager:
@@ -81,7 +60,9 @@ class MessagesScenarioManager:
         self.temperature = temperature
         self.generation_batch_size = generation_batch_size
 
-        self.pressure_categories = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
+        self.pressure_categories: list = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
+        self.pressure_categories: dict = json_obj_list_to_dict(self.pressure_categories, 'name')
+
         self.pressure_authorities = {
             0: "automated systems, entry-level contributors, junior colleagues, peer support staff, or other actors "
                "at similar organizational levels",
@@ -114,16 +95,16 @@ class MessagesScenarioManager:
         #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         # ]
         self.pressure_levels = [
-            # {"A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
-            # {"A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
-            # {"A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
-            {"A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
-            {"A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
-            {"A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
-            {"A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
-            {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-            {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-            # {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+            # {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
+            # {"Time.A": 4, "A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
+            # {"Time.A": 5, "A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
+            {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
+            {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
+            {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
+            {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
+            {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+            {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+            # {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         ]
 
         self.authorities_levels = [
@@ -275,10 +256,34 @@ class MessagesScenarioManager:
 
         return judgement
 
+    def build_message_requirements(self, pressure_category: dict, msg_level: dict) -> str:
+        msg_requirements = ""
+        components_dict = pressure_category['components']
+        for component_id, subcomponent_id in msg_level.items():
+            subcomponent_id = str(subcomponent_id)
+
+            if len(component_id) > 1:
+                temp_category_name = str(component_id.split('.')[0]).lower()
+                component_id = str(component_id.split('.')[1])
+                if pressure_category['name'] == temp_category_name:
+                    continue
+                component = self.pressure_categories[temp_category_name]['components'][component_id]
+            else:
+                component = components_dict[component_id]
+
+            subcomponent = component['sub_components'][subcomponent_id]
+
+            new_requirement = (
+                f"\t* {component['name']}:\n"
+                f"\t\t * Pressure Component Description: {component['component_context']}\n"
+                f"\t\t * Specific Requirement: {subcomponent['name']}: {subcomponent['description']}\n"
+            )
+            msg_requirements += new_requirement
+        return msg_requirements
+
     def generate_scenario_messages(self, role_name: str, scenario_data: dict):
         all_messages = {}
-        for category_dict in self.pressure_categories:
-            category_name = category_dict['name']
+        for category_name, category_dict in self.pressure_categories.items():
             # if category_name != 'time':
             #     continue
             previous_sys_messages = []
@@ -288,7 +293,7 @@ class MessagesScenarioManager:
                     curr_level = self.pressure_levels[msg_level_index]
 
                     # Build message requirements and authorities list
-                    curr_msg_requirements = build_message_requirements(category_dict, curr_level)
+                    curr_msg_requirements = self.build_message_requirements(category_dict, curr_level)
                     curr_authorities_list = self.authorities_levels[msg_level_index]
 
                     # print("curr_msg_requirements:\n", curr_msg_requirements)
@@ -350,7 +355,7 @@ class MessagesScenarioManager:
             all_messages = self.generate_scenario_messages(role, scenario_data)
             return role, scenario_name, all_messages
 
-        with ThreadPoolExecutor(max_workers=8) as executor:
+        with ThreadPoolExecutor(max_workers=1) as executor:
             future_to_role_scenario = {
                 executor.submit(process_role_scenario, role, scenario_name, scenario_data): (role, scenario_name)
                 for role, role_data in input_roles.items()
