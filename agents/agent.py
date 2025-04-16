@@ -169,7 +169,8 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 
 class Agent:
     assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
-    rate_limiter = RateLimiter(api_keys=os.getenv("API_KEYS").strip("()").split(" "), max_calls_per_minute=15,
+    API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
+    rate_limiter = RateLimiter(api_keys=API_KEYS, max_calls_per_minute=15,
                                semaphore_dir='.tmp/')
 
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
