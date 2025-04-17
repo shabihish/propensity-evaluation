@@ -4,6 +4,7 @@ import re
 
 from agents.agent import Agent
 from utils.litellm_utils import get_response_content
+from copy import deepcopy
 
 
 def save_to_disk(data: dict, file_path: str):
@@ -211,3 +212,103 @@ def merge_keys_in_scenarios(dict1, dict2, key_mappings):
 
     return dict2
 
+
+def remove_nested_fields(roles: dict, fields_to_remove: list):
+    """
+    Remove specified fields in the format 'x.y.z' from every scenario of every role.
+    Supports wildcard 'any' to match all keys at a level.
+
+    Args:
+        roles (dict): The roles dictionary containing scenarios.
+        fields_to_remove (list): List of fields to remove in 'x.y.z' format.
+
+    Returns:
+        dict: The updated roles dictionary with specified fields removed.
+    """
+
+    def delete_nested_field(data, keys):
+        """Recursively delete a nested field given a list of keys."""
+        if not keys:
+            return
+
+        if keys[0] == 'any':
+            # If 'any' is encountered, apply the deletion to all keys at this level
+            for key in list(data.keys() if isinstance(data, dict) else range(len(data))):
+                delete_nested_field(data[key], keys[1:])
+        else:
+            if keys[0] in data:
+                if len(keys) == 1:
+                    del data[keys[0]]
+                else:
+                    delete_nested_field(data[keys[0]], keys[1:])
+
+    roles = deepcopy(roles)
+    for role_name, role_data in roles.items():
+        for scenario_name, scenario_data in role_data.get('scenarios', {}).items():
+            for field in fields_to_remove:
+                keys = field.split('.')
+                delete_nested_field(scenario_data, keys)
+
+    return roles
+
+
+def filter_fields_for_roles(roles: dict, fields_to_include: list) -> dict:
+    """
+    Include only specific fields in the scenarios of the roles dictionary for processing,
+    while keeping all fields in the roles themselves.
+
+    Args:
+        roles (dict): The roles dictionary containing scenarios.
+        fields_to_include (list): List of fields to include in 'x.y.z' format, supporting 'any' wildcard.
+
+    Returns:
+        dict: A new roles dictionary with all role-level fields retained and only the specified fields in scenarios.
+    """
+
+    def get_nested_field(data, keys):
+        """Recursively get a nested field given a list of keys."""
+        if not keys:
+            return data
+        if keys[0] == 'any':
+            if isinstance(data, dict):
+                return {k: get_nested_field(v, keys[1:]) for k, v in data.items()}
+            elif isinstance(data, list):
+                return [get_nested_field(v, keys[1:]) for v in data]
+            else:
+                return None
+        if keys[0] in data:
+            return get_nested_field(data[keys[0]], keys[1:])
+        return None
+
+    def set_nested_field(data, keys, value):
+        """Recursively set a nested field given a list of keys."""
+        if not keys:
+            return
+        if keys[0] == 'any':
+            if isinstance(data, dict):
+                for k in data.keys():
+                    set_nested_field(data[k], keys[1:], value)
+            elif isinstance(data, list):
+                for i in range(len(data)):
+                    set_nested_field(data[i], keys[1:], value)
+        else:
+            for key in keys[:-1]:
+                data = data.setdefault(key, {})
+            data[keys[-1]] = value
+
+    filtered_roles = {}
+    for role_name, role_data in roles.items():
+        # Retain all role-level fields
+        filtered_roles[role_name] = deepcopy(role_data)
+        filtered_roles[role_name]['scenarios'] = {}
+
+        for scenario_name, scenario_data in role_data.get('scenarios', {}).items():
+            filtered_scenario = {}
+            for field in fields_to_include:
+                keys = field.split('.')
+                value = get_nested_field(scenario_data, keys)
+                if value is not None:
+                    set_nested_field(filtered_scenario, keys, value)
+            filtered_roles[role_name]['scenarios'][scenario_name] = filtered_scenario
+
+    return filtered_roles
