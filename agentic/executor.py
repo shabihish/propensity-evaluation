@@ -1,4 +1,5 @@
 from openai import OpenAI
+from litellm import completion
 from dotenv import load_dotenv
 import os
 from rich import print as rprint
@@ -65,15 +66,7 @@ class Executor:
         return False
     
     def _call_llm(self):
-        # Call OpenAI model (or other models in the future)
-        client = OpenAI(api_key=api_key)
-        # import pdb; pdb.set_trace()
-        response = client.chat.completions.create(
-            model="o3-mini-2025-01-31",  # or "gpt-3.5-turbo", "o3-mini-2025-01-31", "gpt-4o-mini"
-            messages=self.agent.history,
-            tools=self.openai_tools,
-            tool_choice="auto"  # Let the model decide if it should call the function
-        )
+        response = completion(model="gpt-3.5-turbo", messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
         # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
@@ -115,16 +108,6 @@ class Executor:
                 }, {"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type, "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments}}]}, {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
             else:
                 tool_result = [{"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type, "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments}}]}, {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
-            #     tool_result = []
-            # tool_result.append({
-            #     "role": "assistant",
-            #     "content": f"tool call: {tool_name}, arguments: {arguments}"
-            # })
-            # tool_result.append({
-            #     "role": "assistant",
-            #     "content": f"tool response: {tool_name}, tool result: {tool_output}"
-            # })
-            # Return the function result (so we can show it to the user, for example)
             return tool_name, tool_result, retry_call
             
         else:
@@ -139,33 +122,5 @@ class Executor:
             # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
             rprint(f"[magenta]\[`{self.agent.name.lower()}` -> `user`][/magenta]")
             rprint(f"[green]'{assistant_content}'[/green]\n")
-            # if tool_name != None:
-            #     if tool_name == self.terminate_function:
-            #         rprint(f"[bold red]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/bold red]\n")
-            #     else:
-            #         rprint(f"[blue]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/blue]")
             return None, {"role": "assistant", "content": assistant_content}, retry_call
-    
-    def _parse_content_for_tool_call(self, content: str):
-        # First try matching full pattern with arguments
-        pattern = re.compile(r'\btool call:\s*(?P<func>(?:\w+\.)*(?P<clean_func>\w+))\s*,\s*arguments:\s*(?P<args>{.*})', re.DOTALL)
-
-        match = pattern.search(content)
-        if match:
-            func_name = match.group('clean_func')
-            args_str = match.group('args')
-
-            try:
-                args_dict = ast.literal_eval(args_str)
-                return func_name, args_dict
-            except (SyntaxError, ValueError):
-                return func_name, None
-
-        # Fallback: just function name, no args
-        pattern_func_only = re.compile(r'\btool call:\s*(?P<func>(?:\w+\.)?(?P<clean_func>\w+))', re.DOTALL)
-        match = pattern_func_only.search(content)
-        if match:
-            return match.group('clean_func'), None
-
-        return None, None
 
