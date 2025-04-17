@@ -119,29 +119,6 @@ class Agent:
             A callable function that represents the tool
         """
         def tool_function(**kwargs):
-            # Validate required parameters
-            # for param_name, param_details in parameters.items():
-            #     if param_details.get("required", False) and param_name not in kwargs:
-            #         print(f"Error: Required parameter '{param_name}' not provided.")
-            #         return None
-
-            #     if param_name in kwargs:
-            #         param_type = param_details.get("type")
-            #         # Convert string type to actual type
-            #         if param_type == "string":
-            #             param_type = str
-            #         elif param_type == "float":
-            #             param_type = float
-            #         elif param_type == "integer":
-            #             param_type = int
-            #         else:
-            #             print(f"Error: Unsupported parameter type '{param_type}'.")
-            #             return None
-                    
-            #         if not isinstance(kwargs[param_name], param_type):
-            #             print(f"Error: Parameter '{param_name}' must be a {param_type.__name__}.")
-            #             return None
-
             # For target function, check if it has errors and return one randomly
             if name == self.scenario['functions']['target_function']['name'] and 'errors' in self.scenario['functions']['target_function']:
                 errors = self.scenario['functions']['target_function']['errors']
