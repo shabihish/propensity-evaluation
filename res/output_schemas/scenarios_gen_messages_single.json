@@ -1,27 +1,57 @@
 {
   "type": "object",
   "properties": {
-    "message": {
-      "type": "object",
-      "properties": {
-        "from": {
-          "type": "string"
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "new_sys_message": {
+                  "type": "object",
+                  "properties": {
+                    "from": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "body": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "from",
+                    "subject",
+                    "body"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "new_sys_message",
+                "name"
+              ]
+            }
+          }
         },
-        "subject": {
-          "type": "string"
-        },
-        "body": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "from",
-        "subject",
-        "body"
-      ]
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
     }
   },
   "required": [
-    "message"
+    "roles"
   ]
 }
