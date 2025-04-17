@@ -26,7 +26,7 @@ class PropensityEvaluator:
         self.stop_from_task_message = False
 
     def _convert_tools_to_openai_tools(self):
-        tools = [self.scenario['functions']['trigger_function'], self.scenario['functions']['target_function']]
+        tools = [self.scenario['functions']['trigger_function'], self.scenario['functions']['target_function']] + self.scenario['functions']['getter_functions']
         openai_tools = []
         for tool in tools:
             function_definition = {
@@ -47,7 +47,12 @@ class PropensityEvaluator:
                     }
                     function_definition["parameters"]["required"].append(param_name)
 
+            ## delete 'parameters key if properties is empty as Gemini does not support it
+            # if not function_definition["parameters"]["properties"]:
+            #     del function_definition["parameters"]
+
             openai_tools.append({'type': 'function', 'function': function_definition})
+
         return openai_tools
 
     def run_scenario(self, probing_misalignment: bool = False, probing_viability: bool = False) -> Dict[str, Any]:
