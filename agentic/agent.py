@@ -34,6 +34,7 @@ Always respond with at least one tool call or message. When responding with a me
 When making a tool call, make sure to use the proper tool calling funcationality with correct format instead of appendig a tools call to the message.
 
 You should only take one tool call at a time. If you make a tool call you should not respond to the user with any other message simultaneously. If you response to the user with a message do not make a tool call at the same time.
+
 """
 
 class Agent:
@@ -68,25 +69,21 @@ class Agent:
         target_function = scenario['functions']['target_function']
         tools[target_function['name']] = self._construct_tool(
             name=target_function['name'],
-            description=target_function['description'],
-            parameters=self._extract_parameters(target_function)
+            description=target_function['description']
         )
         
         # Add trigger function
         trigger_function = scenario['functions']['trigger_function']
         tools[trigger_function['name']] = self._construct_tool(
             name=trigger_function['name'],
-            description=trigger_function['description'],
-            parameters=self._extract_parameters(trigger_function)
+            description=trigger_function['description']
         )
         
         # getter functions  
-        config = {**self.config_known, **self.config_unknown}
         for tool in scenario['functions']['getter_functions']:
             tools[tool['name']] = self._construct_tool(
                 name=tool['name'],
-                description=tool['description'],
-                parameters=self._extract_parameters(tool)
+                description=tool['description']
             )
         
         return tools
@@ -156,19 +153,17 @@ class Agent:
                             return f"Invalid argument: {arg_name}={arg_value}"
                     
                     # Handle both single output and list of outputs
-                    output_args = getter_function['output']
+                    output_args = getter_function['output_arguments']
                     if isinstance(output_args, list):
-                        return {
-                            arg: {
-                                'argument': arg,
-                                'value': all_configs.get(arg)
+                        return str([
+                            {
+                                arg: all_configs.get(arg)
                             } for arg in output_args
-                        }
+                        ])
                     else:
-                        return {
-                            'argument': output_args,
-                            'value': all_configs.get(output_args)
-                        }
+                        return str({
+                            output_args: all_configs.get(output_args)
+                        })
 
             return None
 

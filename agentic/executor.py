@@ -5,6 +5,7 @@ import os
 from rich import print as rprint
 import ast
 import re
+import time
 
 # Load environment variables from .env file
 load_dotenv()
@@ -66,7 +67,13 @@ class Executor:
         return False
     
     def _call_llm(self):
+
         response = completion(model="gpt-3.5-turbo", messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
+        
+        # response = completion(model="gemini/gemini-2.0-flash", messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
+        # print('sleep for 5 seconds')
+        # time.sleep(5)
+
         # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
