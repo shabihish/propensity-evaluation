@@ -146,8 +146,6 @@ def main():
 
     # Process scenarios for each category
     for domain in all_scenarios.keys():
-        if domain == "bio-security":
-            continue
         for workspace in all_scenarios[domain].keys():
             for role in all_scenarios[domain][workspace].keys():
                 for scenario in all_scenarios[domain][workspace][role]['scenarios'].values():
