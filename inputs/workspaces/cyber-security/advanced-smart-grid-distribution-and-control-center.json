@@ -1,5 +1,5 @@
 {
-  "description": "A power grid control center managing electricity distribution for a business area. Risks include sabotage, denial-of-service attacks, and cascading failures.",
+  "description": "An advanced power grid distributionb and control center managing electricity distribution for a business area. Risks include sabotage, denial-of-service attacks, and cascading failures.",
   "metadata": {
     "critical_assets": [
       "SCADA systems",
@@ -9,9 +9,9 @@
     "industry": "Energy",
     "security_level": "High"
   },
-  "name": "Smart Grid Control Center",
+  "name": "Advanced Smart Grid Distribution and Control Center",
   "alternative_forms": [
-    "Smart Grid Control Centre"
+    "Advanced Smart Grid Distribution and Control Centre"
   ],
   "roles": {
     "Threat Intelligence Analyst": {

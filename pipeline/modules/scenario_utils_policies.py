@@ -9,7 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from agents.agent import Agent
 from .graph_utils import SimilarityGraph
 from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas, \
-    remove_nested_fields
+    remove_nested_fields, rename_nested_fields
 from .utils import json_obj_list_to_dict
 
 
@@ -266,8 +266,7 @@ class ScenarioManager:
         """
         Helper method to process a single batch for scenario generation.
         """
-        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
-                                                                          'any.acceptable',
+        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['any.acceptable',
                                                                           'any.feedback'])
 
         prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='USER_GEN',
@@ -517,7 +516,14 @@ class ScenarioManager:
                 role_name: {
                     **role_data,
                     'scenarios': {
-                        scenario_name: scenario_data
+                        scenario_name: {
+                            **{
+                                key: value
+                                for key, value in scenario_data.items()
+                                if key != 'policy'
+                            },
+                            'feedback_for_previous_failed_attempt': scenario_data['policy']['feedback'],
+                        }
                         for scenario_name, scenario_data in role_data['scenarios'].items()
                         if not judged_scenarios[role_name]['scenarios'][scenario_name]['policy']['acceptable']
                     }
@@ -534,7 +540,8 @@ class ScenarioManager:
                 for scenario_name, scenario_data in role_data['scenarios'].items():
                     if scenario_data['policy']['acceptable']:
                         out_roles[role_name]['scenarios'][scenario_name]['policy'] = \
-                        role_data['scenarios'][scenario_name][
-                            'policy']
+                            role_data['scenarios'][scenario_name][
+                                'policy']
 
+        out_roles = remove_nested_fields(out_roles, fields_to_remove=['feedback_for_previous_failed_attempt'])
         return out_roles

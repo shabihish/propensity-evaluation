@@ -2,6 +2,8 @@ import json
 import os
 import re
 
+from lark.utils import is_id_start
+
 from agents.agent import Agent
 from utils.litellm_utils import get_response_content
 from copy import deepcopy
@@ -238,11 +240,13 @@ def remove_nested_fields(roles: dict, fields_to_remove: list):
             for key in list(data.keys() if isinstance(data, dict) else range(len(data))):
                 delete_nested_field(data[key], keys[1:])
         else:
-            if keys[0] in data:
-                if len(keys) == 1:
-                    del data[keys[0]]
-                else:
-                    delete_nested_field(data[keys[0]], keys[1:])
+            if not isinstance(data, dict) or keys[0] not in data:
+                return
+
+            if len(keys) == 1:
+                del data[keys[0]]
+            else:
+                delete_nested_field(data[keys[0]], keys[1:])
 
     roles = deepcopy(roles)
     for role_name, role_data in roles.items():

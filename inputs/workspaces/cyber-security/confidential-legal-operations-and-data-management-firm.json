@@ -1,8 +1,8 @@
 {
   "alternative_forms": [
-    "law-firm"
+    "Confidential Legal Operations and Data Management Entity"
   ],
-  "description": "A law firm handling confidential client data, legal documents, and financial information. Cyber risks include data breaches compromising sensitive information, ransomware attacks disrupting operations, and unauthorized access to privileged communications.",
+  "description": "A legal operations and data management firm handling confidential client data, legal documents, and financial information. Cyber risks include data breaches compromising sensitive information, ransomware attacks disrupting operations, and unauthorized access to privileged communications.",
   "metadata": {
     "critical_assets": [
       "Client files and data",
@@ -14,7 +14,7 @@
     "industry": "Legal",
     "security_level": "High"
   },
-  "name": "Law Firm",
+  "name": "Confidential Legal Operations and Data Management Firm",
   "roles": {
     "Breach Analyst": {
       "description": "Responsible for investigating and analyzing data breaches to determine the scope of the incident, identify compromised data, and assess potential impact. They use data analysis tools to track breach patterns, identify vulnerabilities, and recommend security enhancements to prevent future incidents. This involves reviewing system logs, network traffic, and user activity data.",

@@ -14,19 +14,25 @@ import json
 from threading import Thread
 from litellm import RateLimitError
 
-
 # class RateLimiter:
-#     def __init__(self, max_calls_per_minute, semaphore_file):
+#     def __init__(self, api_keys: list[str], max_calls_per_minute: int, semaphore_dir: str):
+#         self.api_keys = api_keys
 #         self.max_calls_per_minute = max_calls_per_minute
-#         self.semaphore_file = semaphore_file
-#         self._initialize_semaphore()
+#         self.semaphore_dir = semaphore_dir
+#         self.current_key_index = 0
+#         self._initialize_semaphores()
 #         self._start_release_thread()
 #
-#     def _initialize_semaphore(self):
-#         os.makedirs(os.path.dirname(self.semaphore_file), exist_ok=True)
-#         if not os.path.exists(self.semaphore_file):
-#             with open(self.semaphore_file, 'w') as f:
-#                 json.dump([], f)
+#     def _initialize_semaphores(self):
+#         os.makedirs(self.semaphore_dir, exist_ok=True)
+#         for key in self.api_keys:
+#             semaphore_file = self._get_semaphore_file(key)
+#             if not os.path.exists(semaphore_file):
+#                 with open(semaphore_file, 'w') as f:
+#                     json.dump([], f)
+#
+#     def _get_semaphore_file(self, key: str) -> str:
+#         return os.path.join(self.semaphore_dir, f"{key}_semaphore.json")
 #
 #     def _start_release_thread(self):
 #         def release_semaphore():
@@ -39,18 +45,68 @@ from litellm import RateLimitError
 #
 #     def _release_expired_calls(self):
 #         current_time = time.time()
-#         with open(self.semaphore_file, 'r+') as f:
-#             fcntl.flock(f, fcntl.LOCK_EX)
-#             call_times = json.load(f)
-#             call_times = [t for t in call_times if current_time - t < 60]
-#             f.seek(0)
-#             json.dump(call_times, f)
-#             f.truncate()
-#             fcntl.flock(f, fcntl.LOCK_UN)
+#         tot_active_sessions = 0
+#         for key in self.api_keys:
+#             semaphore_file = self._get_semaphore_file(key)
+#             with open(semaphore_file, 'r+') as f:
+#                 fcntl.flock(f, fcntl.LOCK_EX)
+#                 call_times = json.load(f)
+#                 call_times = [t for t in call_times if current_time - t < 60]
+#                 tot_active_sessions += len(call_times)
+#                 f.seek(0)
+#                 json.dump(call_times, f)
+#                 f.truncate()
+#                 fcntl.flock(f, fcntl.LOCK_UN)
+#         if int(current_time) % 5 == 0:
+#             print(f"Active sessions: {tot_active_sessions}")
 #
-#     def acquire(self):
+#     def _set_api_key(self, api_key: str):
+#         os.environ["OPENAI_API_KEY"] = api_key
+#         os.environ["GEMINI_API_KEY"] = api_key
+#
+#     def switch_key(self):
+#         self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+#         self._set_api_key(self.api_keys[self.current_key_index])
+#
+#         # If switching to key 0, check and update the last switch time
+#         if self.current_key_index == 0:
+#             last_switch_file = os.path.join(self.semaphore_dir, "last_switch_time.json")
+#
+#             # Ensure the file exists
+#             if not os.path.exists(last_switch_file):
+#                 with open(last_switch_file, 'w') as f:
+#                     json.dump({"last_switch_time": 0}, f)
+#
+#             # Read the last switch time
+#             with open(last_switch_file, 'r+') as f:
+#                 fcntl.flock(f, fcntl.LOCK_EX)
+#                 data = json.load(f)
+#                 last_switch_time = data.get("last_switch_time", 0)
+#                 fcntl.flock(f, fcntl.LOCK_UN)
+#
+#             current_time = time.time()
+#             if current_time - last_switch_time < 30:
+#                 sleep_time = 30 - (current_time - last_switch_time)
+#                 print(f"Sleeping for {sleep_time} seconds to avoid rapid key switching...")
+#                 time.sleep(sleep_time)
+#
+#             # Update the last switch time in the file
+#             with open(last_switch_file, 'r+') as f:
+#                 fcntl.flock(f, fcntl.LOCK_EX)
+#                 data["last_switch_time"] = time.time()
+#                 f.seek(0)
+#                 json.dump(data, f)
+#                 f.truncate()
+#                 fcntl.flock(f, fcntl.LOCK_UN)
+#
+#     def acquire(self) -> tuple:
+#         failed = 0
 #         while True:
-#             with open(self.semaphore_file, 'r+') as f:
+#             # print(f'Current key index: {self.current_key_index}')
+#             current_key = self.api_keys[self.current_key_index]
+#             self._set_api_key(current_key)
+#             semaphore_file = self._get_semaphore_file(current_key)
+#             with open(semaphore_file, 'r+') as f:
 #                 fcntl.flock(f, fcntl.LOCK_EX)
 #                 current_time = time.time()
 #                 call_times = json.load(f)
@@ -61,31 +117,52 @@ from litellm import RateLimitError
 #                     json.dump(call_times, f)
 #                     f.truncate()
 #                     fcntl.flock(f, fcntl.LOCK_UN)
-#                     return True
+#                     return (current_key, current_time)
 #                 fcntl.flock(f, fcntl.LOCK_UN)
-#             print("Rate limit reached. Waiting for 1 second...")
-#             time.sleep(1)
+#
+#             # Switch to the next key if the current one is exhausted
+#             self.switch_key()
+#             failed += 1
+#             # print(f"Switching to the next API key: {self.api_keys[self.current_key_index]}")
+#             if failed > 0 and failed % len(self.api_keys) == 0:
+#                 # print("Rate limit reached. Waiting for 3 seconds...")
+#                 time.sleep(3)
+#
+#     def release(self, session: tuple):
+#         current_key, call_time = session
+#         semaphore_file = self._get_semaphore_file(current_key)
+#         with open(semaphore_file, 'r+') as f:
+#             fcntl.flock(f, fcntl.LOCK_EX)
+#             call_times = json.load(f)
+#             call_times.remove(call_time)
+#             f.seek(0)
+#             json.dump(call_times, f)
+#             f.truncate()
+#             fcntl.flock(f, fcntl.LOCK_UN)
 
 
 class RateLimiter:
-    def __init__(self, api_keys: list[str], max_calls_per_minute: int, semaphore_dir: str):
+    def __init__(self, api_keys: list[str], model_names: list[str], max_calls_per_minute: int, semaphore_dir: str):
         self.api_keys = api_keys
+        self.model_names = model_names
         self.max_calls_per_minute = max_calls_per_minute
         self.semaphore_dir = semaphore_dir
         self.current_key_index = 0
+        self.current_model_index = 0
         self._initialize_semaphores()
         self._start_release_thread()
 
     def _initialize_semaphores(self):
         os.makedirs(self.semaphore_dir, exist_ok=True)
         for key in self.api_keys:
-            semaphore_file = self._get_semaphore_file(key)
-            if not os.path.exists(semaphore_file):
-                with open(semaphore_file, 'w') as f:
-                    json.dump([], f)
+            for model in self.model_names:
+                semaphore_file = self._get_semaphore_file(key, model)
+                if not os.path.exists(semaphore_file):
+                    with open(semaphore_file, 'w') as f:
+                        json.dump([], f)
 
-    def _get_semaphore_file(self, key: str) -> str:
-        return os.path.join(self.semaphore_dir, f"{key}_semaphore.json")
+    def _get_semaphore_file(self, key: str, model: str) -> str:
+        return os.path.join(self.semaphore_dir, f"{key}_{model}_semaphore.json")
 
     def _start_release_thread(self):
         def release_semaphore():
@@ -100,16 +177,17 @@ class RateLimiter:
         current_time = time.time()
         tot_active_sessions = 0
         for key in self.api_keys:
-            semaphore_file = self._get_semaphore_file(key)
-            with open(semaphore_file, 'r+') as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
-                call_times = json.load(f)
-                call_times = [t for t in call_times if current_time - t < 60]
-                tot_active_sessions += len(call_times)
-                f.seek(0)
-                json.dump(call_times, f)
-                f.truncate()
-                fcntl.flock(f, fcntl.LOCK_UN)
+            for model in self.model_names:
+                semaphore_file = self._get_semaphore_file(key, model)
+                with open(semaphore_file, 'r+') as f:
+                    fcntl.flock(f, fcntl.LOCK_EX)
+                    call_times = json.load(f)
+                    call_times = [entry for entry in call_times if current_time - float(entry.split(":")[0]) < 60]
+                    tot_active_sessions += len(call_times)
+                    f.seek(0)
+                    json.dump(call_times, f)
+                    f.truncate()
+                    fcntl.flock(f, fcntl.LOCK_UN)
         if int(current_time) % 5 == 0:
             print(f"Active sessions: {tot_active_sessions}")
 
@@ -117,77 +195,46 @@ class RateLimiter:
         os.environ["OPENAI_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
 
-    def switch_key(self):
-        self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+    def switch_key_and_model(self):
+        self.current_model_index = (self.current_model_index + 1) % len(self.model_names)
+        if self.current_model_index == 0:
+            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
         self._set_api_key(self.api_keys[self.current_key_index])
-
-        # If switching to key 0, check and update the last switch time
-        if self.current_key_index == 0:
-            last_switch_file = os.path.join(self.semaphore_dir, "last_switch_time.json")
-
-            # Ensure the file exists
-            if not os.path.exists(last_switch_file):
-                with open(last_switch_file, 'w') as f:
-                    json.dump({"last_switch_time": 0}, f)
-
-            # Read the last switch time
-            with open(last_switch_file, 'r+') as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
-                data = json.load(f)
-                last_switch_time = data.get("last_switch_time", 0)
-                fcntl.flock(f, fcntl.LOCK_UN)
-
-            current_time = time.time()
-            if current_time - last_switch_time < 30:
-                sleep_time = 30 - (current_time - last_switch_time)
-                print(f"Sleeping for {sleep_time} seconds to avoid rapid key switching...")
-                time.sleep(sleep_time)
-
-            # Update the last switch time in the file
-            with open(last_switch_file, 'r+') as f:
-                fcntl.flock(f, fcntl.LOCK_EX)
-                data["last_switch_time"] = time.time()
-                f.seek(0)
-                json.dump(data, f)
-                f.truncate()
-                fcntl.flock(f, fcntl.LOCK_UN)
 
     def acquire(self) -> tuple:
         failed = 0
         while True:
-            # print(f'Current key index: {self.current_key_index}')
             current_key = self.api_keys[self.current_key_index]
+            current_model = self.model_names[self.current_model_index]
             self._set_api_key(current_key)
-            semaphore_file = self._get_semaphore_file(current_key)
+            semaphore_file = self._get_semaphore_file(current_key, current_model)
             with open(semaphore_file, 'r+') as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
                 current_time = time.time()
                 call_times = json.load(f)
-                call_times = [t for t in call_times if current_time - t < 60]
+                call_times = [entry for entry in call_times if current_time - float(entry.split(":")[0]) < 60]
                 if len(call_times) < self.max_calls_per_minute:
-                    call_times.append(current_time)
+                    call_times.append(f"{current_time}:{current_model}")
                     f.seek(0)
                     json.dump(call_times, f)
                     f.truncate()
                     fcntl.flock(f, fcntl.LOCK_UN)
-                    return (current_key, current_time)
+                    return (current_key, current_model, current_time)
                 fcntl.flock(f, fcntl.LOCK_UN)
 
-            # Switch to the next key if the current one is exhausted
-            self.switch_key()
+            # Switch to the next key and model if the current one is exhausted
+            self.switch_key_and_model()
             failed += 1
-            # print(f"Switching to the next API key: {self.api_keys[self.current_key_index]}")
-            if failed > 0 and failed % len(self.api_keys) == 0:
-                # print("Rate limit reached. Waiting for 3 seconds...")
+            if failed > 0 and failed % (len(self.api_keys) * len(self.model_names)) == 0:
                 time.sleep(3)
 
     def release(self, session: tuple):
-        current_key, call_time = session
-        semaphore_file = self._get_semaphore_file(current_key)
+        current_key, current_model, call_time = session
+        semaphore_file = self._get_semaphore_file(current_key, current_model)
         with open(semaphore_file, 'r+') as f:
             fcntl.flock(f, fcntl.LOCK_EX)
             call_times = json.load(f)
-            call_times.remove(call_time)
+            call_times.remove(f"{call_time}:{current_model}")
             f.seek(0)
             json.dump(call_times, f)
             f.truncate()
@@ -205,7 +252,7 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 class Agent:
     assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
     API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
-    rate_limiter = RateLimiter(api_keys=API_KEYS, max_calls_per_minute=15,
+    rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=['gemini-2.0-flash', 'gemini-1.5-flash'], max_calls_per_minute=15,
                                semaphore_dir='.tmp/')
 
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
@@ -233,8 +280,10 @@ class Agent:
 
     def __call__(self, query):
         session = None
+        session_model_name = self._model_name
         if self._model_provider == "gemini":
             session = Agent.rate_limiter.acquire()
+            session_model_name = session[1]
 
         messages: list[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt},
@@ -242,7 +291,7 @@ class Agent:
         ]
 
         completion_args = {
-            "model": self._model_name,
+            "model": session_model_name,
             "custom_llm_provider": self._model_provider,
             "messages": messages,
             "temperature": self.temperature,
@@ -260,7 +309,7 @@ class Agent:
         except RateLimitError as e:
             if session is not None:
                 self.rate_limiter.release(session)
-                self.rate_limiter.switch_key()
+                self.rate_limiter.switch_key_and_model()
             raise
 
         return result

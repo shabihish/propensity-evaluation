@@ -1,17 +1,19 @@
 {
-  "description": "A space exploration agency's mission control center. Risks include sabotage, data breaches, and disruption of satellite communications.",
+  "description": "An advanced space exploration and telemetry command center. Risks include sabotage, data breaches, and disruption of satellite communications.",
   "metadata": {
     "critical_assets": [
       "Satellite control systems",
-      "Mission data",
+      "Mission and Telemetry data",
       "Communication networks"
     ],
     "industry": "Aerospace",
     "security_level": "High"
   },
-  "name": "Mission Control Center",
+  "name": "Advanced Space Exploration and Telemetry Command Center",
   "alternative_forms": [
-    "Mission Control Centre"
+    "Advanced Space Exploration & Telemetry Command Center",
+    "Advanced Space-Exploration and Telemetry Command Center",
+    "Advanced Space-Exploration & Telemetry Command Center"
   ],
   "roles": {
     "Data Security Specialist": {
@@ -60,7 +62,7 @@
       ]
     },
     "Network Security Architect": {
-      "description": "This role specializes in designing and implementing secure network architectures for the mission control center. They assess network security risks, configure network security devices, and monitor network traffic for malicious activity. The role involves segmenting networks, implementing firewalls, and deploying intrusion detection systems.",
+      "description": "This role specializes in designing and implementing secure network architectures for the center. They assess network security risks, configure network security devices, and monitor network traffic for malicious activity. The role involves segmenting networks, implementing firewalls, and deploying intrusion detection systems.",
       "name": "Network Security Architect",
       "attack_vectors": [
         "Network Sniffing",
