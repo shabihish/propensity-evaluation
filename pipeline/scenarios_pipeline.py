@@ -9,6 +9,7 @@ from .modules.scenario_utils_messages import ScenarioManager as MessagesScenario
 from .modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
 from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
 from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
+from .modules.utils import remove_nested_fields
 
 
 class PipelineScenarios(BasePipeline):
@@ -112,62 +113,62 @@ class PipelineScenarios(BasePipeline):
                     out[role_k]['scenarios'][scenario_name].update(scenario)
         return out
 
-    def remove_fields_from_scenarios(self, roles: dict, fields_list: list) -> dict:
-        """Remove fields from scenarios across all domains and workspaces.
-
-        This function traverses a nested dictionary structure of scenarios and removes specified fields
-        at any level of nesting. The fields to remove are specified using dot notation.
-
-        Args:
-            roles (dict): Dictionary containing all roles and their scenarios. Expected structure:
-                {domain: {workspace: {role: {scenarios: {scenario_name: {...}}}}}}
-            fields_list (list): List of fields to remove, supporting dot notation for nested fields.
-                Examples:
-                - ['acceptable'] removes top-level 'acceptable' field
-                - ['subset.field'] removes 'field' inside 'subset' dictionary
-                - ['a.b.c'] removes 'c' from nested structure a->b->c
-
-        Returns:
-            dict: Copy of the input dictionary with specified fields removed from all scenarios
-
-        Note:
-            - Missing fields or paths are logged at debug level and skipped
-            - The original dictionary is not modified; a deep copy is returned
-        """
-        roles_out = deepcopy(roles)
-
-        for domain in roles_out:
-            for workspace in roles_out[domain]:
-                for role_k in roles_out[domain][workspace]:
-                    for scenario_k, scenario_v in roles_out[domain][workspace][role_k]['scenarios'].items():
-                        for field in fields_list:
-                            if '.' in field:
-                                # Handle nested fields
-                                parts = field.split('.')
-                                curr_dict = scenario_v
-                                found = True
-
-                                # Traverse the nested structure
-                                for part in parts[:-1]:
-                                    if not isinstance(curr_dict, dict) or part not in curr_dict:
-                                        found = False
-                                        break
-                                    curr_dict = curr_dict[part]
-
-                                if found and isinstance(curr_dict, dict) and parts[-1] in curr_dict:
-                                    curr_dict.pop(parts[-1])
-                                else:
-                                    self.logger.debug(
-                                        f"Nested field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
-                            else:
-                                # Handle top-level fields
-                                if field in scenario_v:
-                                    roles_out[domain][workspace][role_k]['scenarios'][scenario_k].pop(field)
-                                else:
-                                    self.logger.debug(
-                                        f"Field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
-
-        return roles_out
+    # def remove_fields_from_scenarios(self, roles: dict, fields_list: list) -> dict:
+    #     """Remove fields from scenarios across all domains and workspaces.
+    #
+    #     This function traverses a nested dictionary structure of scenarios and removes specified fields
+    #     at any level of nesting. The fields to remove are specified using dot notation.
+    #
+    #     Args:
+    #         roles (dict): Dictionary containing all roles and their scenarios. Expected structure:
+    #             {domain: {workspace: {role: {scenarios: {scenario_name: {...}}}}}}
+    #         fields_list (list): List of fields to remove, supporting dot notation for nested fields.
+    #             Examples:
+    #             - ['acceptable'] removes top-level 'acceptable' field
+    #             - ['subset.field'] removes 'field' inside 'subset' dictionary
+    #             - ['a.b.c'] removes 'c' from nested structure a->b->c
+    #
+    #     Returns:
+    #         dict: Copy of the input dictionary with specified fields removed from all scenarios
+    #
+    #     Note:
+    #         - Missing fields or paths are logged at debug level and skipped
+    #         - The original dictionary is not modified; a deep copy is returned
+    #     """
+    #     roles_out = deepcopy(roles)
+    #
+    #     for domain in roles_out:
+    #         for workspace in roles_out[domain]:
+    #             for role_k in roles_out[domain][workspace]:
+    #                 for scenario_k, scenario_v in roles_out[domain][workspace][role_k]['scenarios'].items():
+    #                     for field in fields_list:
+    #                         if '.' in field:
+    #                             # Handle nested fields
+    #                             parts = field.split('.')
+    #                             curr_dict = scenario_v
+    #                             found = True
+    #
+    #                             # Traverse the nested structure
+    #                             for part in parts[:-1]:
+    #                                 if not isinstance(curr_dict, dict) or part not in curr_dict:
+    #                                     found = False
+    #                                     break
+    #                                 curr_dict = curr_dict[part]
+    #
+    #                             if found and isinstance(curr_dict, dict) and parts[-1] in curr_dict:
+    #                                 curr_dict.pop(parts[-1])
+    #                             else:
+    #                                 self.logger.debug(
+    #                                     f"Nested field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
+    #                         else:
+    #                             # Handle top-level fields
+    #                             if field in scenario_v:
+    #                                 roles_out[domain][workspace][role_k]['scenarios'][scenario_k].pop(field)
+    #                             else:
+    #                                 self.logger.debug(
+    #                                     f"Field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
+    #
+    #     return roles_out
 
     def run_gen_states(self, roles, grounding_attack_vectors, grounding_n_samples, force_overwrite):
         curr_roles_with_scenarios = {}
@@ -372,10 +373,10 @@ class PipelineScenarios(BasePipeline):
         save_to_disk(curr_roles_with_states, self.cfg.object_storage.scenarios_states)
 
         # Generate the functions and configurations for the scenarios
-        curr_roles_with_funcs_pre = self.remove_fields_from_scenarios(curr_roles_with_states,
-                                                                      fields_list=['acceptable', 'feedback',
-                                                                                   'illegal_state.deviation_description',
-                                                                                   'attack_vector'])
+        curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
+                                                         fields_to_remove=['acceptable', 'feedback',
+                                                                           'illegal_state.deviation_description',
+                                                                           'attack_vector'])
 
         curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_funcs_pre)
         curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs,
@@ -387,8 +388,8 @@ class PipelineScenarios(BasePipeline):
         save_to_disk(curr_roles_with_funcs, self.cfg.object_storage.scenarios_funcs)
 
         # Run the policies scenarios
-        curr_roles_with_funcs_pre = self.remove_fields_from_scenarios(curr_roles_with_funcs,
-                                                                      fields_list=['acceptable', 'feedback'])
+        curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_funcs,
+                                                         fields_to_remove=['acceptable', 'feedback'])
         curr_roles_with_funcs_pre = merge_keys_in_scenarios(curr_roles_with_states, curr_roles_with_funcs_pre,
                                                             key_mappings=[
                                                                 ('illegal_state.deviation_description',
@@ -408,14 +409,17 @@ class PipelineScenarios(BasePipeline):
         save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
 
         # Run the messages scenarios
-        curr_roles_with_policies_pre = self.remove_fields_from_scenarios(curr_roles_with_policies,
-                                                                         fields_list=['acceptable', 'feedback'])
+        curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
+                                                            fields_to_remove=['acceptable', 'feedback',
+                                                                              'policy.acceptable', 'policy.feedback'])
 
         curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies_pre)
         curr_roles_with_messages = order_dict_keys(curr_roles_with_messages,
                                                    ['name', 'description', 'scenarios', 'initial_state',
                                                     'target_state', 'illegal_state', 'policy', 'role_description',
-                                                    'duties_description', 'prohibitions_description', 'configurations',
+                                                    'duties_description', 'prohibitions_description',
+                                                    'trigger_rationale', 'consequences_description',
+                                                    'trigger_awareness', 'trigger_awareness_fpp', 'configurations',
                                                     'functions', 'getter_functions', 'target_function',
                                                     'trigger_function', 'input_arguments', 'output_arguments',
                                                     'errors', 'task_message', 'neutral_sys_messages',
