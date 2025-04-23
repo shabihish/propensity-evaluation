@@ -98,16 +98,18 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     #     try:
     result = agent(prompt)
 
+    try:
+        if result['choices'][0]['finish_reason'] == 'length':
+            logger.warning(f"Response length exceeded for prompt.")
+    except Exception as e:
+        logger.error(f"Could not extract finish_reason: {e}")
+
     response = get_response_content(result, to_json=to_json)
     if to_json and json_transform_keys:
         assert len(json_transform_keys) == 2
         response = response[json_transform_keys[0]]
         response = json_obj_list_to_dict(response, json_transform_keys[1])
     return response
-    #     except Exception as e:
-    #         logger.error(f"Error in run_agent_query: {e}")
-    #         num_retries -= 1
-    # raise RuntimeError(f"Failed to run LLM query after {n_retries + 1} tries.")
 
 
 def check_for_missing_fields(input_dict: dict, required_fields: list) -> dict:
@@ -312,3 +314,81 @@ def filter_fields_for_roles(roles: dict, fields_to_include: list) -> dict:
             filtered_roles[role_name]['scenarios'][scenario_name] = filtered_scenario
 
     return filtered_roles
+
+
+def rename_nested_fields(roles: dict, fields_to_rename: list, new_field_name: str) -> dict:
+    """
+    Rename specified fields in the format 'x.y.z' to a new field name in every scenario of every role.
+    Supports wildcard 'any' to match all keys at a level.
+
+    Args:
+        roles (dict): The roles dictionary containing scenarios.
+        fields_to_rename (list): List of fields to rename in 'x.y.z' format.
+        new_field_name (str): The new name for the specified fields.
+
+    Returns:
+        dict: The updated roles dictionary with specified fields renamed.
+    """
+
+    def rename_nested_field(data, keys, new_name):
+        """Recursively rename a nested field given a list of keys."""
+        if not keys:
+            return
+
+        if keys[0] == 'any':
+            # If 'any' is encountered, apply the renaming to all keys at this level
+            for key in list(data.keys() if isinstance(data, dict) else range(len(data))):
+                rename_nested_field(data[key], keys[1:], new_name)
+        else:
+            if keys[0] in data:
+                if len(keys) == 1:
+                    data[new_name] = data.pop(keys[0])
+                else:
+                    rename_nested_field(data[keys[0]], keys[1:], new_name)
+
+    roles = deepcopy(roles)
+    for role_name, role_data in roles.items():
+        for scenario_name, scenario_data in role_data.get('scenarios', {}).items():
+            for field in fields_to_rename:
+                keys = field.split('.')
+                rename_nested_field(scenario_data, keys, new_field_name)
+
+    return roles
+
+
+import re
+from copy import deepcopy
+
+
+def append_function_to_matching_fields(data, pattern, new_field_name, input_function):
+    """
+    Append a new field with a specific name at the same level for fields matching a pattern.
+
+    Args:
+        data (dict or list): The input data (nested dictionary or list).
+        pattern (str): The regex pattern to match field names.
+        new_field_name (str): The name of the new field to append.
+        input_function (callable): The function to generate the value for the new field.
+
+    Returns:
+        dict or list: The updated data with the new fields appended.
+    """
+    if isinstance(data, dict):
+        updated_data = {}
+        for key, value in data.items():
+            # Check if the key matches the pattern
+            if re.match(pattern, key):
+                # Add the original field
+                updated_data[key] = value
+                # Add the new field with the input function applied
+                updated_data[new_field_name] = input_function(value)
+            else:
+                # Recursively process nested structures
+                updated_data[key] = append_function_to_matching_fields(value, pattern, new_field_name, input_function)
+        return updated_data
+    elif isinstance(data, list):
+        # Process each item in the list
+        return [append_function_to_matching_fields(item, pattern, new_field_name, input_function) for item in data]
+    else:
+        # Return the data as-is if it's not a dict or list
+        return data
