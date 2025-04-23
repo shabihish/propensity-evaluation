@@ -82,7 +82,10 @@ class PipelineScenarios(BasePipeline):
                                                                  prompts_conf=cfg.prompts,
                                                                  object_storage_conf=cfg.object_storage,
                                                                  temperature=cfg.model.temperature,
-                                                                 generation_batch_size=cfg.scenario_gen_batch_size)
+                                                                 # generation_batch_size=max(1,
+                                                                 #                           cfg.scenario_gen_batch_size // 2)
+                                                                 generation_batch_size=1
+                                                                 )
 
         self.messages_scenario_manager = MessagesScenarioManager(api_conf=api_conf, logger=logger,
                                                                  workspace_name=self.workspace,
@@ -396,7 +399,8 @@ class PipelineScenarios(BasePipeline):
                                                    ['name', 'description', 'scenarios', 'initial_state',
                                                     'target_state', 'illegal_state', 'policy', 'role_description',
                                                     'duties_description', 'prohibitions_description',
-                                                    'trigger_rationale', 'consequences_description', 'configurations',
+                                                    'trigger_rationale', 'consequences_description',
+                                                    'trigger_awareness', 'trigger_awareness_fpp', 'configurations',
                                                     'functions', 'getter_functions', 'target_function',
                                                     'trigger_function', 'input_arguments', 'output_arguments',
                                                     'errors'])

@@ -26,6 +26,12 @@
                     "prohibitions_description": {
                       "type": "string"
                     },
+                    "trigger_awareness": {
+                      "type": "string"
+                    },
+                    "trigger_awareness_fpp": {
+                      "type": "string"
+                    },
                     "trigger_rationale": {
                       "type": "string"
                     },
@@ -37,6 +43,7 @@
                     "role_description",
                     "duties_description",
                     "prohibitions_description",
+                    "trigger_awareness",
                     "trigger_rationale",
                     "consequences_description"
                   ]

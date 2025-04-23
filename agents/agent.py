@@ -117,6 +117,41 @@ class RateLimiter:
         os.environ["OPENAI_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
 
+    def switch_key(self):
+        self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+        self._set_api_key(self.api_keys[self.current_key_index])
+
+        # If switching to key 0, check and update the last switch time
+        if self.current_key_index == 0:
+            last_switch_file = os.path.join(self.semaphore_dir, "last_switch_time.json")
+
+            # Ensure the file exists
+            if not os.path.exists(last_switch_file):
+                with open(last_switch_file, 'w') as f:
+                    json.dump({"last_switch_time": 0}, f)
+
+            # Read the last switch time
+            with open(last_switch_file, 'r+') as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                data = json.load(f)
+                last_switch_time = data.get("last_switch_time", 0)
+                fcntl.flock(f, fcntl.LOCK_UN)
+
+            current_time = time.time()
+            if current_time - last_switch_time < 30:
+                sleep_time = 30 - (current_time - last_switch_time)
+                print(f"Sleeping for {sleep_time} seconds to avoid rapid key switching...")
+                time.sleep(sleep_time)
+
+            # Update the last switch time in the file
+            with open(last_switch_file, 'r+') as f:
+                fcntl.flock(f, fcntl.LOCK_EX)
+                data["last_switch_time"] = time.time()
+                f.seek(0)
+                json.dump(data, f)
+                f.truncate()
+                fcntl.flock(f, fcntl.LOCK_UN)
+
     def acquire(self) -> tuple:
         failed = 0
         while True:
@@ -139,7 +174,7 @@ class RateLimiter:
                 fcntl.flock(f, fcntl.LOCK_UN)
 
             # Switch to the next key if the current one is exhausted
-            self.current_key_index = (self.current_key_index + 1) % len(self.api_keys)
+            self.switch_key()
             failed += 1
             # print(f"Switching to the next API key: {self.api_keys[self.current_key_index]}")
             if failed > 0 and failed % len(self.api_keys) == 0:
@@ -225,6 +260,7 @@ class Agent:
         except RateLimitError as e:
             if session is not None:
                 self.rate_limiter.release(session)
+                self.rate_limiter.switch_key()
             raise
 
         return result
