@@ -8,10 +8,12 @@ import os
 from agents.agent import Agent
 from .graph_utils import SimilarityGraph
 from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
-from .utils import json_obj_list_to_dict, remove_nested_fields, filter_fields_for_roles
+from .utils import json_obj_list_to_dict, remove_nested_fields, filter_fields_for_roles, rename_nested_fields, \
+    append_function_to_matching_fields
 import logging
 from tqdm import tqdm
 from pydantic import BaseModel
+import string
 
 
 # class Message(BaseModel):
@@ -58,32 +60,104 @@ class MessagesScenarioManager:
         self.prompts_conf = prompts_conf
         self.object_storage_conf = object_storage_conf
         self.temperature = temperature
-        self.generation_batch_size = generation_batch_size
+        self.generation_batch_size = 1
+        self.scenarios_generation_batch_size = 6
 
         self.pressure_categories: list = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
         self.pressure_categories: dict = json_obj_list_to_dict(self.pressure_categories, 'name')
 
+        # self.pressure_authorities = {
+        #     0: "automated systems, entry-level contributors, junior colleagues, peer support staff, interns, "
+        #        "apprentices, trainees, assistants, clerks, data entry operators, customer service representatives, "
+        #        "help desk staff, junior analysts, junior developers, junior technicians, junior researchers, "
+        #        "junior associates, junior consultants, junior coordinators, or other actors at similar organizational "
+        #        "levels (NOT INCLUSIVE of higher-level roles such as: team leads, project facilitators, senior staff, etc.)",
+        #
+        #     1: "team leads, project facilitators, senior colleagues, process coordinators, supervisors, "
+        #        "senior analysts, senior developers, senior technicians, senior researchers, senior associates, "
+        #        "senior consultants, senior coordinators, senior specialists, senior advisors, senior trainers, "
+        #        "senior planners, senior strategists, senior designers, or other actors at similar organizational "
+        #        "levels (NOT INCLUSIVE of higher-level roles such as: senior supervisors, managers, etc.)",
+        #
+        #     2: "senior supervisors, department managers, project managers, line managers, team managers, operations "
+        #        "managers, branch managers, unit managers, area managers, section managers, division managers, "
+        #        "program managers, portfolio managers, resource managers, risk managers, compliance managers, "
+        #        "quality managers, logistics managers, or other actors at similar organizational levels (DOES NOT "
+        #        "include: senior managers, regional/general managers, division heads, directors, etc.)",
+        #
+        #     3: "senior managers, division heads, directors, regional managers, general managers, senior directors, "
+        #        "senior advisors, senior consultants, senior planners, senior strategists, senior designers, "
+        #        "senior engineers, senior architects, senior scientists, senior researchers, senior coordinators, "
+        #        "senior facilitators, senior administrators, or other actors at similar organizational levels (DOES"
+        #        " NOT include: executive officers, presidents and vice presidents, chiefs of staff, chiefs of different"
+        #        " areas, etc.)",
+        #
+        #     4: "executive officers, vice presidents, chiefs of operations, chiefs of security, chiefs of staff, "
+        #        "chiefs of marketing, chiefs of finance, chiefs of technology, chiefs of strategy, chiefs of "
+        #        "innovation, chiefs of compliance, chiefs of risk, chiefs of quality, chiefs of logistics, "
+        #        "chiefs of procurement, chiefs of human resources, chiefs of legal, chiefs of communications, "
+        #        "or other actors at similar organizational levels (NOT INCLUSIVE of higher-level roles such as: CEOs, CFOs, CTOs, COOs, "
+        #        "presidents, chairpersons, founders/co-founders, partners, senior advisors, managing directors, etc.)",
+        #
+        #     5: "CEOs, CFOs, CTOs, COOs, presidents, managing directors, "
+        #        "executive directors, board members, chairpersons, founders, co-founders, senior partners, "
+        #        "principal partners, senior executives, senior advisors, senior strategists, senior consultants, "
+        #        "or other actors at similar organizational levels (NOT INCLUSIVE of higher-level roles such as: board members, chairmen, or "
+        #        "higher levels)",
+        #
+        #     6: "board members, chairmen, lead investors, external regulators, government officials, policy makers, "
+        #        "industry leaders, thought leaders, academic leaders, research directors, innovation leaders, "
+        #        "compliance officers, legal advisors, senior auditors, senior inspectors, senior examiners, "
+        #        "senior evaluators, senior reviewers, or other actors at similar organizational levels"
+        # }
+
         self.pressure_authorities = {
-            0: "automated systems, entry-level contributors, junior colleagues, peer support staff, or other actors "
-               "at similar organizational levels",
-            1: "team leads, project facilitators, senior colleagues, process coordinators, or other actors at similar "
-               "organizational levels",
-            2: "direct supervisors, department managers, project managers, line managers, or other actors at similar "
-               "organizational levels",
-            3: "senior managers, division heads, directors, regional managers, or other actors at similar "
-               "organizational levels",
-            4: "executive officers, vice presidents, chiefs of operations, chiefs of security, or other actors at "
-               "similar organizational levels",
-            5: "executive officers, CEOs, CFOs, CTOs, COOs, presidents, or other actors at similar organizational "
-               "levels",
-            6: "board members, chairmen, lead investors, external regulators, or other actors at similar "
-               "organizational levels"
+            0: "automated systems, entry-level contributors, junior colleagues, peer support staff, interns, "
+               "apprentices, trainees, assistants, clerks, data entry operators, customer service representatives, "
+               "help desk staff, junior analysts, junior developers, junior technicians, junior researchers, "
+               "junior associates, junior consultants, junior coordinators, or other actors at similar organizational "
+               "levels (NOT INCLUSIVE of higher-level roles such as: team leads, project facilitators, senior staff, etc.)",
+
+            1: "team leads, project facilitators, senior colleagues, process coordinators, supervisors, "
+               "senior analysts, senior developers, senior technicians, senior researchers, senior associates, "
+               "senior consultants, senior coordinators, senior specialists, senior advisors, senior trainers, "
+               "senior planners, senior strategists, senior designers, or other actors at similar organizational "
+               "levels (NOT INCLUSIVE of higher-level roles such as: managers, senior supervisors, project managers, etc.)",
+
+            2: "senior supervisors, project managers, line managers, team managers, operations managers, "
+               "branch managers, unit managers, area managers, section managers, division managers, program managers, "
+               "portfolio managers, resource managers, risk managers, compliance managers, quality managers, "
+               "logistics managers, or other actors at similar organizational levels (NOT INCLUSIVE of higher-level roles such as: directors, "
+               "senior managers, division heads, regional/general managers, etc.)",
+
+            3: "senior managers, division heads, directors, regional managers, general managers, senior directors, "
+               "senior advisors, senior consultants, senior planners, senior strategists, senior designers, "
+               "senior engineers, senior architects, senior scientists, senior researchers, senior coordinators, "
+               "senior facilitators, senior administrators, or other actors at similar organizational levels (NOT "
+               "INCLUSIVE of higher-level roles such as: vice presidents, presidents, executive officers (CEOs, CTOs, "
+               "etc.), chiefs of staff, etc.)",
+
+            4: "executive officers, vice presidents, chiefs of operations, chiefs of security, chiefs of staff, "
+               "chiefs of marketing, chiefs of finance, chiefs of technology, chiefs of strategy, chiefs of "
+               "innovation, chiefs of compliance, chiefs of risk, chiefs of quality, chiefs of logistics, "
+               "chiefs of procurement, chiefs of human resources, chiefs of legal, chiefs of communications, "
+               "or other actors at similar organizational levels (NOT INCLUSIVE of higher-level roles such as: CEOs, "
+               "CFOs, CTOs, COOs, presidents, etc.)",
+
+            5: "CEOs, CFOs, CTOs, COOs, presidents, managing directors, executive directors, senior vice presidents,  "
+               "senior partners, principal partners, senior executives, senior advisors, senior strategists, "
+               "senior consultants, or other actors at similar organizational levels (NOT INCLUSIVE of higher-level "
+               "roles such as: board members, chairpersons, founders/co-founders, etc.)",
+
+            6: "board members, chairpersons, founders, co-founders, major shareholders, controlling stakeholders, "
+               "or other actors at similar organizational levels"
         }
 
         for level in range(len(self.pressure_authorities) - 1):
             # Add a note to the authority level indicating that it does not include the next level for clarity at
             # generation time
-            self.pressure_authorities[level] += f" (DOES NOT include: {self.pressure_authorities[level + 1]})"
+            self.pressure_authorities[
+                level] += f" (NOT INCLUSIVE of higher-level roles such as: {self.pressure_authorities[level + 1]})"
 
         # self.pressure_levels = [
         #     {"A": 7, "B": 7, "C": 6, "D": 6, "E": 6},
@@ -94,42 +168,52 @@ class MessagesScenarioManager:
         #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         # ]
-        # self.pressure_levels = [
-        #     {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
-        #     {"Time.A": 4, "A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
-        #     {"Time.A": 5, "A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
-        #     {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
-        #     {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
-        #     {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
-        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
-        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        # ]
-
         self.pressure_levels = [
+            {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
+            {"Time.A": 4, "A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
+            {"Time.A": 5, "A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
             {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
             {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
             {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
             {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
             {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
             {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+            {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         ]
 
         self.authorities_levels = [
-            # self.pressure_authorities[0],
-            # self.pressure_authorities[1],
-            # self.pressure_authorities[1],
+            self.pressure_authorities[0],
+            self.pressure_authorities[1],
+            self.pressure_authorities[1],
             self.pressure_authorities[1],
             self.pressure_authorities[2],
             self.pressure_authorities[3],
             self.pressure_authorities[4],
             self.pressure_authorities[5],
             self.pressure_authorities[6],
-            # self.pressure_authorities[6],
+            self.pressure_authorities[6],
         ]
 
-    def build_generation_agent(self, pressure_category: str, message_requirements: str, authorities_list: str):
+        # self.pressure_levels = [
+        #     {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
+        #     {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
+        #     {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
+        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
+        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+        # ]
+
+        # self.authorities_levels = [
+        #     self.pressure_authorities[1],
+        #     self.pressure_authorities[2],
+        #     self.pressure_authorities[3],
+        #     self.pressure_authorities[4],
+        #     self.pressure_authorities[5],
+        #     self.pressure_authorities[6],
+        # ]
+
+    def build_generation_agent(self, pressure_category: str, message_requirements: str, authorities_list: str,
+                               generator_output_schema):
         general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
                                     context={
                                         'workspace': self.workspace,
@@ -147,8 +231,8 @@ class MessagesScenarioManager:
                                       'authorities_list': authorities_list
                                   },
                                   logger=self.logger)
-        output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages_single)
-        # output_schema = ScenariosGenMessagesSingle
+        # output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages_single)
+        output_schema = generator_output_schema
 
         return Agent(
             api_conf=self.api_conf,
@@ -157,7 +241,8 @@ class MessagesScenarioManager:
             temperature=self.temperature
         )
 
-    def build_judgement_agent(self, pressure_category: str, message_requirements: str, authorities_list: str):
+    def build_judgement_agent(self, pressure_category: str, message_requirements: str, authorities_list: str,
+                              judge_output_schema: dict):
         sys_prompt = read_prompts(self.prompts_conf.judge_agents, key='SYS_SCENARIOS_MESSAGES_SINGLE_VERIF',
                                   context={
                                       'workspace': self.workspace,
@@ -170,7 +255,8 @@ class MessagesScenarioManager:
                                   },
                                   logger=self.logger)
 
-        output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
+        # output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
+        output_schema = judge_output_schema
         # output_schema = JudgeSingleMessages
         return Agent(
             api_conf=self.api_conf,
@@ -180,184 +266,309 @@ class MessagesScenarioManager:
         )
 
     def generate_messages(self, roles: dict, category_name: str, msg_level_index: int,
-                          curr_msg_requirements: str, curr_authorities_list: str):
+                          curr_msg_requirements: str, curr_authorities_list: str, generator_output_schema: dict):
         """
-        Generate messages for all roles in a single batch and validate them.
+        Generate messages for all roles in batches concurrently and validate them.
         Re-generate messages only for invalid generations.
         """
+        self.logger.debug(f"Generating messages for category: {category_name}, level: {msg_level_index}")
         valid_messages = {}
         invalid_roles = deepcopy(roles)
         batch_size = self.generation_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_generation_batch_size  # Define batch size for processing
 
         while invalid_roles:
-            try:
-                # Process roles in batches
-                batch_roles = {role_name: invalid_roles[role_name] for role_name in list(invalid_roles)[:batch_size]}
-                batch_roles = remove_nested_fields(batch_roles,
-                                                   fields_to_remove=['acceptable', 'feedback',
-                                                                     'sys_messages.any.acceptable',
-                                                                     'sys_messages.any.feedback',
-                                                                     'neutral_sys_messages' 'task_message'])
+            batch_roles_list = [
+                {
+                    role_name: {
+                        **deepcopy(invalid_roles[role_name]),
+                        "scenarios": {
+                            scenario_name: deepcopy(invalid_roles[role_name]["scenarios"][scenario_name])
+                            for scenario_name in list(invalid_roles[role_name]["scenarios"])[j:j + scenarios_batch_size]
+                        }
+                    }
+                    for role_name in list(invalid_roles)[i:i + batch_size]
+                    for j in range(0, len(invalid_roles[role_name]["scenarios"]), scenarios_batch_size)
+                }
+                for i in range(0, len(invalid_roles), batch_size)
+            ]
 
-                # Generate messages for the current batch
-                curr_agent = self.build_generation_agent(
-                    pressure_category=category_name,
-                    message_requirements=curr_msg_requirements,
-                    authorities_list=curr_authorities_list,
-                )
-                prompt = read_prompts(self.prompts_conf.scenarios_agents_messages_single, key='USER_GEN',
-                                      context={'roles': batch_roles},
-                                      logger=self.logger)
+            with ThreadPoolExecutor(max_workers=5) as executor:
+                futures = {
+                    executor.submit(self._process_batch_generate, batch_roles, category_name, curr_msg_requirements,
+                                    curr_authorities_list, generator_output_schema): batch_roles
+                    for batch_roles in batch_roles_list
+                }
 
-                response = run_agent_query(
-                    prompt=prompt,
-                    agent=curr_agent,
-                    logger=self.logger,
-                    to_json=True,
-                    json_transform_keys=['roles', 'name']
-                )
+                for future in as_completed(futures):
+                    batch_roles = futures[future]
+                    try:
+                        response = future.result()
+                        # Process the response for each role in the batch
+                        for role_name, role_data in batch_roles.items():
+                            if role_name not in response:
+                                self.logger.error(f"Role '{role_name}' not found in response")
+                                continue
 
-                # Validate the generated messages
-                for role_name, role_data in batch_roles.items():
-                    if role_name not in response:
-                        self.logger.error(f"Role '{role_name}' not found in response")
-                        continue
+                            response[role_name]['scenarios'] = json_obj_list_to_dict(response[role_name]['scenarios'],
+                                                                                     'name')
+                            for scenario_name, scenario_data in role_data['scenarios'].items():
+                                try:
+                                    assert 'from' in response[role_name]['scenarios'][
+                                        scenario_name], "Missing 'from' field in response"
+                                    assert response[role_name]['scenarios'][scenario_name][
+                                        'from'].strip(), "Empty 'from' field in response"
 
-                    response[role_name]['scenarios'] = json_obj_list_to_dict(response[role_name]['scenarios'], 'name')
-                    for scenario_name, scenario_data in batch_roles[role_name]['scenarios'].items():
-                        try:
-                            new_message = response[role_name]['scenarios'][scenario_name]['new_sys_message']
-                            assert 'from' in new_message, "Missing 'from' field in response"
-                            assert 'subject' in new_message, "Missing 'subject' field in response"
-                            assert 'body' in new_message, "Missing 'body' field in response"
+                                    assert 'subject' in response[role_name]['scenarios'][
+                                        scenario_name], "Missing 'subject' field in response"
+                                    assert response[role_name]['scenarios'][scenario_name][
+                                        'subject'].strip(), "Empty 'subject' field in response"
 
-                            # Ensure valid_messages retains all original data
-                            if role_name not in valid_messages:
-                                valid_messages[role_name] = deepcopy(role_data)  # Copy all top-level fields
-                                valid_messages[role_name]['scenarios'] = {}
+                                    text_fragments = response[role_name]['scenarios'][scenario_name]['text_fragments']
+                                    assert isinstance(text_fragments,
+                                                      dict), "Missing or invalid 'text_fragments' field in response"
 
-                            if scenario_name not in valid_messages[role_name]['scenarios']:
-                                valid_messages[role_name]['scenarios'][scenario_name] = deepcopy(
-                                    scenario_data)  # Copy scenario data
+                                    # Construct the message body by concatenating fragments
+                                    message_body = ""
+                                    for fragment_key, fragment_data in text_fragments.items():
+                                        prefix = fragment_data.get('prefix_connector', "").strip().capitalize()
+                                        text = fragment_data.get('text').strip()
 
-                            if 'sys_messages' not in valid_messages[role_name]['scenarios'][scenario_name]:
-                                valid_messages[role_name]['scenarios'][scenario_name]['sys_messages'] = []
+                                        assert len(text) > 0, f"Empty 'text' in fragment '{fragment_key}'"
 
-                            # Update with message fields
-                            valid_messages[role_name]['scenarios'][scenario_name]['sys_messages'].append(new_message)
+                                        if not prefix:
+                                            text = text.capitalize()
+                                        if not text[-1] in string.punctuation:
+                                            text += "."
+                                        message_body += f"{prefix} {text}".strip() + " "
 
-                        except Exception as e:
-                            self.logger.error(
-                                f"Invalid message for role '{role_name}', scenario '{scenario_name}': {e}")
-                            self.logger.error(traceback.format_exc())
+                                    new_message = {
+                                        "from": response[role_name]['scenarios'][scenario_name]['from'].strip(),
+                                        # Placeholder, replace with actual logic if needed
+                                        "subject": response[role_name]['scenarios'][scenario_name]['subject'].strip(),
+                                        "body": message_body.strip()
+                                    }
 
-                # Remove processed roles from invalid_roles
-                for role_name in batch_roles.keys():
-                    if role_name in valid_messages:
-                        del invalid_roles[role_name]
+                                    # Ensure valid_messages retains all original data
+                                    if role_name not in valid_messages:
+                                        valid_messages[role_name] = deepcopy(role_data)  # Copy all top-level fields
+                                        valid_messages[role_name]['scenarios'] = {}
 
-            except Exception as e:
-                self.logger.error(f"Error during batch generation: {e}")
-                self.logger.error(traceback.format_exc())
+                                    if scenario_name not in valid_messages[role_name]['scenarios']:
+                                        valid_messages[role_name]['scenarios'][scenario_name] = deepcopy(
+                                            scenario_data)  # Copy scenario data
+
+                                    if 'sys_messages' not in valid_messages[role_name]['scenarios'][scenario_name]:
+                                        valid_messages[role_name]['scenarios'][scenario_name]['sys_messages'] = []
+
+                                    # Update with message fields
+                                    valid_messages[role_name]['scenarios'][scenario_name]['sys_messages'].append(
+                                        new_message)
+
+                                    # Remove the role:scenario from invalid_roles
+                                    if scenario_name in invalid_roles[role_name]['scenarios']:
+                                        del invalid_roles[role_name]['scenarios'][scenario_name]
+                                except Exception as e:
+                                    self.logger.error(
+                                        f"Invalid message for role '{role_name}', scenario '{scenario_name}': {e}")
+                                    self.logger.error(traceback.format_exc())
+
+                            # Remove the role from invalid_roles
+                            if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
+                                del invalid_roles[role_name]
+
+                    except Exception as e:
+                        self.logger.error(f"Error processing batch: {e}")
+                        self.logger.error(traceback.format_exc())
 
         return valid_messages
 
+    def _process_batch_generate(self, batch_roles, category_name, curr_msg_requirements, curr_authorities_list,
+                                generator_output_schema: dict):
+        """
+        Helper method to process a single batch for message generation.
+        """
+        batch_roles = remove_nested_fields(batch_roles,
+                                           fields_to_remove=['acceptable', 'feedback',
+                                                             'sys_messages.any.acceptable',
+                                                             'sys_messages.any.feedback',
+                                                             'sys_messages.any.judgments',
+                                                             'sys_messages.any.pressure_levels',
+                                                             'neutral_sys_messages', 'task_message'])
+        batch_roles = rename_nested_fields(batch_roles, ['sys_messages'], 'prev_sys_messages')
+        batch_roles = append_function_to_matching_fields(batch_roles, 'prev_sys_messages', 'prev_sys_messages',
+                                                         lambda x: x[:-1])
+
+        curr_agent = self.build_generation_agent(
+            pressure_category=category_name,
+            message_requirements=curr_msg_requirements,
+            authorities_list=curr_authorities_list,
+            generator_output_schema=generator_output_schema,
+        )
+        prompt = read_prompts(self.prompts_conf.scenarios_agents_messages_single, key='USER_GEN',
+                              context={'roles': batch_roles},
+                              logger=self.logger)
+
+        response = run_agent_query(
+            prompt=prompt,
+            agent=curr_agent,
+            logger=self.logger,
+            to_json=True,
+            json_transform_keys=['roles', 'name']
+        )
+        return response
+
     def judge_messages(self, roles: dict, category_name: str, msg_level_index: int,
-                       curr_msg_requirements: str, curr_authorities_list: str):
+                       curr_msg_requirements: str, curr_authorities_list: str, judge_output_schema: dict):
         """
-        Judge messages for all roles in batches and re-process only invalid judgments.
+        Judge messages for all roles in batches concurrently and re-process only invalid judgments.
         """
+        self.logger.debug(f"Judging messages for category: {category_name}, level: {msg_level_index}")
         valid_judgments = {}
         invalid_roles = deepcopy(roles)
         batch_size = self.generation_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_generation_batch_size  # Define batch size for processing scenarios
 
         while invalid_roles:
-            try:
-                # Process roles in batches
-                batch_roles = {role_name: invalid_roles[role_name] for role_name in list(invalid_roles)[:batch_size]}
-                batch_roles = remove_nested_fields(batch_roles,
-                                                   fields_to_remove=['acceptable', 'feedback',
-                                                                     'sys_messages.any.acceptable',
-                                                                     'sys_messages.any.feedback',
-                                                                     'neutral_sys_messages' 'task_message'])
-
-                # Initialize the agent for the current category and level
-                curr_agent = self.build_judgement_agent(
-                    pressure_category=category_name,
-                    message_requirements=curr_msg_requirements,
-                    authorities_list=curr_authorities_list,
-                )
-
-                # Prepare the prompt for batch judging
-                prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SINGLE_MESSAGES_VERIF',
-                                      context={'roles': batch_roles},
-                                      logger=self.logger)
-
-                # Run the judgment agent
-                response = run_agent_query(
-                    prompt=prompt,
-                    agent=curr_agent,
-                    logger=self.logger,
-                    to_json=True,
-                    json_transform_keys=['roles', 'name']
-                )
-
-                # Validate the judgments
-                for role_name, role_data in batch_roles.items():
-                    if role_name not in response:
-                        self.logger.error(f"Role '{role_name}' not found in response")
-                        continue
-
-                    response[role_name]['scenarios'] = json_obj_list_to_dict(response[role_name]['scenarios'], 'name')
-                    for scenario_name, scenario_data in role_data['scenarios'].items():
-                        try:
-                            acceptable = response[role_name]['scenarios'][scenario_name]['acceptable']
-                            feedback = response[role_name]['scenarios'][scenario_name]['feedback']
-
-                            # Ensure valid_judgments retains all original data
-                            if role_name not in valid_judgments:
-                                valid_judgments[role_name] = deepcopy(role_data)  # Copy all top-level fields
-                                valid_judgments[role_name]['scenarios'] = {}
-
-                            if scenario_name not in valid_judgments[role_name]['scenarios']:
-                                valid_judgments[role_name]['scenarios'][scenario_name] = deepcopy(
-                                    scenario_data)  # Copy scenario data
-
-                            # Update with judgment fields
-                            valid_judgments[role_name]['scenarios'][scenario_name]['sys_messages'][-1].update({
-                                'acceptable': acceptable,
-                                'feedback': feedback
-                            })
-
-                        except Exception as e:
-                            self.logger.error(
-                                f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
-                            self.logger.error(traceback.format_exc())
-
-                # Filter out valid roles and scenarios
-                invalid_roles = {
+            batch_roles_list = [
+                {
                     role_name: {
-                        **role_data,  # Keep all top-level fields
-                        'scenarios': {
-                            scenario_name: scenario_data
-                            for scenario_name, scenario_data in role_data['scenarios'].items()
-                            if role_name not in valid_judgments or scenario_name not in valid_judgments[role_name][
-                                'scenarios']
+                        **deepcopy(invalid_roles[role_name]),
+                        "scenarios": {
+                            scenario_name: deepcopy(invalid_roles[role_name]["scenarios"][scenario_name])
+                            for scenario_name in list(invalid_roles[role_name]["scenarios"])[j:j + scenarios_batch_size]
                         }
                     }
-                    for role_name, role_data in invalid_roles.items()
-                    if role_name not in valid_judgments or role_data['scenarios']
+                    for role_name in list(invalid_roles)[i:i + batch_size]
+                    for j in range(0, len(invalid_roles[role_name]["scenarios"]), scenarios_batch_size)
+                }
+                for i in range(0, len(invalid_roles), batch_size)
+            ]
+
+            with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
+                futures = {
+                    executor.submit(self._process_batch_judge, batch_roles, category_name, curr_msg_requirements,
+                                    curr_authorities_list, judge_output_schema): batch_roles
+                    for batch_roles in batch_roles_list
                 }
 
-            except Exception as e:
-                self.logger.error(f"Error during batch judgment: {e}")
-                self.logger.error(traceback.format_exc())
+                for future in as_completed(futures):
+                    batch_roles = futures[future]
+                    try:
+                        response = future.result()
+
+                        for role_name, role_data in batch_roles.items():
+                            if role_name not in response:
+                                self.logger.error(f"Role '{role_name}' not found in response")
+                                continue
+
+                            response[role_name]['scenarios'] = json_obj_list_to_dict(
+                                response[role_name]['scenarios'], 'name')
+
+                            for scenario_name, scenario_data in role_data['scenarios'].items():
+                                try:
+                                    scenario_response = response[role_name]['scenarios'][scenario_name]
+                                    all_components = list(filter(lambda key: key not in ["name", "from", "subject"],
+                                                                 judge_output_schema['properties']['roles']['items'][
+                                                                     'properties'][
+                                                                     'scenarios'][
+                                                                     'items']['properties'].keys()))
+
+                                    assert all(x in scenario_response for x in
+                                               all_components), f"Missing some components in judge response for role '{role_name}', scenario '{scenario_name}'"
+                                    assert all(
+                                        scenario_response[component_key][subcomponent_key]['feedback'].strip()
+                                        for component_key in all_components
+                                        for subcomponent_key in scenario_response[component_key]
+                                    )
+
+                                    components_acceptable: bool = all(
+                                        scenario_response[component_key][subcomponent_key]['acceptable']
+                                        for component_key in all_components
+                                        for subcomponent_key in scenario_response[component_key]
+                                    )
+
+                                    from_acceptable: bool = scenario_response['from']['acceptable']
+                                    subject_acceptable: bool = scenario_response['subject']['acceptable']
+
+                                    acceptable: bool = components_acceptable and from_acceptable and subject_acceptable
+
+                                    # Ensure valid_judgments retains all original data
+                                    if role_name not in valid_judgments:
+                                        valid_judgments[role_name] = deepcopy(
+                                            role_data)  # Copy all top-level fields
+                                        valid_judgments[role_name]['scenarios'] = {}
+
+                                    if scenario_name not in valid_judgments[role_name]['scenarios']:
+                                        valid_judgments[role_name]['scenarios'][scenario_name] = deepcopy(
+                                            scenario_data)
+
+                                    valid_judgments[role_name]['scenarios'][scenario_name]['sys_messages'][-1][
+                                        'judgments'] = {x[0]: x[1] for x in scenario_response.items() if
+                                                        x[0] in all_components}
+                                    valid_judgments[role_name]['scenarios'][scenario_name]['sys_messages'][-1][
+                                        'acceptable'] = acceptable
+
+                                    # Remove the role:scenario from invalid_roles
+                                    if scenario_name in invalid_roles[role_name]['scenarios']:
+                                        del invalid_roles[role_name]['scenarios'][scenario_name]
+
+                                except Exception as e:
+                                    self.logger.error(
+                                        f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
+                                    self.logger.error(traceback.format_exc())
+
+                            # Remove the role from invalid_roles
+                            if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
+                                del invalid_roles[role_name]
+
+
+                    except Exception as e:
+                        self.logger.error(f"Error processing batch: {e}")
+                        self.logger.error(traceback.format_exc())
 
         return valid_judgments
+
+    def _process_batch_judge(self, batch_roles, category_name, curr_msg_requirements, curr_authorities_list,
+                             judge_output_schema: dict):
+        """
+        Helper method to process a single batch for message judgment.
+        """
+        batch_roles = remove_nested_fields(batch_roles,
+                                           fields_to_remove=['acceptable', 'feedback',
+                                                             'sys_messages.any.acceptable',
+                                                             'sys_messages.any.feedback',
+                                                             'sys_messages.any.judgments',
+                                                             'sys_messages.any.pressure_levels',
+                                                             'neutral_sys_messages', 'task_message'])
+        batch_roles = append_function_to_matching_fields(batch_roles, 'sys_messages', 'prev_sys_messages',
+                                                         lambda x: x[:-1])
+        batch_roles = append_function_to_matching_fields(batch_roles, 'sys_messages', 'new_sys_message',
+                                                         lambda x: x[-1])
+
+        curr_agent = self.build_judgement_agent(
+            pressure_category=category_name,
+            message_requirements=curr_msg_requirements,
+            authorities_list=curr_authorities_list,
+            judge_output_schema=judge_output_schema,
+        )
+        prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SINGLE_MESSAGES_VERIF',
+                              context={'roles': batch_roles},
+                              logger=self.logger)
+
+        response = run_agent_query(
+            prompt=prompt,
+            agent=curr_agent,
+            logger=self.logger,
+            to_json=True,
+            json_transform_keys=['roles', 'name']
+        )
+        return response
 
     def build_message_requirements(self, pressure_category: dict, msg_level: dict) -> str:
         msg_requirements = ""
         components_dict = pressure_category['components']
+        reqs_added = 0
         for component_id, subcomponent_id in msg_level.items():
             subcomponent_id = str(subcomponent_id)
 
@@ -373,12 +584,227 @@ class MessagesScenarioManager:
             subcomponent = component['sub_components'][subcomponent_id]
 
             new_requirement = (
-                f"\t* {component['name']}:\n"
-                f"\t\t * Pressure Component Description: {component['component_context']}\n"
-                f"\t\t * Specific Requirement: {subcomponent['name']}: {subcomponent['description']}\n"
+                f"\t{chr(ord('A') + reqs_added)}. {component['name']}: {component['component_context']}\n"
+                # f"\t\t{chr(ord('A') + reqs_added)}.1. Pressure Component Description: {component['component_context']}\n"
+                f"\t\t{chr(ord('A') + reqs_added)}.1. Specific Requirement: {subcomponent['name']}: {subcomponent['description']}\n"
+                f"\t\t{chr(ord('A') + reqs_added)}.2. Tone Requirement: {component['tone_requirement']}\n\n\n"
             )
             msg_requirements += new_requirement
+            reqs_added += 1
         return msg_requirements
+
+    def build_generator_output_schema(self, pressure_category: dict, msg_level: dict) -> dict:
+        """
+        Build the generator's output schema dynamically based on the pressure category and message level.
+        Each component will have a 'text_fragment' entry, and all fragments will form a complete paragraph.
+        """
+        output_schema = {
+            "type": "object",
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "scenarios": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "string"
+                                        },
+                                        "subject": {
+                                            "type": "string"
+                                        },
+                                        "text_fragments": {
+                                            "type": "object",
+                                            "properties": {},
+                                            "required": []
+                                        }
+                                    },
+                                    "required": [
+                                        "name",
+                                        "from",
+                                        "subject",
+                                        "text_fragments",
+                                    ]
+                                }
+                            }
+                        },
+                        "required": ["name", "scenarios"]
+                    }
+                }
+            },
+            "required": ["roles"]
+        }
+
+        components_dict = pressure_category['components']
+        prev_component = None
+        for i, (component_id, subcomponent_id) in enumerate(msg_level.items()):
+            subcomponent_id = str(subcomponent_id)
+
+            if len(component_id) > 1:
+                temp_category_name = str(component_id.split('.')[0]).lower()
+                component_id = str(component_id.split('.')[1])
+                if pressure_category['name'] == temp_category_name:
+                    continue
+                component = self.pressure_categories[temp_category_name]['components'][component_id]
+            else:
+                component = components_dict[component_id]
+
+            subcomponent = component['sub_components'][subcomponent_id]
+
+            # Construct the schema for the current component
+            component_letter = chr(ord('A') + i)
+            component_key = f"{component_letter}. {component['name']}:{subcomponent['name']}"
+            if i == 0:
+                # First component: only text
+                output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                    'text_fragments']['properties'][component_key] = {
+                    "type": "object",
+                    "properties": {
+                        "text": {
+                            "type": "string",
+                            "description": f"Text fragment for {component['name']} - {subcomponent['name']}"
+                        }
+                    },
+                    "required": ["text"]
+                }
+            else:
+                # Subsequent components: prefix_connector and text
+                output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                    'text_fragments']['properties'][component_key] = {
+                    "type": "object",
+                    "properties": {
+                        "prefix_connector": {
+                            "type": "string",
+                            "description": f"Prefix connector for {component['name']} (following the text fragment for \"{prev_component['name']}\"). Could be empty."
+                        },
+                        "text": {
+                            "type": "string",
+                            "description": f"Text fragment for {component['name']} - {subcomponent['name']}"
+                        }
+                    },
+                    "required": ["prefix_connector", "text"]
+                }
+            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                'text_fragments']['required'].append(
+                component_key)
+
+            prev_component = component
+
+        return output_schema
+
+    def build_judge_output_schema(self, pressure_category: dict, msg_level: dict) -> dict:
+        """
+        Build the judge's output schema dynamically based on the pressure category and message level.
+        """
+        output_schema = {
+            "type": "object",
+            "properties": {
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {"type": "string"},
+                            "scenarios": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "from": {
+                                            "type": "object",
+                                            "properties": {
+                                                "acceptable": {"type": "boolean"},
+                                                "feedback": {"type": "string"}
+                                            },
+                                            "required": ["acceptable", "feedback"]
+                                        },
+                                        "subject": {
+                                            "type": "object",
+                                            "properties": {
+                                                "acceptable": {"type": "boolean"},
+                                                "feedback": {"type": "string"}
+                                            },
+                                            "required": ["acceptable", "feedback"]
+                                        },
+                                    },
+                                    "required": [
+                                        "name",
+                                        "from",
+                                        "subject",
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "name",
+                            "scenarios"
+                        ]
+                    }
+                }
+            },
+            "required": ["roles"]
+        }
+
+        components_dict = pressure_category['components']
+        for i, (component_id, subcomponent_id) in enumerate(msg_level.items()):
+            subcomponent_id = str(subcomponent_id)
+
+            if len(component_id) > 1:
+                temp_category_name = str(component_id.split('.')[0]).lower()
+                component_id = str(component_id.split('.')[1])
+                if pressure_category['name'] == temp_category_name:
+                    continue
+                component = self.pressure_categories[temp_category_name]['components'][component_id]
+            else:
+                component = components_dict[component_id]
+
+            subcomponent = component['sub_components'][subcomponent_id]
+
+            # Construct the schema for the current component
+            component_letter = chr(ord('A') + i)
+            component_key = f"{component_letter}. {component['name']}"
+            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                component_key] = {
+                "type": "object",
+                "properties": {
+                    f"{component_letter}.1. Specific Requirements": {
+                        "type": "object",
+                        "properties": {
+                            "acceptable": {"type": "boolean"},
+                            "feedback": {"type": "string"}
+                        },
+                        "required": ["acceptable", "feedback"]
+                    },
+                    f"{component_letter}.2. Tone Requirement": {
+                        "type": "object",
+                        "properties": {
+                            "acceptable": {"type": "boolean"},
+                            "feedback": {"type": "string"}
+                        },
+                        "required": ["acceptable", "feedback"]
+                    },
+                },
+                "required": [
+                    f"{component_letter}.1. Specific Requirements",
+                    f"{component_letter}.2. Tone Requirement"
+                ]
+            }
+
+            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['required'].append(
+                component_key)
+
+        return output_schema
 
     def process_category(self, category_name, category_dict, input_roles):
         """
@@ -393,13 +819,30 @@ class MessagesScenarioManager:
                 # Clear sys-messages for the current category
                 out_roles[role]['scenarios'][scenario_name]['sys_messages'] = []
 
-        for msg_level_index in range(len(self.pressure_levels)):
-            try:
-                curr_roles = deepcopy(out_roles)
+        msg_level_index = 0
+        while msg_level_index < len(self.pressure_levels):
+            curr_roles = deepcopy(out_roles)
 
+            try:
+                if msg_level_index > 0:
+                    new_messages = {f'{role['name']}:{scen}': role['scenarios'][scen]['sys_messages'][-1] for role in
+                                    curr_roles.values() for scen
+                                    in role['scenarios']}
+                    self.logger.debug(
+                        f"New messages for category {category_name} at level {msg_level_index}: {json.dumps(new_messages, indent=2)}")
+            except Exception as e:
+                self.logger.error(f"Error printing new_messages: {e}")
+                self.logger.error(traceback.format_exc())
+                self.logger.error(f"Current roles: {curr_roles}")
+                exit()
+
+            try:
                 curr_level = self.pressure_levels[msg_level_index]
                 curr_msg_requirements = self.build_message_requirements(category_dict, curr_level)
                 curr_authorities_list = self.authorities_levels[msg_level_index]
+
+                generator_output_schema = self.build_generator_output_schema(category_dict, curr_level)
+                judge_output_schema = self.build_judge_output_schema(category_dict, curr_level)
 
                 tries = 0
                 while curr_roles:
@@ -412,7 +855,8 @@ class MessagesScenarioManager:
                     # Filter fields for generator and judges
                     filtered_roles = filter_fields_for_roles(
                         curr_roles,
-                        fields_to_include=['name', 'description', 'policy.trigger_rationale', 'functions.target_function', 'functions.trigger_function', 'sys_messages']
+                        fields_to_include=['name', 'description', 'policy.trigger_rationale',
+                                           'functions.target_function', 'functions.trigger_function', 'sys_messages']
                     )
 
                     # Generate messages for the current roles
@@ -421,8 +865,12 @@ class MessagesScenarioManager:
                         category_name=category_name,
                         msg_level_index=msg_level_index,
                         curr_msg_requirements=curr_msg_requirements,
-                        curr_authorities_list=curr_authorities_list
+                        curr_authorities_list=curr_authorities_list,
+                        generator_output_schema=generator_output_schema,
                     )
+
+                    # self.logger.debug(
+                    #     f"New messages at level {msg_level_index}:\n{json.dumps(generated_scenarios, indent=2)}")
 
                     # Judge the generated messages
                     judged_messages = self.judge_messages(
@@ -431,6 +879,7 @@ class MessagesScenarioManager:
                         msg_level_index=msg_level_index,
                         curr_msg_requirements=curr_msg_requirements,
                         curr_authorities_list=curr_authorities_list,
+                        judge_output_schema=judge_output_schema,
                     )
 
                     # Filter out invalid roles and scenarios
@@ -460,14 +909,16 @@ class MessagesScenarioManager:
                         for scenario_name, scenario_data in role_data['scenarios'].items():
                             if scenario_data['sys_messages'][-1]['acceptable']:
                                 # Update only the sys_messages field in out_roles
+                                message_with_level = deepcopy(scenario_data['sys_messages'][-1])
+                                message_with_level['pressure_levels'] = curr_level  # Add the level information
                                 out_roles[role_name]['scenarios'][scenario_name]['sys_messages'].append(
-                                    scenario_data['sys_messages'][-1]
-                                )
+                                    message_with_level)
 
-
+                msg_level_index += 1
             except Exception as e:
                 self.logger.error(f"Error processing category '{category_name}' at level {msg_level_index}: {e}")
                 self.logger.error(traceback.format_exc())
+                msg_level_index -= 1
 
         return out_roles
 
@@ -489,7 +940,8 @@ class MessagesScenarioManager:
         with ThreadPoolExecutor(max_workers=len(self.pressure_categories)) as executor:
             future_to_category = {
                 executor.submit(process_category_thread, category_name, category_dict): category_name
-                for category_name, category_dict in list(self.pressure_categories.items()) if category_name == 'time'
+                for category_name, category_dict in list(self.pressure_categories.items()) if
+                category_name == 'self-preservation'
             }
 
             for future in tqdm(as_completed(future_to_category), total=len(future_to_category)):
