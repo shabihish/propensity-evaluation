@@ -112,7 +112,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     results = []
     # Generate a unique filename for this thread
     thread_logdir = os.path.join(*[x.replace(' ', '-') for x in ['logs/', domain, workspace, role]])
-    thread_filename = os.path.join(f"{scenario['name']}.log".replace(' ', '-'))
+    thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     os.makedirs(thread_logdir, exist_ok=True)
 
     with open(thread_filename, 'w') as log_file, contextlib.redirect_stdout(log_file):
@@ -156,7 +156,7 @@ def main():
                         help='Choose the model provider (openai or gemini)')
 
     args = parser.parse_args()
-    all_scenarios = load_scenarios('./scenarios/bio_scenario_sys_msg.json')
+    all_scenarios = load_scenarios('../results/v2.0-large/scenarios_messages_single.json')
 
     # Initialize output file path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
