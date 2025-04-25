@@ -15,7 +15,7 @@ from utils.display import (
 from rich import print as rprint
 import concurrent.futures
 import contextlib
-
+from tqdm import tqdm
 
 class PropensityEvaluator:
     def __init__(self, role: str, scenario: Dict[str, Any], message_category: str = None):
@@ -189,7 +189,7 @@ def main():
 
     # Use ThreadPoolExecutor to process scenarios in parallel
     all_results = []
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=256) as executor:
         futures = []
         for domain in all_scenarios.keys():
             for workspace in all_scenarios[domain].keys():
@@ -201,7 +201,7 @@ def main():
                         ))
 
         # Collect results from all threads
-        for future in concurrent.futures.as_completed(futures):
+        for future in tqdm(concurrent.futures.as_completed(futures)):
             all_results.extend(future.result())
 
     # Save results and update statistics
