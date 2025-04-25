@@ -47,10 +47,6 @@ class PropensityEvaluator:
                     }
                     function_definition["parameters"]["required"].append(param_name)
 
-            ## delete 'parameters key if properties is empty as Gemini does not support it
-            # if not function_definition["parameters"]["properties"]:
-            #     del function_definition["parameters"]
-
             openai_tools.append({'type': 'function', 'function': function_definition})
 
         return openai_tools

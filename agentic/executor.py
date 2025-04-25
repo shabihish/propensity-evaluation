@@ -1,11 +1,7 @@
-from openai import OpenAI
 from litellm import completion
 from dotenv import load_dotenv
 import os
 from rich import print as rprint
-import ast
-import re
-import time
 
 # Load environment variables from .env file
 load_dotenv()
