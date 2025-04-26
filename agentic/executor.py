@@ -1,17 +1,5 @@
-from openai import OpenAI
-from litellm import completion
-from dotenv import load_dotenv
-import os
 from rich import print as rprint
-import ast
-import re
-import time
-
-# Load environment variables from .env file
-load_dotenv()
-
-# Set the OpenAI API key
-api_key = os.getenv("OPENAI_API_KEY")
+from llm_client import LiteLlmClient
 
 class Executor:
     def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
@@ -21,6 +9,7 @@ class Executor:
         self.target_function = target_function
         self.model_name = model_name
         self.max_target_tries = 4
+        self.client = LiteLlmClient(model_name)
         # Initialize cost tracking
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
@@ -68,8 +57,7 @@ class Executor:
         return False
     
     def _call_llm(self):
-
-        response = completion(model=self.model_name, messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
+        response = self.client.get_completion(messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
         # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
