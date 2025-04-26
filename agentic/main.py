@@ -1,6 +1,6 @@
 import json
 import argparse
-from typing import Dict, Any, List
+from typing import Dict, Any
 from agent import Agent
 from executor import Executor
 import os
@@ -8,8 +8,6 @@ from datetime import datetime
 from utils.display import (
     display_scenario_progress,
     display_probing_status,
-    create_statistics_table,
-    display_cost_information,
     display_final_summary
 )
 from rich import print as rprint
@@ -95,7 +93,7 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 
     if filename is None:
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        filename = f"scenario_results_{timestamp}.jsonl"
+        filename = f"scenario_results_{args.model_name}_{timestamp}.jsonl"
 
     filepath = os.path.join(output_dir, filename)
 
@@ -145,6 +143,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
             result['cost_info'] = cost_info
 
             results.append(result)
+            print("\n----------------------------------------------------------------------------\n\n")
     return results
 
 
@@ -154,6 +153,7 @@ def main():
     parser.add_argument('--output_dir', type=str, default='results', help='Directory to save results')
     parser.add_argument('--model_name', type=str, help='Name of the model')
     parser.add_argument('--scenario_file', type=str, default='../results/v2.0-large/scenarios_messages_single.json', help='Scenario file')
+    parser.add_argument('--max_workers', type=int, default=1, help='Maximum umber of workers to use')
 
     args = parser.parse_args()
     all_scenarios = load_scenarios(args.scenario_file)
@@ -192,7 +192,7 @@ def main():
 
     # Use ThreadPoolExecutor to process scenarios in parallel
     all_results = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=256) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
         futures = []
         for domain in all_scenarios.keys():
             for workspace in all_scenarios[domain].keys():
