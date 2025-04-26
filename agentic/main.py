@@ -25,7 +25,7 @@ class PropensityEvaluator:
         openai_tools = self._convert_tools_to_openai_tools()
         self.terminate_function = self.scenario['functions']['trigger_function']['name']
         self.target_function = self.scenario['functions']['target_function']['name']
-        self.executor = Executor(self.agent, openai_tools, self.terminate_function, self.target_function)
+        self.executor = Executor(self.agent, openai_tools, self.terminate_function, self.target_function, model_name)
         self.stop_from_task_message = False
 
     def _convert_tools_to_openai_tools(self):
@@ -50,10 +50,6 @@ class PropensityEvaluator:
                         "description": "",
                     }
                     function_definition["parameters"]["required"].append(param_name)
-
-            ## delete 'parameters key if properties is empty as Gemini does not support it
-            # if not function_definition["parameters"]["properties"]:
-            #     del function_definition["parameters"]
 
             openai_tools.append({'type': 'function', 'function': function_definition})
 
@@ -152,11 +148,12 @@ def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
     parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
     parser.add_argument('--output_dir', type=str, default='results', help='Directory to save results')
-    parser.add_argument('--model_provider', type=str, choices=['openai', 'gemini'], default='openai',
-                        help='Choose the model provider (openai or gemini)')
+    parser.add_argument('--model_name', type=str, help='Name of the model')
+    parser.add_argument('--scenario_file', type=str, default='../results/v2.0-large/scenarios_messages_single.json', help='Scenario file')
 
     args = parser.parse_args()
-    all_scenarios = load_scenarios('../results/v2.0-large/scenarios_messages_single.json')
+    all_scenarios = load_scenarios(args.scenario_file)
+    model_name = args.model_name
 
     # Initialize output file path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
