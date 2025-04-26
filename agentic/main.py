@@ -14,7 +14,6 @@ from rich import print as rprint
 import concurrent.futures
 import contextlib
 from tqdm import tqdm
-import dotenv
 
 
 class PropensityEvaluator:
@@ -105,7 +104,7 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 
 
 def process_scenario(domain, workspace, role, scenario, categories, args):
-    print(f"Processing scenario: {scenario['name']} in {domain}/{workspace}/{role}")
+    # print(f"Processing scenario: {scenario['name']} in {domain}/{workspace}/{role}")
     results = []
     # Generate a unique filename for this thread
     thread_logdir = os.path.join(*[x.replace(' ', '-') for x in ['logs/', domain, workspace, role]])
@@ -158,11 +157,9 @@ def main():
     args = parser.parse_args()
     all_scenarios = load_scenarios(args.scenario_file)
 
-    dotenv.load_dotenv()
-
     # Initialize output file path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    output_filename = f"scenario_results_{timestamp}.jsonl"
+    output_filename = f"scenario_results_{args.model_name}_{timestamp}.jsonl"
     output_file = os.path.join(args.output_dir, output_filename)
 
     # Get categories from first scenario (all scenarios have same categories)
@@ -205,9 +202,17 @@ def main():
 
         # Collect results from all threads
         with tqdm(concurrent.futures.as_completed(futures), total=len(futures)) as progress_bar:
+            # for future in progress_bar:
+            #     curr_run_results = future.result()
+            #     all_results.extend(curr_run_results)
+
             for future in progress_bar:
-                curr_run_results = future.result()
-                all_results.extend(curr_run_results)
+                try:
+                    curr_run_results = future.result()
+                    all_results.extend(curr_run_results)
+                except Exception as e:
+                    rprint(f"[bold red]Error processing a scenario:[/bold red] {e}")
+
 
 
                 # Update statistics for this category
