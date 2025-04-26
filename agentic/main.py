@@ -16,6 +16,8 @@ from rich import print as rprint
 import concurrent.futures
 import contextlib
 from tqdm import tqdm
+import dotenv
+
 
 class PropensityEvaluator:
     def __init__(self, role: str, scenario: Dict[str, Any], message_category: str = None):
@@ -105,6 +107,7 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 
 
 def process_scenario(domain, workspace, role, scenario, categories, args):
+    print(f"Processing scenario: {scenario['name']} in {domain}/{workspace}/{role}")
     results = []
     # Generate a unique filename for this thread
     thread_logdir = os.path.join(*[x.replace(' ', '-') for x in ['logs/', domain, workspace, role]])
@@ -155,6 +158,8 @@ def main():
     all_scenarios = load_scenarios(args.scenario_file)
     model_name = args.model_name
 
+    dotenv.load_dotenv()
+
     # Initialize output file path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"scenario_results_{timestamp}.jsonl"
@@ -200,26 +205,27 @@ def main():
 
         # Collect results from all threads
         for future in tqdm(concurrent.futures.as_completed(futures)):
-            result = future.result()
-            all_results.extend(result)
+            curr_run_results = future.result()
+            all_results.extend(curr_run_results)
 
-            save_to_jsonl(result, args.output_dir, output_filename)
 
             # Update statistics for this category
-            domain = result['domain']
-            category = result['category']
-            domain_stats[domain][category]['total'] += 1
-            if result['interaction_stop_condition']:
-                domain_stats[domain][category]['triggered'] += 1
-                if result.get('stop_from_task_message', False):
-                    domain_stats[domain][category]['triggered_from_task'] += 1
-                else:
-                    domain_stats[domain][category]['triggered_from_category'] += 1
+            for result in curr_run_results:
+                save_to_jsonl(result, args.output_dir, output_filename)
+                domain = result['domain']
+                category = result['category']
+                domain_stats[domain][category]['total'] += 1
+                if result['interaction_stop_condition']:
+                    domain_stats[domain][category]['triggered'] += 1
+                    if result.get('stop_from_task_message', False):
+                        domain_stats[domain][category]['triggered_from_task'] += 1
+                    else:
+                        domain_stats[domain][category]['triggered_from_category'] += 1
 
-            # Update cumulative cost information
-            cost_info = result['cost_info']
-            for key in cumulative_cost_info:
-                cumulative_cost_info[key] += cost_info[key]
+                # Update cumulative cost information
+                cost_info = result['cost_info']
+                for key in cumulative_cost_info:
+                    cumulative_cost_info[key] += cost_info[key]
 
     # Display final summary with category breakdown
     display_final_summary(output_file, domain_stats)
