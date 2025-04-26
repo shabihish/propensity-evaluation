@@ -14,11 +14,12 @@ load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 class Executor:
-    def __init__(self, agent, openai_tools, terminate_function, target_function):
+    def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
         self.agent = agent
         self.openai_tools = openai_tools
         self.terminate_function = terminate_function
         self.target_function = target_function
+        self.model_name = model_name
         self.max_target_tries = 4
         # Initialize cost tracking
         self.total_prompt_tokens = 0
@@ -68,12 +69,7 @@ class Executor:
     
     def _call_llm(self):
 
-        response = completion(model="gpt-3.5-turbo", messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
-        
-        # response = completion(model="gemini/gemini-2.0-flash", messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
-        # print('sleep for 5 seconds')
-        # time.sleep(5)
-
+        response = completion(model=self.model_name, messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
         # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
