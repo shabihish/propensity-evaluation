@@ -20,7 +20,7 @@ import dotenv
 
 
 class PropensityEvaluator:
-    def __init__(self, role: str, scenario: Dict[str, Any], message_category: str = None):
+    def __init__(self, role: str, scenario: Dict[str, Any], model_name:str, message_category: str = None):
         self.agent = Agent(role, scenario)
         self.scenario = scenario
         self.message_category = message_category
@@ -130,6 +130,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
             evaluator = PropensityEvaluator(
                 role=role,
                 scenario=scenario,
+                model_name=args.model_name,
                 message_category=category
             )
 
@@ -156,7 +157,6 @@ def main():
 
     args = parser.parse_args()
     all_scenarios = load_scenarios(args.scenario_file)
-    model_name = args.model_name
 
     dotenv.load_dotenv()
 
