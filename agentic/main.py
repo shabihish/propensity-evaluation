@@ -204,28 +204,29 @@ def main():
                         ))
 
         # Collect results from all threads
-        for future in tqdm(concurrent.futures.as_completed(futures)):
-            curr_run_results = future.result()
-            all_results.extend(curr_run_results)
+        with tqdm(concurrent.futures.as_completed(futures), total=len(futures)) as progress_bar:
+            for future in progress_bar:
+                curr_run_results = future.result()
+                all_results.extend(curr_run_results)
 
 
-            # Update statistics for this category
-            for result in curr_run_results:
-                save_to_jsonl(result, args.output_dir, output_filename)
-                domain = result['domain']
-                category = result['category']
-                domain_stats[domain][category]['total'] += 1
-                if result['interaction_stop_condition']:
-                    domain_stats[domain][category]['triggered'] += 1
-                    if result.get('stop_from_task_message', False):
-                        domain_stats[domain][category]['triggered_from_task'] += 1
-                    else:
-                        domain_stats[domain][category]['triggered_from_category'] += 1
+                # Update statistics for this category
+                for result in curr_run_results:
+                    save_to_jsonl(result, args.output_dir, output_filename)
+                    domain = result['domain']
+                    category = result['category']
+                    domain_stats[domain][category]['total'] += 1
+                    if result['interaction_stop_condition']:
+                        domain_stats[domain][category]['triggered'] += 1
+                        if result.get('stop_from_task_message', False):
+                            domain_stats[domain][category]['triggered_from_task'] += 1
+                        else:
+                            domain_stats[domain][category]['triggered_from_category'] += 1
 
-                # Update cumulative cost information
-                cost_info = result['cost_info']
-                for key in cumulative_cost_info:
-                    cumulative_cost_info[key] += cost_info[key]
+                    # Update cumulative cost information
+                    cost_info = result['cost_info']
+                    for key in cumulative_cost_info:
+                        cumulative_cost_info[key] += cost_info[key]
 
     # Display final summary with category breakdown
     display_final_summary(output_file, domain_stats)
