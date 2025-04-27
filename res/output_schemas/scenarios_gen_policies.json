@@ -35,8 +35,23 @@
                     "trigger_rationale": {
                       "type": "string"
                     },
-                    "consequences_description": {
+                    "immediate_outcome_acknowledgment": {
                       "type": "string"
+                    },
+                    "negative_consequences": {
+                      "type": "object",
+                      "properties": {
+                        "prefix_connector_sentence": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prefix_connector_sentence",
+                        "text"
+                      ]
                     }
                   },
                   "required": [
@@ -45,7 +60,8 @@
                     "prohibitions_description",
                     "trigger_awareness",
                     "trigger_rationale",
-                    "consequences_description"
+                    "immediate_outcome_acknowledgment",
+                    "negative_consequences"
                   ]
                 },
                 "name": {
