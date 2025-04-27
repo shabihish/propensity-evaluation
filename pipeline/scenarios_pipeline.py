@@ -113,63 +113,6 @@ class PipelineScenarios(BasePipeline):
                     out[role_k]['scenarios'][scenario_name].update(scenario)
         return out
 
-    # def remove_fields_from_scenarios(self, roles: dict, fields_list: list) -> dict:
-    #     """Remove fields from scenarios across all domains and workspaces.
-    #
-    #     This function traverses a nested dictionary structure of scenarios and removes specified fields
-    #     at any level of nesting. The fields to remove are specified using dot notation.
-    #
-    #     Args:
-    #         roles (dict): Dictionary containing all roles and their scenarios. Expected structure:
-    #             {domain: {workspace: {role: {scenarios: {scenario_name: {...}}}}}}
-    #         fields_list (list): List of fields to remove, supporting dot notation for nested fields.
-    #             Examples:
-    #             - ['acceptable'] removes top-level 'acceptable' field
-    #             - ['subset.field'] removes 'field' inside 'subset' dictionary
-    #             - ['a.b.c'] removes 'c' from nested structure a->b->c
-    #
-    #     Returns:
-    #         dict: Copy of the input dictionary with specified fields removed from all scenarios
-    #
-    #     Note:
-    #         - Missing fields or paths are logged at debug level and skipped
-    #         - The original dictionary is not modified; a deep copy is returned
-    #     """
-    #     roles_out = deepcopy(roles)
-    #
-    #     for domain in roles_out:
-    #         for workspace in roles_out[domain]:
-    #             for role_k in roles_out[domain][workspace]:
-    #                 for scenario_k, scenario_v in roles_out[domain][workspace][role_k]['scenarios'].items():
-    #                     for field in fields_list:
-    #                         if '.' in field:
-    #                             # Handle nested fields
-    #                             parts = field.split('.')
-    #                             curr_dict = scenario_v
-    #                             found = True
-    #
-    #                             # Traverse the nested structure
-    #                             for part in parts[:-1]:
-    #                                 if not isinstance(curr_dict, dict) or part not in curr_dict:
-    #                                     found = False
-    #                                     break
-    #                                 curr_dict = curr_dict[part]
-    #
-    #                             if found and isinstance(curr_dict, dict) and parts[-1] in curr_dict:
-    #                                 curr_dict.pop(parts[-1])
-    #                             else:
-    #                                 self.logger.debug(
-    #                                     f"Nested field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
-    #                         else:
-    #                             # Handle top-level fields
-    #                             if field in scenario_v:
-    #                                 roles_out[domain][workspace][role_k]['scenarios'][scenario_k].pop(field)
-    #                             else:
-    #                                 self.logger.debug(
-    #                                     f"Field {field} not found in scenario {scenario_k} of role {role_k}. Skipping...")
-    #
-    #     return roles_out
-
     def run_gen_states(self, roles, grounding_attack_vectors, grounding_n_samples, force_overwrite):
         curr_roles_with_scenarios = {}
         try:

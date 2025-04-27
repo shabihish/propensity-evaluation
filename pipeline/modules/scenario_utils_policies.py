@@ -103,78 +103,6 @@ class ScenarioManager:
                     continue
         return valid_scenarios
 
-    # def generate_scenarios(self, input_roles: dict):
-    #     """
-    #     Generate scenarios for all roles in batches concurrently.
-    #     """
-    #     roles_with_scenarios = deepcopy(input_roles)
-    #     curr_input_roles = deepcopy(input_roles)
-    #     roles_to_process = list(curr_input_roles.keys())
-    #     batch_size = self.batch_size
-    #
-    #     while roles_to_process:
-    #         if self.logger:
-    #             self.logger.debug(f"Roles left to process: {roles_to_process}")
-    #
-    #         # Create batches of roles
-    #         batch_roles_list = [
-    #             roles_to_process[i:i + batch_size]
-    #             for i in range(0, len(roles_to_process), batch_size)
-    #         ]
-    #
-    #         with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
-    #             futures = {
-    #                 executor.submit(self._process_batch_generate_scenarios, batch_roles, curr_input_roles): batch_roles
-    #                 for batch_roles in batch_roles_list
-    #             }
-    #
-    #             for future in as_completed(futures):
-    #                 batch_roles = futures[future]
-    #                 try:
-    #                     response = future.result()
-    #
-    #                     # Process the response for each role in the batch
-    #                     for role in response.values():
-    #                         if set(role['scenarios'].keys()) == set(curr_input_roles[role['name']]['scenarios'].keys()):
-    #                             roles_to_process.remove(role['name'])
-    #                             # Preserve existing fields and update with new ones
-    #                             for scenario_name, new_scenario in role['scenarios'].items():
-    #                                 if scenario_name in roles_with_scenarios[role['name']]['scenarios']:
-    #                                     existing_scenario = roles_with_scenarios[role['name']]['scenarios'][
-    #                                         scenario_name]
-    #                                     existing_scenario.update(new_scenario)  # Keep old fields, add/update new ones
-    #
-    #                 except Exception as e:
-    #                     self.logger.error(f"Error processing batch: {e}")
-    #                     self.logger.error(traceback.format_exc())
-    #
-    #     return roles_with_scenarios
-    #
-    # # TODO: batch_roles here?!!
-    # def _process_batch_generate_scenarios(self, batch_roles, curr_input_roles):
-    #     """
-    #     Helper method to process a single batch for scenario generation.
-    #     """
-    #     random.shuffle(batch_roles)
-    #     prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='USER_GEN',
-    #                           context={'roles': {role: curr_input_roles[role] for role in batch_roles}},
-    #                           logger=self.logger)
-    #     try:
-    #         response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
-    #                                    logger=self.logger,
-    #                                    to_json=True, json_transform_keys=['roles', 'name'])
-    #         # Run validity checks
-    #         response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
-    #         response = {k: v for k, v in response.items() if set(x['name'] for x in v['scenarios']) ==
-    #                     set(curr_input_roles[k]['scenarios'].keys())}
-    #         for role in response:
-    #             response[role]['scenarios'] = json_obj_list_to_dict(response[role]['scenarios'], 'name')
-    #         return response
-    #     except Exception as e:
-    #         self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
-    #         self.logger.error(traceback.format_exc())
-    #         return {
-
     def generate_scenarios(self, input_roles: dict):
         """
         Generate scenarios for all roles in batches concurrently and validate them.
@@ -283,68 +211,6 @@ class ScenarioManager:
 
         return response
 
-    # def judge_scenarios(self, input_scenarios: dict):
-    #     """
-    #     Judge scenarios for all roles in batches concurrently.
-    #     """
-    #     roles_to_process = list(input_scenarios.keys())
-    #     out = deepcopy(input_scenarios)
-    #     batch_size = self.batch_size
-    #
-    #     while roles_to_process:
-    #         if self.logger:
-    #             self.logger.debug(f"Roles left to process (judge): {roles_to_process}")
-    #
-    #         # Create batches of roles
-    #         batch_roles_list = [
-    #             roles_to_process[i:i + batch_size]
-    #             for i in range(0, len(roles_to_process), batch_size)
-    #         ]
-    #
-    #         with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
-    #             futures = {
-    #                 executor.submit(self._process_batch_judge_scenarios, batch_roles, input_scenarios): batch_roles
-    #                 for batch_roles in batch_roles_list
-    #             }
-    #
-    #             for future in as_completed(futures):
-    #                 batch_roles = futures[future]
-    #                 try:
-    #                     response = future.result()
-    #
-    #                     # Process the response for each role in the batch
-    #                     for role_name, role_data in response.items():
-    #                         if role_name in roles_to_process:
-    #                             roles_to_process.remove(role_name)
-    #                             out[role_name] = role_data
-    #
-    #                 except Exception as e:
-    #                     self.logger.error(f"Error processing batch: {e}")
-    #                     self.logger.error(traceback.format_exc())
-    #
-    #     return out
-    #
-    # def _process_batch_judge_scenarios(self, batch_roles, input_scenarios):
-    #     """
-    #     Helper method to process a single batch for scenario judgment.
-    #     """
-    #     random.shuffle(batch_roles)
-    #     prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SCENARIOS_VERIF',
-    #                           context={'roles': {role: input_scenarios[role] for role in batch_roles}},
-    #                           logger=self.logger)
-    #     try:
-    #         response = run_agent_query(prompt=prompt, agent=self.scenarios_verif_judge,
-    #                                    logger=self.logger,
-    #                                    to_json=True, json_transform_keys=['roles', 'name'])
-    #         # Run validity checks
-    #         response = get_valid_scenarios(response,
-    #                                        required_fields=['name', 'scenarios'])
-    #         return response
-    #     except Exception as e:
-    #         self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
-    #         self.logger.error(traceback.format_exc())
-    #         return {}
-
     def judge_scenarios(self, roles: dict):
         """
         Judge scenarios for all roles in batches concurrently and re-process only invalid judgments.
@@ -444,41 +310,6 @@ class ScenarioManager:
             json_transform_keys=['roles', 'name']
         )
         return response
-
-    # def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
-    #     # Expects the scenarios to be converted to a dict already
-    #     for role_v in input_roles.values():
-    #         assert isinstance(role_v['scenarios'], dict)
-    #
-    #     accepted_scenarios = {}
-    #     missing_scenarios = list(set(input_roles.keys()) - set(accepted_scenarios.keys()))
-    #     n_tries_for_role = 0
-    #     while True:
-    #         if not missing_scenarios or n_tries_for_role >= 10:
-    #             break
-    #         n_tries_for_role += 1
-    #         generated_scenarios = self.generate_scenarios({name: input_roles[name] for name in missing_scenarios})
-    #         if logging:
-    #             self.logger.debug(f'Generated scenarios_dict: {generated_scenarios}\n\n')
-    #
-    #         judged_scenarios = self.judge_scenarios(generated_scenarios)
-    #
-    #         for role_k, role_v in judged_scenarios.items():
-    #             all_scenarios_accepted = all(scen['acceptable'] == True for scen in role_v['scenarios'].values())
-    #             if all_scenarios_accepted:
-    #                 accepted_scenarios[role_k] = generated_scenarios[role_k]
-    #                 # Update accepted scenarios with judgment fields provided by the judge
-    #                 for scenario_k, scenario_v in role_v['scenarios'].items():
-    #                     accepted_scenarios[role_k]['scenarios'][scenario_k].update(scenario_v)
-    #                 missing_scenarios.remove(role_k)
-    #             else:
-    #                 if logging:
-    #                     self.logger.debug(f"Judgment not valid for role {role_k}: {role_v}\n\n")
-    #
-    #         if logging:
-    #             self.logger.debug(f'Accepted scenario names: {list(accepted_scenarios.keys())}\n\n')
-    #
-    #     return accepted_scenarios
 
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
         """

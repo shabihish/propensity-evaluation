@@ -28,15 +28,7 @@ def _remove_most_weighted_nodes(G):
                        G.nodes()}
         sorted_nodes = sorted(weight_sums, key=lambda x: weight_sums[x], reverse=True)
         node_to_remove = sorted_nodes[0]
-        # print the list of all edges with weights
-        # for edge in G.edges(node_to_remove, data=True):
-        #     print(edge)
         G.remove_node(node_to_remove)
-        # print(f"Removed node: {node_to_remove}")
-        # for neighbor in G.nodes():
-        #     if G.has_edge(node_to_remove, neighbor):
-        #         edge_weight = G[node_to_remove][neighbor]['weight']
-        #         G[node_to_remove][neighbor]['weight'] -= edge_weight
 
 
 class SimilarityGraph:
