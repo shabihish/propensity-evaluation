@@ -1,18 +1,9 @@
-#defaults:
-#  _self
-#  - sys_prompts: default
-
 seed: 42
 logs_dir: "logs"
 
-n_initial_roles: 20
-n_min_initial_roles: 10
-n_roles: 10 # Number of roles selected out of the initial batch
 min_initial_scenarios_per_role: 3
 min_chosen_scenarios_per_role: 2
 scenario_gen_batch_size: 5
-
-#n_retries: 5
 
 model:
   model_provider: "gemini"
@@ -28,13 +19,6 @@ messages_model:
   use_cache: false
   temperature: 1.0
 
-#  model_provider: "openai"
-##  model_name: "openai/Qwen/Qwen2.5-72B-Instruct"
-#  model_name: "openai/Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4"
-#  api_base: http://localhost:11110/v1
-#  use_cache: false
-#  temperature: 1.0
-
 inputs:
   base_dir: "inputs"
   pressure_categories_dir: "${inputs.base_dir}/pressure_categories"
@@ -42,8 +26,6 @@ inputs:
 
 prompts:
   base_dir: "res/prompts"
-  roles_agents: "${prompts.base_dir}/roles_agents.ini"
-  #  scenarios_agents: "${prompts.base_dir}/scenarios_agents.ini"
   scenarios_general_body: "${prompts.base_dir}/scenarios_general_body.ini"
   scenarios_agents_states: "${prompts.base_dir}/scenarios_agents_states.ini"
   scenarios_agents_funcs: "${prompts.base_dir}/scenarios_agents_funcs.ini"
@@ -55,22 +37,17 @@ prompts:
 
 output_schemas:
   base_dir: "res/output_schemas"
-  roles_generation: "${output_schemas.base_dir}/roles_generation.json"
-  #  scenarios_generation: "${output_schemas.base_dir}/scenarios_generation3.json"
   scenarios_gen_states: "${output_schemas.base_dir}/scenarios_gen_states.json"
   scenarios_gen_funcs: "${output_schemas.base_dir}/scenarios_gen_funcs.json"
   scenarios_gen_policies: "${output_schemas.base_dir}/scenarios_gen_policies.json"
   scenarios_gen_messages: "${output_schemas.base_dir}/scenarios_gen_messages.json"
   scenarios_gen_messages_single: "${output_schemas.base_dir}/scenarios_gen_messages_single.json"
 
-  judge_roles: "${output_schemas.base_dir}/judge_roles.json"
   judge_scenarios: "${output_schemas.base_dir}/judge_scenarios.json"
   judge_single_messages: "${output_schemas.base_dir}/judge_single_messages.json"
 
 object_storage:
   base_dir: "output/finalized_jsons"
-  roles: "${object_storage.base_dir}/roles.json"
-  #  scenarios: "${object_storage.base_dir}/scenarios3.json"
   scenarios_states: "${object_storage.base_dir}/scenarios_states.json"
   scenarios_funcs: "${object_storage.base_dir}/scenarios_funcs.json"
   scenarios_policies: "${object_storage.base_dir}/scenarios_policies.json"

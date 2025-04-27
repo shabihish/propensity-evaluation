@@ -15,22 +15,6 @@ from tqdm import tqdm
 from pydantic import BaseModel
 import string
 
-
-# class Message(BaseModel):
-#     from_: str  # Use `from_` since `from` is a reserved keyword in Python
-#     subject: str
-#     body: str
-#
-#
-# class ScenariosGenMessagesSingle(BaseModel):
-#     message: Message
-#
-#
-# class JudgeSingleMessages(BaseModel):
-#     acceptable: bool
-#     feedback: str
-
-
 def load_pressure_categories(directory):
     pressure_categories = []
     for filename in os.listdir(directory):
