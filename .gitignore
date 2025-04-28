@@ -171,3 +171,6 @@ output
 outputs
 test*
 agentic/llm_client.py
+agentic/logs/
+agentic/results/
+agentic/process_results.ipynb
