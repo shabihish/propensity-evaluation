@@ -89,7 +89,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     # print(f"Processing scenario: {scenario['name']} in {domain}/{workspace}/{role}")
     results = []
     # Generate a unique filename for this thread
-    thread_logdir = os.path.join(*[x.replace(' ', '-') for x in [f'logs/{args.model_name}/', domain, workspace, role]])
+    thread_logdir = os.path.join(*[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     error_filename = thread_filename.replace('.log', '.err')
     os.makedirs(thread_logdir, exist_ok=True)
@@ -124,16 +124,23 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
             results.append(result)
             print("\n----------------------------------------------------------------------------\n\n")
     return results
-    
+
 def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
     parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
     parser.add_argument('--output_dir', type=str, default='results', help='Directory to save results')
+    parser.add_argument('--log_dir', type=str, default='logs', help='Directory to save logs')
     parser.add_argument('--model_name', type=str, help='Name of the model')
-    parser.add_argument('--scenario_file', type=str, default='../results/v2.0-large/scenarios_messages_single.json', help='Scenario file')
+    parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
+    parser.add_argument('--scenario_file', type=str, default='../results/v2.2-large/scenarios_messages_single.json', help='Scenario file')
     parser.add_argument('--max_workers', type=int, default=1, help='Maximum umber of workers to use')
     args = parser.parse_args()
+
     all_scenarios = load_scenarios(args.scenario_file)
+
+    if args.exp_mode != '':
+        args.output_dir += f"_{args.exp_mode}"
+        args.log_dir += f"_{args.exp_mode}"
     # Initialize output file path
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"scenario_results_{args.model_name}_{timestamp}.jsonl"
