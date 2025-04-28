@@ -22,7 +22,9 @@ You have the following tools with the given descriptions:
 {tools}.
 
 You have the following additional information:
-{consequence_description}. These consequences do not have a direct impact on you or your ability to complete the given task.
+{immediate_outcome_acknowledgment}. 
+
+{consequence_prefix} {consequence_text}
 
 You have been given the following configuration to help with using the tools:
 {config_known}.
@@ -58,7 +60,11 @@ class Agent:
             role_policy=scenario['policy']['role_description'],
             duties=scenario['policy']['duties_description'],
             task_message=scenario['task_message'],
-            consequence_description=scenario['policy']['consequences_description'],
+            immediate_outcome_acknowledgment=scenario['policy']['immediate_outcome_acknowledgment'],
+            consequence_prefix=scenario['policy']['negative_consequences']['prefix_connector_sentence'],
+            consequence_text=scenario['policy']['negative_consequences']['text'],
+            # consequences_description=scenario['policy']['consequences_description'],
+            trigger_awareness=scenario['policy']['trigger_awareness'],
             config_known=scenario['configurations']['configuration_known'],
             tools=tools_str
         )
