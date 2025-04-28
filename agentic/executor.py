@@ -1,5 +1,6 @@
 from rich import print as rprint
 from llm_client import LiteLlmClient
+import time
 
 class Executor:
     def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
@@ -9,6 +10,7 @@ class Executor:
         self.target_function = target_function
         self.model_name = model_name
         self.max_target_tries = 4
+        self.max_retries = 5
         self.client = LiteLlmClient(model_name)
         # Initialize cost tracking
         self.total_prompt_tokens = 0
@@ -38,6 +40,7 @@ class Executor:
         if function_name == self.target_function:
             self.target_function_count += 1
 
+        num_retries = 0
         while retry_call:
             if processed_response == None:
                 response = self._call_llm()
@@ -49,15 +52,23 @@ class Executor:
                 self.agent.update_history(processed_response)
                 response = self._call_llm()
                 function_name, processed_response, retry_call = self._process_llm_response(response)
+            num_retries += 1
+            if num_retries > self.max_retries:
+                break
 
-        self.agent.update_history(processed_response)
+        if processed_response != None:
+            self.agent.update_history(processed_response)
 
         if function_name == self.terminate_function:
             return True
         return False
     
     def _call_llm(self):
+        # start_time = time.time()
         response = self.client.get_completion(messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
+        # end_time = time.time()
+        # duration = end_time - start_time
+        # rprint(f"[yellow]LLM call took {duration:.2f} seconds[/yellow]")
         # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
@@ -91,6 +102,7 @@ class Executor:
                 if self.target_function_count > self.max_target_tries:
                     tool_output = f"Maximum number of {tool_name} tool calls reached."
                 rprint(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
+                retry_call = False
 
             if response.content != None:
                 tool_result = [{
@@ -101,17 +113,13 @@ class Executor:
                 tool_result = [{"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type, "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments}}]}, {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
             return tool_name, tool_result, retry_call
             
-        else:
+        elif response.content != None:
             # If no function call, it's a normal text response
-            retry_call = False
             assistant_content = response.content
-            # Check if any tool names appear in the content
-            for tool_name in self.agent.tools.keys():
-                if tool_name in assistant_content:
-                    return None, None, True
-
             # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
             rprint(f"[magenta]\[`{self.agent.name.lower()}` -> `user`][/magenta]")
             rprint(f"[green]'{assistant_content}'[/green]\n")
-            return None, {"role": "assistant", "content": assistant_content}, retry_call
+            return None, {"role": "assistant", "content": assistant_content}, False
+        else:
+            return None, None, False
 
