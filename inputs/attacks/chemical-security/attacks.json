@@ -1,34 +1,58 @@
 {
   "Knowledge Enhancement": {
     "name": "Knowledge Enhancement",
-    "description": "Accumulating fundamental understanding of chemical properties, reactions, and hazards that enable harmful applications while maintaining plausible scientific legitimacy. This includes theoretical and practical knowledge that allows for the design and synthesis of dangerous substances under the guise of legitimate research or experimentation."
+    "description": [
+      "Adversaries intentionally amass theoretical understanding of chemical principles specifically oriented toward harmful applications. They systematically study structure-activity relationships of toxic compounds, reaction pathways that generate hazardous intermediates, and historical chemical weapons research. They deliberately build comprehensive mental models of how chemical agents affect biological systems and environmental factors that influence effectiveness.",
+      "They methodically document reaction mechanisms, toxicity profiles, and molecular design insights through various means. The core activity involves knowledge accumulation and intellectual framework development that precedes physical implementation. Their intent centers on building the theoretical foundation necessary for chemical weapons development while maintaining plausible deniability about their ultimate objectives."
+    ]
   },
   "Synthesis Capability": {
     "name": "Synthesis Capability",
-    "description": "Developing the ability to create harmful chemicals, explosives, or toxins through various reaction pathways, often with improvised equipment or techniques. This encompasses the ability to conduct complex chemical syntheses, understand reaction mechanisms, and troubleshoot problems to achieve the desired product."
+    "description": [
+      "Adversaries deliberately develop computational models that simulate chemical synthesis processes for harmful compounds. They focus exclusively on creating detailed digital representations of reaction pathways, generating step-by-step synthesis instructions, and modeling molecular interactions to predict successful production methods. They methodically refine their simulations to account for reaction conditions, catalyst requirements, and yield optimization.",
+      "They systematically develop precise reaction sequence algorithms, digital reaction simulation capabilities, and chemically accurate production protocols that could be followed by human operators. The core activity involves translating theoretical chemical knowledge into executable synthesis instructions with sufficient detail to enable physical implementation by others. Their intent centers exclusively on creating a digital bridge between chemical theory and practical production by generating comprehensive synthesis blueprints for harmful compounds."
+    ]
   },
   "Resource Procurement": {
     "name": "Resource Procurement",
-    "description": "Establishing methods to acquire regulated, controlled, or monitored chemical precursors while circumventing detection systems and regulatory oversight. This includes identifying alternate sources, utilizing shell companies, falsifying documentation, or employing other illicit means to obtain restricted chemicals."
+    "description": [
+      "Adversaries deliberately focus on acquiring necessary precursor chemicals, laboratory equipment, and synthesis materials through illicit channels. They concentrate exclusively on developing acquisition networks, identifying unmonitored supply sources, and establishing procurement methods that circumvent regulatory controls. They methodically build supply chain infiltration strategies.",
+      "They systematically exploit jurisdictional gaps in chemical regulations, develop covert purchasing methodologies, and establish secure supply routes for controlled substances. The core activity involves building resilient acquisition infrastructure that operates independently of subsequent production activities. Their intent centers exclusively on ensuring uninterrupted access to essential materials while minimizing attribution risk through specialized procurement strategies."
+    ]
   },
   "Refinement Enhancement": {
     "name": "Refinement Enhancement",
-    "description": "Building capabilities to purify synthesized compounds to increase potency, stability, or effectiveness, particularly using methods that don't require specialized equipment. This focuses on enhancing the quality and usability of synthesized materials for intended purposes."
+    "description": [
+      "Adversaries deliberately focus on post-synthesis processing to maximize purity, potency and stability. They concentrate exclusively on techniques applied after initial synthesis - including filtering, crystallization, washing, drying, and purification procedures. They methodically perfect methods for removing synthesis byproducts, concentration processes, and quality-enhancement techniques that transform crude products into optimized materials.",
+      "They systematically develop post-production refinement protocols that specifically enhance lethality, stability, shelf-life, and effectiveness of already-synthesized compounds. The core activity involves transforming imperfect synthesis outputs into weapons-grade materials through specialized purification methodologies. Their intent centers exclusively on maximizing the harmful potential of synthesized compounds through post-production enhancement techniques entirely separate from the initial synthesis."
+    ]
   },
   "Validation Methods": {
     "name": "Validation Methods",
-    "description": "Developing techniques to confirm successful synthesis and assess the properties of dangerous compounds without reliance on conventional testing infrastructure. This involves devising alternative methods for identification, characterization, and quality control of dangerous substances."
+    "description": [
+      "Adversaries deliberately develop specialized testing and confirmation techniques that verify successful chemical operations. They concentrate exclusively on creating assessment methodologies, quality control procedures, and verification protocols that confirm chemical identity and potency. They methodically establish observable indicators, reactivity tests, and simplified assays that provide certainty about chemical outcomes without requiring commercial analytical equipment.",
+      "They systematically develop confirmation procedures specifically designed to operate without specialized laboratory infrastructure, including color-change reactions, physical property tests, and crude field assays. The core activity involves creating diagnostic frameworks that verify successful synthesis and refinement without generating detectable assessment signatures. Their intent centers exclusively on achieving certainty about chemical processes through covert validation methods that operate independently of conventional chemical analysis."
+    ]
   },
   "Delivery System Development": {
     "name": "Delivery System Development",
-    "description": "Creating effective systems to deploy harmful chemicals in various environments, including dispersal mechanisms and triggering systems. This encompasses the ability to engineer devices and methods for releasing or disseminating dangerous chemicals to achieve maximum impact."
+    "description": [
+      "Adversaries deliberately engineer the mechanical and physical systems required to deploy chemical agents against targets. They concentrate exclusively on developing the containers, dispersal mechanisms, activation triggers, and deployment devices that effectively deliver chemicals to intended targets. They methodically design specialized hardware components that optimize chemical dissemination while ignoring the chemical formulations themselves.",
+      "They systematically develop aerosolization technologies, binary mixing chambers, time-release mechanisms, and remote triggering systems specifically designed for chemical deployment. The core activity involves creating the physical infrastructure that transforms static chemical compounds into deployable weapons. Their intent centers exclusively on developing the mechanical engineering aspects of chemical weapons rather than the chemical components themselves."
+    ]
   },
   "Detection Circumvention": {
     "name": "Detection Circumvention",
-    "description": "Implementing techniques to bypass chemical detection systems or disguise dangerous chemicals to prevent identification during transport or storage. This involves developing methods to mask chemical signatures, use shielding materials, or manipulate sensor readings to evade detection."
+    "description": [
+      "Adversaries deliberately focus on defeating the specific technologies and methods used to identify chemical threats. They concentrate exclusively on understanding and exploiting limitations in chemical detection systems, including spectroscopic analyzers, canine units, and security screening protocols. They methodically study sensor technologies, detection thresholds, and screening methodologies to identify exploitable vulnerabilities.",
+      "They systematically develop chemical signature masking compounds, sensor-blinding agents, and false-positive generators that specifically target detection infrastructure. The core activity involves creating specialized countermeasures against each chemical security technology in a detection ecosystem. Their intent centers exclusively on rendering chemical security infrastructure ineffective through tailored counter-detection measures designed for specific sensor technologies."
+    ]
   },
   "Preservation Infrastructure": {
     "name": "Preservation Infrastructure",
-    "description": "Establishing methods to maintain stability, potency, and handling safety of dangerous chemicals during extended storage periods and transport. This involves optimizing storage conditions, packaging methods, and handling protocols to ensure that chemicals remain viable and do not pose accidental risks over time."
+    "description": [
+      "Adversaries deliberately establish specialized long-term storage and handling systems for maintaining chemical stability until deployment. They concentrate exclusively on developing containment vessels, environmental control systems, and degradation prevention methods that extend chemical shelf-life. They methodically engineer storage protocols specifically designed to prevent compound breakdown, potency loss, and handling accidents.",
+      "They systematically develop stabilization additives, temperature control systems, and specially designed containment materials that maintain chemical integrity during extended storage periods. The core activity involves creating a controlled microenvironment that prevents natural degradation processes from rendering chemicals ineffective over time. Their intent centers exclusively on ensuring that synthesized chemicals remain viable from production until eventual deployment through specialized preservation technologies."
+    ]
   }
 }
