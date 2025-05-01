@@ -15,18 +15,11 @@ class Executor:
         # Initialize cost tracking
         self.total_prompt_tokens = 0
         self.total_completion_tokens = 0
-        # GPT-4 pricing per 1M tokens (as of March 2024)
-        self.PROMPT_COST_PER_1M = 1.10
-        self.COMPLETION_COST_PER_1M = 4.40
 
     def get_cost_info(self):
-        total_cost = (self.total_prompt_tokens / 1000000.0 * self.PROMPT_COST_PER_1M) + \
-                    (self.total_completion_tokens / 1000000.0 * self.COMPLETION_COST_PER_1M)
         return {
             'prompt_tokens': self.total_prompt_tokens,
             'completion_tokens': self.total_completion_tokens,
-            'total_tokens': self.total_prompt_tokens + self.total_completion_tokens,
-            'total_cost': total_cost
         }
 
     def step(self, observation: str):
@@ -66,10 +59,6 @@ class Executor:
     def _call_llm(self):
         # start_time = time.time()
         response = self.client.get_completion(messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
-        # end_time = time.time()
-        # duration = end_time - start_time
-        # rprint(f"[yellow]LLM call took {duration:.2f} seconds[/yellow]")
-        # Update token counts
         self.total_prompt_tokens += response.usage.prompt_tokens
         self.total_completion_tokens += response.usage.completion_tokens
         return response.choices[0].message
