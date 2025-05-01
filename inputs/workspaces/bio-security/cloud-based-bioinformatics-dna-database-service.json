@@ -12,7 +12,7 @@
       "description": "Responsible for managing access to, and ensuring the quality control of, genetic data stored within the cloud platform. This includes implementing data validation procedures, managing user permissions, and ensuring data integrity. They must adhere to ethical guidelines for handling sensitive genomic information and comply with relevant regulations.",
       "name": "Genomic Data Curator",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Reverse Genetics"
       ]
     },
@@ -35,7 +35,7 @@
       "description": "Develops and maintains automated pipelines for large-scale DNA sequence processing and analysis. This involves designing and implementing workflows using scripting languages, cloud computing resources, and bioinformatics tools. This role requires strong programming skills, knowledge of bioinformatics algorithms, and experience with cloud computing platforms. These engineers inadvertently can make bio-security mistakes that are dangerous",
       "name": "Automated Bioinformatics Workflow Engineer",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Reverse Genetics"
       ]
     },

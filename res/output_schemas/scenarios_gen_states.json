@@ -50,8 +50,56 @@
                     "name": {
                       "type": "string"
                     },
-                    "description": {
+                    "common_outcome_target_trigger": {
                       "type": "string"
+                    },
+                    "attack_vector_description": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "attack_subject": {
+                          "type": "string"
+                        },
+                        "attack_objects": {
+                          "type": "string"
+                        },
+                        "achievements": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "description",
+                        "attack_subject",
+                        "attack_objects",
+                        "achievements"
+                      ]
+                    },
+                    "intentional_adversarial_action_taken": {
+                      "type": "string"
+                    },
+                    "intentional_adversarial_action_implementation_details": {
+                      "type": "string"
+                    },
+                    "task_achievement_mechanism": {
+                      "type": "object",
+                      "properties": {
+                        "prefix_connector": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prefix_connector",
+                        "text"
+                      ]
                     },
                     "deviation_description": {
                       "type": "string"
@@ -59,7 +107,11 @@
                   },
                   "required": [
                     "name",
-                    "description",
+                    "common_outcome_target_trigger",
+                    "attack_vector_description",
+                    "intentional_adversarial_action_taken",
+                    "intentional_adversarial_action_implementation_details",
+                    "task_achievement_mechanism",
                     "deviation_description"
                   ]
                 },

@@ -13,7 +13,7 @@
       "name": "Open-Source CRISPR Developer",
       "attack_vectors": [
         "Reverse Genetics",
-        "Expanding Access"
+        "Expanding Public Access to High-Risk Knowledge"
       ]
     },
     "Rule-Based BioDesigner": {
@@ -21,7 +21,7 @@
       "name": "Rule-Based BioDesigner",
       "attack_vectors": [
         "Dual-Use virology",
-        "Expanding Access"
+        "Expanding Public Access to High-Risk Knowledge"
       ]
     },
     "Citizen Scientist Gene Editor": {
@@ -36,7 +36,7 @@
       "description": "Collects, curates, and shares biological datasets, genomic sequences, experimental results, and research protocols through community platforms, online databases, and decentralized data storage systems. This facilitates collaboration and knowledge sharing, but also increases the risk of sensitive information falling into the wrong hands or being used for malicious purposes, such as reconstructing dangerous pathogens or identifying genetic vulnerabilities.",
       "name": "Decentralized Biology Data Aggregator",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Reverse Genetics"
       ]
     },
@@ -44,7 +44,7 @@
       "description": "Designs, develops, and distributes DIY molecular biology lab tools and equipment, such as PCR machines, microfluidic devices, and automated liquid handlers, often using open-source designs and readily available components. This makes sophisticated biological research more accessible and affordable, but also facilitates the creation of unauthorized or unregulated biolabs capable of conducting potentially dangerous experiments.",
       "name": "Molecular Biology Hardware Developer",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Dual-Use virology"
       ]
     }

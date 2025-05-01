@@ -12,7 +12,7 @@
       "description": "Responsible for organizing and leading open-access biology workshops, training sessions, and community events within the biohacking lab. They facilitate knowledge sharing, recruit new members, and manage the lab's resources and infrastructure. Their activities can unintentionally contribute to the dissemination of potentially dangerous knowledge and techniques.",
       "name": "Biohacker Community Leader",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Dual-Use virology"
       ]
     },
@@ -44,7 +44,7 @@
       "description": "Produces and distributes easy-to-use genetic engineering kits, reagents, and equipment for the biohacking community. These kits lower the barrier to entry for individuals interested in experimenting with molecular biology, but they can also be misused to perform dangerous experiments or create harmful organisms.",
       "name": "Molecular Biology Kit Manufacturer",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Viral Vector Research"
       ]
     }

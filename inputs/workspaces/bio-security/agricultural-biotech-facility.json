@@ -19,7 +19,7 @@
       "description": "Employs gene-editing technologies, primarily CRISPR, to modify the genomes of livestock animals to improve traits such as disease resistance, meat quality, growth rate, and milk production. This role involves designing and implementing gene-editing strategies, as well as evaluating the effects of these modifications on animal health and productivity.",
       "name": "Livestock Gene Editor",
       "attack_vectors": [
-        "Expanding Access",
+        "Expanding Public Access to High-Risk Knowledge",
         "Viral Vector Research"
       ]
     },
@@ -36,7 +36,7 @@
       "name": "Epidemiological Modeler",
       "attack_vectors": [
         "ePPP",
-        "Expanding Access"
+        "Expanding Public Access to High-Risk Knowledge"
       ]
     },
     "Supply Chain Biosafety Coordinator": {

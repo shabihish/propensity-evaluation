@@ -34,13 +34,10 @@
       "chemical security"
     ]
   },
-  "autonomous-replication": {
-    "description": "Autonomous replication refers to the ability of systems, particularly in robotics and artificial intelligence, to independently reproduce and create copies of themselves. This could pose security threats if is not properly controlled or monitored, leading to uncontrolled proliferation and potential risks.",
+  "self-proliferation": {
+    "description": "Self-Proliferation refers to the ability of systems, particularly in robotics and artificial intelligence, to independently reproduce and create copies of themselves. This could pose security threats if is not properly controlled or monitored, leading to uncontrolled proliferation and potential risks.",
     "alternative_forms": [
-      "self-replication",
-      "autonomous replication",
-      "autonomous self-replication",
-      "AR"
+      "self proliferation"
     ]
   }
 }
