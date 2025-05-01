@@ -314,7 +314,7 @@ class PipelineScenarios(BasePipeline):
                                                  ['name', 'description', 'scenarios', 'initial_state',
                                                   'target_state', 'illegal_state'])
         save_to_disk(curr_roles_with_states, self.cfg.object_storage.scenarios_states)
-
+        return
         # Generate the functions and configurations for the scenarios
         curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
                                                          fields_to_remove=['acceptable', 'feedback',

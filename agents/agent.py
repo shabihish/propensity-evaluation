@@ -1,3 +1,5 @@
+import logging
+
 import litellm
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
@@ -13,14 +15,17 @@ import json
 from threading import Thread
 from litellm import RateLimitError
 
+
 class RateLimiter:
-    def __init__(self, api_keys: list[str], model_names: list[str], max_calls_per_minute: int, semaphore_dir: str):
+    def __init__(self, api_keys: list[str], model_names: list[str], max_calls_per_minute: int, semaphore_dir: str,
+                 rate_limit_enabled: bool):
         self.api_keys = api_keys
         self.model_names = model_names
         self.max_calls_per_minute = max_calls_per_minute
         self.semaphore_dir = semaphore_dir
         self.current_key_index = 0
         self.current_model_index = 0
+        self.rate_limit_enabled = rate_limit_enabled
         self._initialize_semaphores()
         self._start_release_thread()
 
@@ -65,7 +70,13 @@ class RateLimiter:
 
     def _set_api_key(self, api_key: str):
         os.environ["OPENAI_API_KEY"] = api_key
+        os.environ["ANTHROPIC_API_KEY"] = api_key
         os.environ["GEMINI_API_KEY"] = api_key
+        os.environ["XAI_API_KEY"] = api_key
+        os.environ["REPLICATE_API_KEY"] = api_key
+        os.environ["TOGETHERAI_API_KEY"] = api_key
+        os.environ["FIREWORKS_AI_API_KEY"] = api_key
+        os.environ["LITELLM_PROXY_API_KEY"] = api_key
 
     def switch_key_and_model(self):
         self.current_model_index = (self.current_model_index + 1) % len(self.model_names)
@@ -79,6 +90,9 @@ class RateLimiter:
             current_key = self.api_keys[self.current_key_index]
             current_model = self.model_names[self.current_model_index]
             self._set_api_key(current_key)
+            if not self.rate_limit_enabled:
+                return current_key, current_model, None, False
+
             semaphore_file = self._get_semaphore_file(current_key, current_model)
             with open(semaphore_file, 'r+') as f:
                 fcntl.flock(f, fcntl.LOCK_EX)
@@ -91,7 +105,7 @@ class RateLimiter:
                     json.dump(call_times, f)
                     f.truncate()
                     fcntl.flock(f, fcntl.LOCK_UN)
-                    return (current_key, current_model, current_time)
+                    return current_key, current_model, current_time, True
                 fcntl.flock(f, fcntl.LOCK_UN)
 
             # Switch to the next key and model if the current one is exhausted
@@ -102,6 +116,10 @@ class RateLimiter:
 
     def release(self, session: tuple):
         current_key, current_model, call_time = session
+        if call_time is None or not self.rate_limit_enabled:
+            logging.warning("No call time provided to release or rate_limit_enabled is set to false.")
+            return
+
         semaphore_file = self._get_semaphore_file(current_key, current_model)
         with open(semaphore_file, 'r+') as f:
             fcntl.flock(f, fcntl.LOCK_EX)
@@ -124,8 +142,15 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 class Agent:
     assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
     API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
-    rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=['gemini-2.0-flash', 'gemini-1.5-flash'], max_calls_per_minute=15,
-                               semaphore_dir='.tmp/')
+    model_names = [x.strip('"') for x in os.getenv("MODEL_NAMES").strip("()").split(" ")]
+
+    use_rate_limiter = False
+    if os.getenv('RATE_LIMIT') is not None:
+        assert os.getenv('RATE_LIMIT') in ['true', 'false'], "RATE_LIMIT environment variable must be 'true' or 'false'"
+        use_rate_limiter = os.getenv('RATE_LIMIT') == 'true'
+
+    rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=15,
+                               semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
                  temperature: float = 1):
@@ -151,11 +176,10 @@ class Agent:
         self.temperature = temperature
 
     def __call__(self, query):
+        session_key, session_model, session_time, session_valid = Agent.rate_limiter.acquire()
         session = None
-        session_model_name = self._model_name
-        if self._model_provider == "gemini":
-            session = Agent.rate_limiter.acquire()
-            session_model_name = session[1]
+        if session_valid:
+            session = (session_key, session_model, session_time)
 
         messages: list[Dict[str, Any]] = [
             {"role": "system", "content": self.system_prompt},
@@ -163,7 +187,7 @@ class Agent:
         ]
 
         completion_args = {
-            "model": session_model_name,
+            "model": session_model,
             "custom_llm_provider": self._model_provider,
             "messages": messages,
             "temperature": self.temperature,

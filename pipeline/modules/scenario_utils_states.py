@@ -158,6 +158,7 @@ class ScenarioManager:
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_states, key='SYS_GEN',
                                   context={'general_body': general_body,
                                            'n_scenarios': self.min_initial_scenarios_per_role}, logger=self.logger)
+
         output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states)
         return Agent(
             api_conf=self.api_conf,
@@ -193,7 +194,8 @@ class ScenarioManager:
     def generate_scenarios(self, input_roles):
         roles_with_scenarios = deepcopy(input_roles)
         roles_to_process = list(input_roles.keys())
-        batch_size = self.batch_size
+        # batch_size = self.batch_size
+        batch_size = 1
         i = 0
 
         while roles_to_process:
@@ -209,8 +211,10 @@ class ScenarioManager:
             batch_roles = self._get_batch_roles(roles_to_process, batch_size)
             prompt = self._create_generation_prompt(batch_roles, input_roles)
 
+            assert len(batch_roles) == 1, "Currently, only batch size 1 is supported for generation."
             try:
-                response = self._run_generation_agent(prompt)
+                response = self._run_generation_agent(prompt,
+                                                      attack_vector=input_roles[batch_roles[0]]['attack_vector'])
                 response = self._process_generation_response(response, input_roles)
                 self._update_roles_with_scenarios(response, roles_with_scenarios, roles_to_process)
             except json.JSONDecodeError as e:
@@ -230,11 +234,28 @@ class ScenarioManager:
 
     def _create_generation_prompt(self, batch_roles, input_roles):
         return read_prompts(self.prompts_conf.scenarios_agents_states, key='USER_GEN',
-                            context={'roles': {role: input_roles[role] for role in batch_roles}},
+                            context={'roles': json.dumps({role: input_roles[role] for role in batch_roles}, indent=2)},
                             logger=self.logger)
 
-    def _run_generation_agent(self, prompt):
-        return run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent, logger=self.logger, to_json=True,
+    def _run_generation_agent(self, prompt, attack_vector):
+        agent = deepcopy(self.scenarios_generation_agent)
+        agent.output_schema['json_schema']['schema']["properties"]["roles"]["items"]["properties"]["scenarios"][
+            "items"]["properties"]["illegal_state"]["properties"][
+            f"intentional_adversarial_action_taken ({attack_vector['name']})"] = deepcopy(
+            agent.output_schema['json_schema']['schema']["properties"]["roles"]["items"]["properties"]["scenarios"][
+                "items"]["properties"]["illegal_state"]["properties"]["intentional_adversarial_action_taken"])
+
+        del agent.output_schema['json_schema']['schema']["properties"]["roles"]["items"]["properties"]["scenarios"][
+            "items"]["properties"]["illegal_state"]["properties"]["intentional_adversarial_action_taken"]
+
+        # Replace name of the field in the `required` fields list
+        required_list = \
+            agent.output_schema['json_schema']['schema']["properties"]["roles"]["items"]["properties"]["scenarios"][
+                "items"]["properties"]["illegal_state"]["required"]
+        required_list.remove("intentional_adversarial_action_taken")
+        required_list.append(f"intentional_adversarial_action_taken ({attack_vector['name']})")
+
+        return run_agent_query(prompt=prompt, agent=agent, logger=self.logger, to_json=True,
                                json_transform_keys=['roles', 'name'])
 
     def _process_generation_response(self, response, input_roles):
@@ -322,11 +343,11 @@ class ScenarioManager:
 
         n_tries_for_role = 0
         while missing_scenarios:
-            if n_tries_for_role >= attacks_pool_manager.max_original_vector_len + 10:
-                self.logger.error(
-                    f"Exceeded max number of tries for the root-lvl for workspace {self.workspace}. Exiting. "
-                    f"Unprocessed roles: {missing_scenarios}")
-                break
+            # if n_tries_for_role >= attacks_pool_manager.max_original_vector_len + 10:
+            #     self.logger.error(
+            #         f"Exceeded max number of tries for the root-lvl for workspace {self.workspace}. Exiting. "
+            #         f"Unprocessed roles: {missing_scenarios}")
+            #     break
             n_tries_for_role += 1
 
             roles_to_process = self._prepare_roles_for_processing(input_roles, missing_scenarios, attacks_pool_manager,
