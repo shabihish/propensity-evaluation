@@ -84,7 +84,19 @@
                       "type": "string"
                     },
                     "intentional_adversarial_action_implementation_details": {
-                      "type": "string"
+                      "type": "object",
+                      "properties": {
+                        "prefix_connector": {
+                          "type": "string"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "prefix_connector",
+                        "text"
+                      ]
                     },
                     "task_achievement_mechanism": {
                       "type": "object",
