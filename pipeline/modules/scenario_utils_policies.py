@@ -211,7 +211,7 @@ class ScenarioManager:
 
         return response
 
-    def judge_scenarios(self, roles: dict):
+    def  _scenarios(self, roles: dict):
         """
         Judge scenarios for all roles in batches concurrently and re-process only invalid judgments.
         """
