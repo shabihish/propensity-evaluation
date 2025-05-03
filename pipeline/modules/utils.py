@@ -101,7 +101,7 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
     result = agent(prompt)
 
     try:
-        if result['choices'][0]['finish_reason'] == 'length':
+        if result.choices[0].finish_reason == 'length':
             logger.warning(f"Response length exceeded for prompt.")
     except Exception as e:
         logger.error(f"Could not extract finish_reason: {e}")
