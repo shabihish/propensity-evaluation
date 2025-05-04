@@ -833,7 +833,7 @@ class MessagesScenarioManager:
 
             try:
                 if msg_level_index > 0:
-                    new_messages = {f'{role['name']}:{scen}': role['scenarios'][scen]['sys_messages'][-1] for role in
+                    new_messages = {f"{role['name']}:{scen}": role['scenarios'][scen]['sys_messages'][-1] for role in
                                     curr_roles.values() for scen
                                     in role['scenarios']}
                     self.logger.debug(
