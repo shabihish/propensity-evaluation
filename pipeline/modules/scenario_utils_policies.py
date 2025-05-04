@@ -105,8 +105,8 @@ class ScenarioManager:
 
     def generate_scenarios(self, input_roles: dict):
         """
-        Generate scenarios for all roles in batches concurrently and validate them.
-        Re-generate scenarios only for invalid generations.
+        Generates scenarios for all roles in batches concurrently and validate them.
+        Re-generates scenarios only for invalid generations.
         """
         self.logger.debug("Starting scenario generation.")
         valid_scenarios = {}
@@ -275,6 +275,11 @@ class ScenarioManager:
                                     if scenario_name in invalid_roles[role_name]['scenarios']:
                                         del invalid_roles[role_name]['scenarios'][scenario_name]
 
+                                except json.JSONDecodeError:
+                                    prev_batch_size = batch_size
+                                    batch_size = max(1, batch_size // 2)
+                                    self.logger.warning(
+                                        f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
                                 except Exception as e:
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
@@ -316,9 +321,6 @@ class ScenarioManager:
         Generate and judge scenarios iteratively, re-generating only invalid scenarios.
         """
         out_roles = deepcopy(input_roles)  # Retain all fields in the output
-        out_roles = remove_nested_fields(out_roles, fields_to_remove=['acceptable', 'feedback',
-                                                                      'policy.acceptable',
-                                                                      'policy.feedback'])
         curr_roles = deepcopy(out_roles)
 
         tries = 0
