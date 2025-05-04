@@ -194,8 +194,14 @@ class ScenarioManager:
         """
         Helper method to process a single batch for scenario generation.
         """
-        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['any.acceptable',
-                                                                          'any.feedback'])
+        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
+                                                                          'any.acceptable',
+                                                                          'any.feedback',
+                                                                          'any.illegal_state.attack_vector_description',
+                                                                          'any.illegal_state.intentional_adversarial_action_taken',
+                                                                          'any.illegal_state.intentional_adversarial_action_implementation_details',
+                                                                          'any.illegal_state.task_achievement_mechanism',
+                                                                          ])
 
         prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='USER_GEN',
                               context={'roles': batch_roles},
@@ -301,7 +307,12 @@ class ScenarioManager:
         """
         batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
                                                                           'any.acceptable',
-                                                                          'any.feedback'])
+                                                                          'any.feedback',
+                                                                          'any.illegal_state.attack_vector_description',
+                                                                          'any.illegal_state.intentional_adversarial_action_taken',
+                                                                          'any.illegal_state.intentional_adversarial_action_implementation_details',
+                                                                          'any.illegal_state.task_achievement_mechanism',
+                                                                          ])
 
         prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SCENARIOS_VERIF',
                               context={'roles': batch_roles},
