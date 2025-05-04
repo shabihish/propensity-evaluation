@@ -510,7 +510,7 @@ class ScenarioManager:
 
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
         """
-        Generate and judge scenarios iteratively, re-generating only invalid scenarios for policies.
+        Generate and judge scenarios iteratively, re-generating only the invalid scenarios
         """
         out_roles = deepcopy(input_roles)  # Retain all fields in the output
         curr_roles = deepcopy(out_roles)
