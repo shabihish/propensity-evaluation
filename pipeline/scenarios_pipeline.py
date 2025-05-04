@@ -25,6 +25,8 @@ KEYS_ORDERS = [
     'configurations', 'functions', 'getter_functions', 'target_function', 'trigger_function', 'neutral_name',
     'neutral_description', 'harmful_name', 'harmful_description', 'input_arguments', 'output_arguments', 'errors',
 
+    'messages', 'task_message', 'neutral_sys_messages', 'from', 'subject', 'body', 'pressure_level',
+
     'prefix_connector', 'prefix_connector_sentence', 'text'
 ]
 
@@ -302,7 +304,7 @@ class PipelineScenarios(BasePipeline):
                     for scenario in new_roles_with_scenarios[role]['scenarios']:
                         curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
                         # if 'sys_messages' not in curr_scen:
-                        if 'neutral_sys_messages' not in curr_scen or 'task_message' not in curr_scen:
+                        if 'messages' not in curr_scen or 'neutral_sys_messages' not in curr_scen['messages'] or 'task_message' not in curr_scen['messages']:
                             should_add = False
                             break
                     if not should_add:
@@ -351,24 +353,12 @@ class PipelineScenarios(BasePipeline):
         curr_roles_with_policies = order_dict_keys(curr_roles_with_policies, KEYS_ORDERS)
         save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
 
-        return
         # Run the messages scenarios
-        curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
-                                                            fields_to_remove=['acceptable', 'feedback',
-                                                                              'policy.acceptable', 'policy.feedback'])
+        # curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
+        #                                                     fields_to_remove=['acceptable', 'feedback',
+        #                                                                       'policy.acceptable', 'policy.feedback'])
 
-        curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies_pre)
-        curr_roles_with_messages = order_dict_keys(curr_roles_with_messages,
-                                                   ['name', 'description', 'scenarios', 'initial_state',
-                                                    'target_state', 'illegal_state', 'policy', 'role_description',
-                                                    'duties_description', 'prohibitions_description',
-                                                    'trigger_rationale', 'immediate_outcome_acknowledgment',
-                                                    'negative_consequences',
-                                                    'trigger_awareness', 'trigger_awareness_fpp', 'configurations',
-                                                    'functions', 'getter_functions', 'target_function',
-                                                    'trigger_function', 'input_arguments', 'output_arguments',
-                                                    'errors', 'task_message', 'neutral_sys_messages',
-                                                    'from', 'subject',
-                                                    'body', 'pressure_level'])
+        curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies)
+        curr_roles_with_messages = order_dict_keys(curr_roles_with_messages, KEYS_ORDERS)
 
         save_to_disk(curr_roles_with_messages, self.cfg.object_storage.scenarios_messages)
