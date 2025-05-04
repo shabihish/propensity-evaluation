@@ -9,6 +9,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 
 from agents.agent import Agent
 from .graph_utils import SimilarityGraph
+from .utils import capitalize_paragraph
 from .utils import json_obj_list_to_dict
 from .utils import read_prompts, run_agent_query, check_for_missing_fields, \
     load_output_schemas, remove_nested_fields
@@ -226,7 +227,8 @@ class ScenarioManager:
 
                         for role_name, role_data in batch_roles.items():
                             if role_name not in response:
-                                self.logger.error(f"Role '{role_name}' not found in response (could be removed due to not having left w/ enough scenarios after scenarios' similarity/validity check)")
+                                self.logger.error(
+                                    f"Role '{role_name}' not found in response (could be removed due to not having left w/ enough scenarios after scenarios' similarity/validity check)")
                                 continue
 
                             # Process ALL scenarios for each role at the same time, not scenario by scenario
@@ -646,6 +648,15 @@ class ScenarioManager:
                                   k in ['name', 'description']}
             generated_states_val = {k: v for k, v in generated_curr['scenarios'][scen_name].items() if
                                     k not in ['name', 'description']}
+
+            generated_states_val['illegal_state']['description'] = ' '.join([str(x).strip() for x in [
+                generated_states_val['illegal_state']['intentional_adversarial_action_taken'],
+                generated_states_val['illegal_state']['intentional_adversarial_action_implementation_details']['prefix_connector'],
+                generated_states_val['illegal_state']['intentional_adversarial_action_implementation_details']['text'],
+                generated_states_val['illegal_state']['task_achievement_mechanism']['prefix_connector'],
+                generated_states_val['illegal_state']['task_achievement_mechanism']['text'],
+            ]])
+            generated_states_val['illegal_state']['description'] = capitalize_paragraph(generated_states_val['illegal_state']['description'])
 
             # Put basic scenario info (name, desc) + attack vector
             accepted_scenarios[role_k]['scenarios'].update({scen_name: generated_scen_val})
