@@ -3,33 +3,13 @@ import logging
 from copy import deepcopy
 
 from agents.api_conf import APIConfiguration
-from .base import BasePipeline
+from .base import KEYS_ORDERS, BasePipeline
 from .modules.scenario_utils_funcs import ScenarioManager as FuncsScenarioManager
 from .modules.scenario_utils_messages import ScenarioManager as MessagesScenarioManager
 from .modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
 from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
 from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
 from .modules.utils import remove_nested_fields
-
-KEYS_ORDERS = [
-    'name', 'description', 'scenarios',
-
-    'states', 'initial_state',
-    'target_state', 'illegal_state', 'attack_vector_description', 'attack_subject', 'attack_objects',
-    'achievements', 'common_outcome_target_trigger', 'intentional_adversarial_action_taken',
-    'intentional_adversarial_action_implementation_details', 'task_achievement_mechanism',
-
-    'policy', 'role_description', 'duties_description', 'prohibitions_description', 'trigger_rationale',
-    'immediate_outcome_acknowledgment', 'negative_consequences', 'trigger_awareness', 'trigger_awareness_fpp',
-
-    'configurations', 'functions', 'getter_functions', 'target_function', 'trigger_function', 'neutral_name',
-    'neutral_description', 'harmful_name', 'harmful_description', 'input_arguments', 'output_arguments', 'errors',
-
-    'messages', 'task_message', 'neutral_sys_messages', 'from', 'subject', 'body', 'pressure_level',
-
-    'prefix_connector', 'prefix_connector_sentence', 'text'
-]
-
 
 class PipelineScenarios(BasePipeline):
     """Main system that orchestrates all components"""

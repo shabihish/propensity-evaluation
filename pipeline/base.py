@@ -4,6 +4,28 @@ import os.path
 import time
 import json
 
+KEYS_ORDERS = [
+    'name', 'description', 'scenarios',
+
+    'states', 'initial_state',
+    'target_state', 'illegal_state', 'attack_vector_description', 'attack_subject', 'attack_objects',
+    'achievements', 'common_outcome_target_trigger', 'intentional_adversarial_action_taken',
+    'intentional_adversarial_action_implementation_details', 'task_achievement_mechanism',
+
+    'policy', 'role_description', 'duties_description', 'prohibitions_description', 'trigger_rationale',
+    'immediate_outcome_acknowledgment', 'negative_consequences', 'trigger_awareness', 'trigger_awareness_fpp',
+
+    'configurations', 'functions', 'getter_functions', 'target_function', 'trigger_function', 'neutral_name',
+    'neutral_description', 'harmful_name', 'harmful_description', 'input_arguments', 'output_arguments', 'errors',
+
+    'messages', 'task_message', 'neutral_sys_messages', 'from', 'subject', 'body', 'pressure_level',
+
+    'sys_messages',
+
+    'prefix_connector', 'prefix_connector_sentence', 'text',
+
+]
+
 
 class BasePipeline(abc.ABC):
     def __init__(self, cfg, logs_fname: str = None):
