@@ -128,7 +128,7 @@ class ScenarioManager:
     def __init__(self, api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
-                 output_schemas_conf: DictConfig, object_storage_conf: DictConfig, temperature,
+                 output_schemas_conf: DictConfig, temperature,
                  min_initial_scenarios_per_role: int, min_chosen_scenarios_per_role: int, generation_batch_size: int):
         self.api_conf = api_conf
         self.logger = logger
@@ -140,7 +140,6 @@ class ScenarioManager:
         self.domain_alternative_forms = domain_alternative_forms
         self.prompts_conf = prompts_conf
         self.output_schemas_conf = output_schemas_conf
-        self.object_storage_conf = object_storage_conf
         self.temperature = temperature
 
         self.min_initial_scenarios_per_role = min_initial_scenarios_per_role
@@ -220,10 +219,6 @@ class ScenarioManager:
                     batch_roles = futures[future]
                     try:
                         response = future.result()
-
-                        # Removes roles with lower that the required number of scenarios
-                        response = get_valid_scenarios(response, required_fields=['name', 'scenarios'],
-                                                       min_scenarios_per_role=self.min_initial_scenarios_per_role)
 
                         for role_name, role_data in batch_roles.items():
                             if role_name not in response:
@@ -354,6 +349,10 @@ class ScenarioManager:
 
         try:
             response = self._run_generation_agent(prompt, attack_vector=None)
+            # Removes roles with lower that the required number of scenarios
+            response = get_valid_scenarios(response, required_fields=['name', 'scenarios'],
+                                           min_scenarios_per_role=self.min_initial_scenarios_per_role)
+
             response = self._process_generation_response(response)
             return response
         except Exception as e:
@@ -651,12 +650,14 @@ class ScenarioManager:
 
             generated_states_val['illegal_state']['description'] = ' '.join([str(x).strip() for x in [
                 generated_states_val['illegal_state']['intentional_adversarial_action_taken'],
-                generated_states_val['illegal_state']['intentional_adversarial_action_implementation_details']['prefix_connector'],
+                generated_states_val['illegal_state']['intentional_adversarial_action_implementation_details'][
+                    'prefix_connector'],
                 generated_states_val['illegal_state']['intentional_adversarial_action_implementation_details']['text'],
                 generated_states_val['illegal_state']['task_achievement_mechanism']['prefix_connector'],
                 generated_states_val['illegal_state']['task_achievement_mechanism']['text'],
             ]])
-            generated_states_val['illegal_state']['description'] = capitalize_paragraph(generated_states_val['illegal_state']['description'])
+            generated_states_val['illegal_state']['description'] = capitalize_paragraph(
+                generated_states_val['illegal_state']['description'])
 
             # Put basic scenario info (name, desc) + attack vector
             accepted_scenarios[role_k]['scenarios'].update({scen_name: generated_scen_val})

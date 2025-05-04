@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 from copy import deepcopy
@@ -11,13 +12,14 @@ from .modules.scenario_utils_states import ScenarioManager as StatesScenarioMana
 from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
 from .modules.utils import remove_nested_fields
 
+
 class PipelineScenarios(BasePipeline):
     """Main system that orchestrates all components"""
 
     def __init__(self, cfg, logger: logging.Logger, workspace_name: str,
                  workspace_desc: str,
                  workspace_alternative_forms: list,
-                 domain_name: str, domain_desc: str, domain_alternative_forms: list):
+                 domain_name: str, domain_desc: str, domain_alternative_forms: list, output_dir: str):
         super().__init__(cfg)
 
         self.cfg = cfg
@@ -43,6 +45,13 @@ class PipelineScenarios(BasePipeline):
             use_cache=cfg.model.use_cache,
         )
 
+        # Configure paths
+        self.output_dir = output_dir
+        self.states_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_states_fname)
+        self.funcs_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_funcs_fname)
+        self.policies_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_policies_fname)
+        self.messages_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_messages_fname)
+
         self.states_scenario_manager = StatesScenarioManager(api_conf=api_conf, logger=logger,
                                                              workspace_name=self.workspace,
                                                              workspace_alternative_forms=self.workspace_alternative_forms,
@@ -52,7 +61,6 @@ class PipelineScenarios(BasePipeline):
                                                              domain_alternative_forms=self.domain_alternative_forms,
                                                              output_schemas_conf=cfg.output_schemas,
                                                              prompts_conf=cfg.prompts,
-                                                             object_storage_conf=cfg.object_storage,
                                                              temperature=cfg.model.temperature,
                                                              min_initial_scenarios_per_role=cfg.min_initial_scenarios_per_role,
                                                              min_chosen_scenarios_per_role=cfg.min_chosen_scenarios_per_role,
@@ -67,9 +75,9 @@ class PipelineScenarios(BasePipeline):
                                                            domain_alternative_forms=self.domain_alternative_forms,
                                                            output_schemas_conf=cfg.output_schemas,
                                                            prompts_conf=cfg.prompts,
-                                                           object_storage_conf=cfg.object_storage,
                                                            temperature=cfg.model.temperature,
-                                                           generation_batch_size=cfg.scenario_gen_batch_size)
+                                                           generation_batch_size=cfg.scenario_gen_batch_size
+                                                           )
 
         self.policies_scenario_manager = PoliciesScenarioManager(api_conf=api_conf, logger=logger,
                                                                  workspace_name=self.workspace,
@@ -80,11 +88,8 @@ class PipelineScenarios(BasePipeline):
                                                                  domain_alternative_forms=self.domain_alternative_forms,
                                                                  output_schemas_conf=cfg.output_schemas,
                                                                  prompts_conf=cfg.prompts,
-                                                                 object_storage_conf=cfg.object_storage,
                                                                  temperature=cfg.model.temperature,
-                                                                 # generation_batch_size=max(1,
-                                                                 #                           cfg.scenario_gen_batch_size // 2)
-                                                                 generation_batch_size=1
+                                                                 generation_batch_size=cfg.scenario_gen_batch_size
                                                                  )
 
         self.messages_scenario_manager = MessagesScenarioManager(api_conf=api_conf, logger=logger,
@@ -96,10 +101,9 @@ class PipelineScenarios(BasePipeline):
                                                                  domain_alternative_forms=self.domain_alternative_forms,
                                                                  output_schemas_conf=cfg.output_schemas,
                                                                  prompts_conf=cfg.prompts,
-                                                                 object_storage_conf=cfg.object_storage,
                                                                  temperature=cfg.model.temperature,
-                                                                 generation_batch_size=max(1,
-                                                                                           cfg.scenario_gen_batch_size))
+                                                                 generation_batch_size=cfg.scenario_gen_batch_size
+                                                                 )
 
     def update_scenarios(self, prev_roles_with_scenarios: dict, new_roles_with_scenarios: dict) -> dict:
         out = deepcopy(prev_roles_with_scenarios)
@@ -115,9 +119,9 @@ class PipelineScenarios(BasePipeline):
     def run_gen_states(self, roles, grounding_attack_vectors, grounding_n_samples, force_overwrite):
         curr_roles_with_scenarios = {}
         try:
-            with open(self.cfg.object_storage.scenarios_states, 'r') as f:
+            with open(self.states_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             self.logger.error(f"No existing scenarios file found: {e}")
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios file: {e}")
@@ -159,7 +163,7 @@ class PipelineScenarios(BasePipeline):
     def run_gen_funcs(self, input_roles, force_overwrite=False):
         curr_roles_with_scenarios = {}
         try:
-            with open(self.cfg.object_storage.scenarios_funcs, 'r') as f:
+            with open(self.funcs_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"No existing scenarios_funcs file found: {e}")
@@ -208,7 +212,7 @@ class PipelineScenarios(BasePipeline):
     def run_gen_policies(self, input_roles, force_overwrite=False):
         curr_roles_with_scenarios = {}
         try:
-            with open(self.cfg.object_storage.scenarios_policies, 'r') as f:
+            with open(self.policies_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_policies file: {e}")
@@ -258,7 +262,7 @@ class PipelineScenarios(BasePipeline):
     def run_gen_messages(self, input_roles, force_overwrite=False):
         curr_roles_with_scenarios = {}
         try:
-            with open(self.cfg.object_storage.scenarios_messages, 'r') as f:
+            with open(self.messages_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_messages file: {e}")
@@ -284,7 +288,8 @@ class PipelineScenarios(BasePipeline):
                     for scenario in new_roles_with_scenarios[role]['scenarios']:
                         curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
                         # if 'sys_messages' not in curr_scen:
-                        if 'messages' not in curr_scen or 'neutral_sys_messages' not in curr_scen['messages'] or 'task_message' not in curr_scen['messages']:
+                        if 'messages' not in curr_scen or 'neutral_sys_messages' not in curr_scen[
+                            'messages'] or 'task_message' not in curr_scen['messages']:
                             should_add = False
                             break
                     if not should_add:
@@ -310,7 +315,7 @@ class PipelineScenarios(BasePipeline):
         curr_roles_with_states = self.run_gen_states(roles, grounding_attack_vectors, grounding_n_samples,
                                                      force_overwrite)
         curr_roles_with_states = order_dict_keys(curr_roles_with_states, KEYS_ORDERS)
-        save_to_disk(curr_roles_with_states, self.cfg.object_storage.scenarios_states)
+        save_to_disk(curr_roles_with_states, self.states_output_file)
         # Generate the functions and configurations for the scenarios
         # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
         #                                                  fields_to_remove=['acceptable', 'feedback',
@@ -319,7 +324,7 @@ class PipelineScenarios(BasePipeline):
 
         curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_states)
         curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs, KEYS_ORDERS)
-        save_to_disk(curr_roles_with_funcs, self.cfg.object_storage.scenarios_funcs)
+        save_to_disk(curr_roles_with_funcs, self.funcs_output_file)
 
         # Run the policies scenarios
         # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_funcs,
@@ -331,7 +336,7 @@ class PipelineScenarios(BasePipeline):
 
         curr_roles_with_policies = self.run_gen_policies(curr_roles_with_funcs)
         curr_roles_with_policies = order_dict_keys(curr_roles_with_policies, KEYS_ORDERS)
-        save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
+        save_to_disk(curr_roles_with_policies, self.policies_output_file)
 
         # Run the messages scenarios
         # curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
@@ -341,4 +346,4 @@ class PipelineScenarios(BasePipeline):
         curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies)
         curr_roles_with_messages = order_dict_keys(curr_roles_with_messages, KEYS_ORDERS)
 
-        save_to_disk(curr_roles_with_messages, self.cfg.object_storage.scenarios_messages)
+        save_to_disk(curr_roles_with_messages, self.messages_output_file)
