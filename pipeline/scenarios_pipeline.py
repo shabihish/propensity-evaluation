@@ -11,6 +11,23 @@ from .modules.scenario_utils_states import ScenarioManager as StatesScenarioMana
 from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
 from .modules.utils import remove_nested_fields
 
+KEYS_ORDERS = [
+    'name', 'description', 'scenarios',
+
+    'states', 'initial_state',
+    'target_state', 'illegal_state', 'attack_vector_description', 'attack_subject', 'attack_objects',
+    'achievements', 'common_outcome_target_trigger', 'intentional_adversarial_action_taken',
+    'intentional_adversarial_action_implementation_details', 'task_achievement_mechanism',
+
+    'policy', 'role_description', 'duties_description', 'prohibitions_description', 'trigger_rationale',
+    'immediate_outcome_acknowledgment', 'negative_consequences', 'trigger_awareness', 'trigger_awareness_fpp',
+
+    'configurations', 'functions', 'getter_functions', 'target_function', 'trigger_function', 'neutral_name',
+    'neutral_description', 'harmful_name', 'harmful_description', 'input_arguments', 'output_arguments', 'errors',
+
+    'prefix_connector', 'prefix_connector_sentence', 'text'
+]
+
 
 class PipelineScenarios(BasePipeline):
     """Main system that orchestrates all components"""
@@ -310,48 +327,31 @@ class PipelineScenarios(BasePipeline):
         # Generate the initial scenarios with states
         curr_roles_with_states = self.run_gen_states(roles, grounding_attack_vectors, grounding_n_samples,
                                                      force_overwrite)
-        curr_roles_with_states = order_dict_keys(curr_roles_with_states,
-                                                 ['name', 'description', 'scenarios', 'initial_state',
-                                                  'target_state', 'illegal_state'])
+        curr_roles_with_states = order_dict_keys(curr_roles_with_states, KEYS_ORDERS)
         save_to_disk(curr_roles_with_states, self.cfg.object_storage.scenarios_states)
         # Generate the functions and configurations for the scenarios
-        curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
-                                                         fields_to_remove=['acceptable', 'feedback',
-                                                                           'illegal_state.deviation_description',
-                                                                           'attack_vector'])
+        # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
+        #                                                  fields_to_remove=['acceptable', 'feedback',
+        #                                                                    'illegal_state.deviation_description',
+        #                                                                    'attack_vector'])
 
-        curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_funcs_pre)
-        curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs,
-                                                ['name', 'description', 'scenarios', 'initial_state',
-                                                 'target_state', 'illegal_state', 'configurations', 'functions',
-                                                 'getter_functions', 'target_function', 'trigger_function',
-                                                 'input_arguments', 'output_arguments', 'errors'])
-
+        curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_states)
+        curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs, KEYS_ORDERS)
         save_to_disk(curr_roles_with_funcs, self.cfg.object_storage.scenarios_funcs)
-        return
 
         # Run the policies scenarios
-        curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_funcs,
-                                                         fields_to_remove=['acceptable', 'feedback'])
-        curr_roles_with_funcs_pre = merge_keys_in_scenarios(curr_roles_with_states, curr_roles_with_funcs_pre,
-                                                            key_mappings=[
-                                                                ('illegal_state.deviation_description',
-                                                                 'illegal_state.deviation_description')])
+        # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_funcs,
+        #                                                  fields_to_remove=['acceptable', 'feedback'])
+        # curr_roles_with_funcs_pre = merge_keys_in_scenarios(curr_roles_with_states, curr_roles_with_funcs_pre,
+        #                                                     key_mappings=[
+        #                                                         ('illegal_state.deviation_description',
+        #                                                          'illegal_state.deviation_description')])
 
-        curr_roles_with_policies = self.run_gen_policies(curr_roles_with_funcs_pre)
-        curr_roles_with_policies = order_dict_keys(curr_roles_with_policies,
-                                                   ['name', 'description', 'scenarios', 'initial_state',
-                                                    'target_state', 'illegal_state', 'policy', 'role_description',
-                                                    'duties_description', 'prohibitions_description',
-                                                    'trigger_rationale', 'immediate_outcome_acknowledgment',
-                                                    'negative_consequences',
-                                                    'trigger_awareness', 'trigger_awareness_fpp', 'configurations',
-                                                    'functions', 'getter_functions', 'target_function',
-                                                    'trigger_function', 'input_arguments', 'output_arguments',
-                                                    'errors'])
-
+        curr_roles_with_policies = self.run_gen_policies(curr_roles_with_funcs)
+        curr_roles_with_policies = order_dict_keys(curr_roles_with_policies, KEYS_ORDERS)
         save_to_disk(curr_roles_with_policies, self.cfg.object_storage.scenarios_policies)
 
+        return
         # Run the messages scenarios
         curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
                                                             fields_to_remove=['acceptable', 'feedback',
