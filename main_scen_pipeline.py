@@ -3,10 +3,12 @@ from dotenv import load_dotenv
 load_dotenv()
 import hydra
 import os
+from concurrent.futures import ThreadPoolExecutor
 import json
 from utils.colors import BaseColoredFormatter
 import logging
 from copy import deepcopy
+from tqdm import tqdm
 from pipeline.scenarios_pipeline import PipelineScenarios
 
 
@@ -77,6 +79,31 @@ def remove_keys_from_dictv(roles, keys: list):
     return out
 
 
+def process_workspace(domain_name, domain_data, workspace_name, workspace_data, attack_vectors, logger, cfg,
+                      output_dir):
+    """
+    Process a single workspace and save results to a unique folder.
+    """
+    workspace_desc = workspace_data.get('description')
+    workspace_alternative_forms = workspace_data.get('alternative_forms')
+    loaded_roles = workspace_data.get('roles', {})
+
+    # Prepare roles and attack vectors
+    prepared_roles = remove_keys_from_dictv(loaded_roles, ['attack_vectors'])
+    current_avs = get_attack_vectors_for_roles(loaded_roles, attack_vectors[domain_name], logger)
+
+    # Run the pipeline
+    sim = PipelineScenarios(cfg, logger, workspace_name=workspace_name, workspace_desc=workspace_desc,
+                            workspace_alternative_forms=workspace_alternative_forms,
+                            domain_name=domain_name, domain_desc=domain_data[domain_name].get('description'),
+                            domain_alternative_forms=domain_data[domain_name].get('alternative_forms'),
+                            output_dir=str(output_dir))
+
+    sim.run(roles=prepared_roles,
+            grounding_attack_vectors=current_avs,
+            grounding_n_samples=3 if 'cyber' in domain_name else 0)
+
+
 @hydra.main(config_path="configs", config_name="pipeline", version_base="1.2")
 def main(cfg) -> None:
     logger = setup_logger()
@@ -87,7 +114,7 @@ def main(cfg) -> None:
         # 'self-proliferation.Global Trade Negotiation Platform',
         # 'self-proliferation.Healthcare Data Management Platform',
 
-        'bio-security.Agricultural Biotech Facility',
+        # 'bio-security.Agricultural Biotech Facility',
         # 'bio-security.Pandemic Response & Biosecurity Center',
         # 'bio-security.BSL-3/BSL-4 High-Containment Laboratory',
         # 'bio-security.Open-Access DIY Biohacking Lab',
@@ -110,6 +137,8 @@ def main(cfg) -> None:
     with open(os.path.join(base_inputs_dir, 'domains.json'), 'r') as file:
         domain_data = json.load(file)
 
+    # Collect all workspaces to process
+    workspaces = []
     for domain_name in os.listdir(base_inputs_dir):
         # Check for the chosen file to be of dir type
         if not os.path.isdir(os.path.join(base_inputs_dir, domain_name)):
@@ -131,17 +160,23 @@ def main(cfg) -> None:
                     logger.info(f'Skipping workspace {domain_name}.{workspace_name}')
                     continue
 
-                prepared_roles = remove_keys_from_dictv(loaded_roles, ['attack_vectors'])
-                current_avs = get_attack_vectors_for_roles(loaded_roles, attack_vectors[domain_name], logger)
+                workspaces.append((domain_name, domain_data, workspace_name, workspace_data))
 
-                sim = PipelineScenarios(cfg, logger, workspace_name=workspace_name, workspace_desc=workspace_desc,
-                                        workspace_alternative_forms=workspace_alternative_forms,
-                                        domain_name=domain_name, domain_desc=domain_desc,
-                                        domain_alternative_forms=domain_alternative_forms)
+    # Process workspaces in parallel
+    with ThreadPoolExecutor(max_workers=10) as executor:
+        futures = [
+            executor.submit(process_workspace, domain_name, domain_data, workspace_name, workspace_data,
+                            attack_vectors, logger,
+                            cfg, os.path.join(cfg.object_storage.base_dir, domain_name.lower().replace(' ', '-'),
+                                              workspace_name.lower().replace(' ', '-')))
+            for domain_name, domain_data, workspace_name, workspace_data in workspaces
+        ]
 
-                sim.run(roles=prepared_roles,
-                        grounding_attack_vectors=current_avs,
-                        grounding_n_samples=3 if 'cyber' in domain_name else 0)
+        for future in tqdm(futures, desc="Processing workspaces", total=len(futures)):
+            try:
+                future.result()  # Wait for each thread to complete
+            except Exception as e:
+                logger.error(f"Error processing workspace: {e}")
 
 
 # Example usage

@@ -47,10 +47,10 @@ output_schemas:
   judge_single_messages: "${output_schemas.base_dir}/judge_single_messages.json"
 
 object_storage:
-  base_dir: "output/finalized_jsons"
-  scenarios_states: "${object_storage.base_dir}/scenarios_states.json"
-  scenarios_funcs: "${object_storage.base_dir}/scenarios_funcs.json"
-  scenarios_policies: "${object_storage.base_dir}/scenarios_policies.json"
-  scenarios_messages: "${object_storage.base_dir}/scenarios_messages.json"
-  scenarios_messages_single: "${object_storage.base_dir}/scenarios_messages_single.json"
+  base_dir: "output"
+  scenarios_states_fname: "scenarios_states.json"
+  scenarios_funcs_fname: "scenarios_funcs.json"
+  scenarios_policies_fname: "scenarios_policies.json"
+  scenarios_messages_fname: "scenarios_messages.json"
+  scenarios_messages_single_fname: "scenarios_messages_single.json"
 

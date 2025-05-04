@@ -91,7 +91,7 @@ class ScenarioManager:
     def __init__(self, api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
-                 output_schemas_conf: DictConfig, object_storage_conf: DictConfig, temperature,
+                 output_schemas_conf: DictConfig, temperature,
                  generation_batch_size: int):
         self.api_conf = api_conf
         self.logger = logger
@@ -103,7 +103,6 @@ class ScenarioManager:
         self.domain_alternative_forms = domain_alternative_forms
         self.prompts_conf = prompts_conf
         self.output_schemas_conf = output_schemas_conf
-        self.object_storage_conf = object_storage_conf
         self.temperature = temperature
 
         self.batch_size = generation_batch_size
