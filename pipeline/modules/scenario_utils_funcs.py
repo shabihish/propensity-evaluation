@@ -4,11 +4,12 @@ from copy import deepcopy
 import traceback
 from omegaconf import DictConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from agents.agent import Agent
 from .graph_utils import SimilarityGraph
 from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
-from .utils import json_obj_list_to_dict
+from .utils import json_obj_list_to_dict, remove_nested_fields
 
 
 def get_valid_scenarios(roles: dict, required_fields: list):
@@ -120,6 +121,8 @@ class ScenarioManager:
 
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_funcs, key='SYS_GEN',
                                   context={'general_body': general_body}, logger=self.logger)
+
+        # print(f'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n{sys_prompt}\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
         output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_funcs)
         return Agent(
             api_conf=self.api_conf,
@@ -241,148 +244,320 @@ class ScenarioManager:
         return valid_scenarios
 
     def generate_scenarios(self, input_roles: dict):
-        roles_with_scenarios = deepcopy(input_roles)
-        curr_input_roles = deepcopy(input_roles)
-        roles_to_process = list(curr_input_roles.keys())
-        batch_size = self.batch_size
+        """
+        Generates scenarios for all roles in batches concurrently and validate them.
+        Re-generates scenarios only for invalid generations.
+        """
+        self.logger.debug("Starting functions scenario generation.")
+        valid_scenarios = {}
+        invalid_roles = deepcopy(input_roles)
+        batch_size = self.batch_size  # Define batch size for processing
+        scenarios_batch_size = 100  # Define batch size for processing
 
-        while roles_to_process:
-            if self.logger:
-                self.logger.debug(f"Roles left to process: {roles_to_process}")
+        while invalid_roles:
+            batch_roles_list = [
+                {
+                    role_name: {
+                        **deepcopy(invalid_roles[role_name]),
+                        "scenarios": {
+                            scenario_name: deepcopy(invalid_roles[role_name]["scenarios"][scenario_name])
+                            for scenario_name in list(invalid_roles[role_name]["scenarios"])[j:j + scenarios_batch_size]
+                        }
+                    }
+                    for role_name in list(invalid_roles)[i:i + batch_size]
+                    for j in range(0, len(invalid_roles[role_name]["scenarios"]), scenarios_batch_size)
+                }
+                for i in range(0, len(invalid_roles), batch_size)
+            ]
 
-            batch_roles = roles_to_process[:batch_size]
-            random.shuffle(batch_roles)
-            prompt = read_prompts(self.prompts_conf.scenarios_agents_funcs, key='USER_GEN',
-                                  context={'roles': {role: curr_input_roles[role] for role in batch_roles}},
-                                  logger=self.logger)
-            try:
-                response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
-                                           logger=self.logger,
-                                           to_json=True, json_transform_keys=['roles', 'name'])
-            except json.decoder.JSONDecodeError as e:
-                self.logger.error(f"JSONDecodeError in generate_scenarios: {type(e)}:{e}")
-                self.logger.error(traceback.format_exc())
-                batch_size = max(1, batch_size // 2)
-                continue
-            except Exception as e:
-                self.logger.error(f"Error in generate_scenarios: {e}")
-                self.logger.error(traceback.format_exc())
-                continue
+            with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
+                futures = {
+                    executor.submit(self._process_batch_generate_scenarios, batch_roles): batch_roles
+                    for batch_roles in batch_roles_list
+                }
 
-            try:
-                # Run validity checks
-                response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
-                response = {k: v for k, v in response.items() if set(x['name'] for x in v['scenarios']) ==
-                            set(curr_input_roles[k]['scenarios'].keys())}
-                for role in response:
-                    response[role]['scenarios'] = json_obj_list_to_dict(response[role]['scenarios'], 'name')
-                self.logger.debug(f"Scenarios before checks: {response}")
-                for role in response.values():
-                    for scenario in role['scenarios'].values():
-                        self.logger.debug(f"Scenario {scenario['name']} fields: {scenario.keys()}")
-                response = self.check_configurations_are_valid(response)
-                response = self.check_funcs_are_valid(response)
+                for future in as_completed(futures):
+                    batch_roles = futures[future]
+                    try:
+                        response = future.result()
 
-                if self.logger:
-                    self.logger.debug(f"Valid generated scenarios: {response}")
+                        for role_name, role_data in batch_roles.items():
+                            if role_name not in response:
+                                self.logger.error(f"Role '{role_name}' not found in response")
+                                continue
 
-                for role in response.values():
-                    if set(role['scenarios'].keys()) == set(curr_input_roles[role['name']]['scenarios'].keys()):
-                        roles_to_process.remove(role['name'])
-                        # Preserve existing fields and update with new ones
-                        for scenario_name, new_scenario in role['scenarios'].items():
-                            if scenario_name in roles_with_scenarios[role['name']]['scenarios']:
-                                existing_scenario = roles_with_scenarios[role['name']]['scenarios'][scenario_name]
-                                existing_scenario.update(new_scenario)  # Keep old fields, add/update new ones
+                            response[role_name]['scenarios'] = json_obj_list_to_dict(
+                                response[role_name]['scenarios'], 'name')
 
+                            response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
+                            response = self.check_configurations_are_valid(response)
+                            response = self.check_funcs_are_valid(response)
 
-            except Exception as e:
-                self.logger.error(f"Error in generate_scenarios: {e}")
-                self.logger.error(traceback.format_exc())
+                            for scenario_name, scenario_data in role_data['scenarios'].items():
+                                try:
+                                    scenario_response = response[role_name]['scenarios'][scenario_name]
 
-        return roles_with_scenarios
+                                    # Validate fields
+                                    assert isinstance(scenario_response['name'], str), \
+                                        f"Scenario name for '{role_name}:{scenario_name}' is not a string"
+                                    assert isinstance(scenario_response['configurations'], dict), \
+                                        f"Scenario configurations for '{role_name}:{scenario_name}' is not a dict"
+                                    assert isinstance(scenario_response['functions'], dict), \
+                                        f"Scenario functions for '{role_name}:{scenario_name}' is not a dict"
+
+                                    # Add to valid scenarios
+                                    if role_name not in valid_scenarios:
+                                        valid_scenarios[role_name] = deepcopy(role_data)
+                                        valid_scenarios[role_name]['scenarios'] = {}
+
+                                    if scenario_name not in valid_scenarios[role_name]['scenarios']:
+                                        valid_scenarios[role_name]['scenarios'][scenario_name] = deepcopy(scenario_data)
+
+                                    # Update with scenario fields
+                                    valid_scenarios[role_name]['scenarios'][scenario_name].update(scenario_response)
+
+                                    # Remove from invalid roles
+                                    if scenario_name in invalid_roles[role_name]['scenarios']:
+                                        del invalid_roles[role_name]['scenarios'][scenario_name]
+
+                                except json.JSONDecodeError:
+                                    prev_batch_size = batch_size
+                                    batch_size = max(1, batch_size // 2)
+                                    self.logger.warning(
+                                        f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
+                                except Exception as e:
+                                    self.logger.error(
+                                        f"Invalid scenario for role '{role_name}', scenario '{scenario_name}': {e}")
+                                    self.logger.error(traceback.format_exc())
+
+                            # Remove role if all scenarios are processed
+                            if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
+                                del invalid_roles[role_name]
+
+                    except Exception as e:
+                        self.logger.error(f"Error processing batch: {e}")
+                        self.logger.error(traceback.format_exc())
+
+        self.logger.debug("Finished functions scenario generation.")
+        return valid_scenarios
+
+    def _process_batch_generate_scenarios(self, batch_roles):
+        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
+                                                                          'any.acceptable',
+                                                                          'any.feedback',
+                                                                          'attack_vector',
+                                                                          'any.attack_vector',
+                                                                          'any.illegal_state.attack_vector_description',
+                                                                          'any.illegal_state.intentional_adversarial_action_taken',
+                                                                          'any.illegal_state.intentional_adversarial_action_implementation_details',
+                                                                          'any.illegal_state.task_achievement_mechanism',
+                                                                          ])
+
+        prompt = read_prompts(self.prompts_conf.scenarios_agents_funcs, key='USER_GEN',
+                              context={'roles': batch_roles}, logger=self.logger)
+
+        try:
+            response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
+                                       logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
+            return response
+        except Exception as e:
+            self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
+            self.logger.error(traceback.format_exc())
+            return {}
 
     def judge_scenarios(self, input_scenarios: dict):
-        # Roles for which the scenarios have been given
-        roles_to_process = list(input_scenarios.keys())
-        out = deepcopy(input_scenarios)
+        self.logger.debug("Starting function scenario judgment.")
+        valid_judgments = {}
+        invalid_roles = deepcopy(input_scenarios)
         batch_size = self.batch_size
 
-        while roles_to_process:
-            if roles_to_process:
-                self.logger.debug(f"Roles to process (judge): {roles_to_process}")
-            batch_roles = roles_to_process[:batch_size]
-            random.shuffle(batch_roles)
-            prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SCENARIOS_VERIF',
-                                  context={'roles': str({name: input_scenarios[name] for name in batch_roles})},
-                                  logger=self.logger)
+        while invalid_roles:
+            batch_roles_list = [
+                {
+                    role_name: deepcopy(invalid_roles[role_name])
+                    for role_name in list(invalid_roles)[i:i + batch_size]
+                }
+                for i in range(0, len(invalid_roles), batch_size)
+            ]
 
-            try:
-                response = run_agent_query(prompt=prompt, agent=self.scenarios_verif_judge, logger=self.logger,
-                                           to_json=True,
-                                           json_transform_keys=['roles', 'name'])
-            except json.decoder.JSONDecodeError as e:
-                self.logger.error(f"JSONDecodeError in judge_scenarios run_agent_query: {type(e)}:{e}")
-                batch_size = max(1, batch_size // 2)
-                self.logger.error(traceback.format_exc())
-                continue
-            except Exception as e:
-                self.logger.error(f"Error in judge_scenarios run_agent_query: {type(e)}:{e}")
-                self.logger.error(traceback.format_exc())
-                continue
+            with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
+                futures = {
+                    executor.submit(self._process_batch_judge_scenarios, batch_roles): batch_roles
+                    for batch_roles in batch_roles_list
+                }
 
-            if self.logger:
-                self.logger.debug(f"Response from scenarios judge: {response}")
+                for future in as_completed(futures):
+                    batch_roles = futures[future]
+                    try:
+                        response = future.result()
 
-            try:
-                response = get_valid_scenarios(response, required_fields=['name', 'scenarios'])
-                response = {k: v for k, v in response.items() if set(x['name'] for x in v['scenarios']) ==
-                            set(input_scenarios[k]['scenarios'].keys())}
-                for role in response:
-                    response[role]['scenarios'] = json_obj_list_to_dict(response[role]['scenarios'], 'name')
+                        for role_name, role_data in batch_roles.items():
+                            if role_name not in response:
+                                self.logger.error(f"Role '{role_name}' not found in response")
+                                continue
 
-                for role in response.values():
-                    if role['name'] in input_scenarios:
-                        out[role['name']].update(role)
-                        roles_to_process.remove(role['name'])
-            except Exception as e:
-                self.logger.error(f"Error in judge_roles: {e}")
-                self.logger.error(traceback.format_exc())
+                            response[role_name]['scenarios'] = json_obj_list_to_dict(
+                                response[role_name]['scenarios'], 'name')
 
-        return out
+                            for scenario_name, scenario_data in role_data['scenarios'].items():
+                                try:
+                                    scenario_response = response[role_name]['scenarios'][scenario_name]
+
+                                    # Validate fields
+                                    assert isinstance(scenario_response['acceptable'], bool), \
+                                        f"Judge acceptable flag for scenario '{role_name}:{scenario_name}' is not a boolean"
+                                    assert scenario_response['feedback'].strip(), \
+                                        f"Judge feedback is empty for scenario '{role_name}:{scenario_name}'"
+
+                                    # Add to valid judgments
+                                    if role_name not in valid_judgments:
+                                        valid_judgments[role_name] = deepcopy(role_data)
+                                        valid_judgments[role_name]['scenarios'] = {}
+
+                                    if scenario_name not in valid_judgments[role_name]['scenarios']:
+                                        valid_judgments[role_name]['scenarios'][scenario_name] = deepcopy(scenario_data)
+
+                                    # Update with judgment fields
+                                    valid_judgments[role_name]['scenarios'][scenario_name]['functions'].update({
+                                        'acceptable': scenario_response['acceptable'],
+                                        'feedback': scenario_response['feedback']
+                                    })
+
+                                    # Remove from invalid roles
+                                    if scenario_name in invalid_roles[role_name]['scenarios']:
+                                        del invalid_roles[role_name]['scenarios'][scenario_name]
+
+                                except json.JSONDecodeError:
+                                    prev_batch_size = batch_size
+                                    batch_size = max(1, batch_size // 2)
+                                    self.logger.warning(
+                                        f"Error in judge_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
+                                except Exception as e:
+                                    self.logger.error(
+                                        f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
+                                    self.logger.error(traceback.format_exc())
+
+                            # Remove role if all scenarios are processed
+                            if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
+                                del invalid_roles[role_name]
+
+                    except Exception as e:
+                        self.logger.error(f"Error processing batch: {e}")
+                        self.logger.error(traceback.format_exc())
+
+        self.logger.debug("Finished function scenario judgment.")
+        return valid_judgments
+
+    def _process_batch_judge_scenarios(self, batch_roles):
+        batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
+                                                                          'any.acceptable',
+                                                                          'any.feedback',
+                                                                          'attack_vector',
+                                                                          'any.attack_vector',
+                                                                          'any.illegal_state.attack_vector_description',
+                                                                          'any.illegal_state.intentional_adversarial_action_taken',
+                                                                          'any.illegal_state.intentional_adversarial_action_implementation_details',
+                                                                          'any.illegal_state.task_achievement_mechanism',
+                                                                          ])
+
+        prompt = read_prompts(self.prompts_conf.judge_agents, key='USER_SCENARIOS_VERIF',
+                              context={'roles': batch_roles}, logger=self.logger)
+
+        try:
+            response = run_agent_query(prompt=prompt, agent=self.scenarios_verif_judge,
+                                       logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
+            return response
+        except Exception as e:
+            self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
+            self.logger.error(traceback.format_exc())
+            return {}
+
+    # def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
+    #     # Expects the scenarios to be converted to a dict already
+    #     for role_v in input_roles.values():
+    #         assert isinstance(role_v['scenarios'], dict)
+    #
+    #     accepted_scenarios = {}
+    #     missing_scenarios = list(set(input_roles.keys()) - set(accepted_scenarios.keys()))
+    #     n_tries_for_role = 0
+    #     while missing_scenarios:
+    #         if n_tries_for_role >= 10:
+    #             break
+    #         n_tries_for_role += 1
+    #         generated_scenarios = self.generate_scenarios({name: input_roles[name] for name in missing_scenarios})
+    #         if logging:
+    #             self.logger.debug(f'Generated scenarios_dict: {generated_scenarios}\n\n')
+    #
+    #         judged_scenarios = self.judge_scenarios(generated_scenarios)
+    #
+    #         for role_k, role_v in judged_scenarios.items():
+    #             all_scenarios_accepted = all(scen['acceptable'] == True for scen in role_v['scenarios'].values())
+    #             if all_scenarios_accepted:
+    #                 accepted_scenarios[role_k] = generated_scenarios[role_k]
+    #                 # Update accepted scenarios with judgment fields provided by the judge
+    #                 for scenario_k, scenario_v in role_v['scenarios'].items():
+    #                     accepted_scenarios[role_k]['scenarios'][scenario_k].update(scenario_v)
+    #                 missing_scenarios.remove(role_k)
+    #             else:
+    #                 if logging:
+    #                     self.logger.debug(f"Judgment not valid for role {role_k}: {role_v}\n\n")
+    #
+    #         if logging:
+    #             self.logger.debug(f'Accepted scenario names: {list(accepted_scenarios.keys())}\n\n')
+    #
+    #     # accepted_scenarios = normalize_scenarios(accepted_scenarios)
+    #     return accepted_scenarios
 
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
-        # Expects the scenarios to be converted to a dict already
-        for role_v in input_roles.values():
-            assert isinstance(role_v['scenarios'], dict)
+        """
+        Generate and judge scenarios iteratively, re-generating only invalid scenarios for policies.
+        """
+        out_roles = deepcopy(input_roles)  # Retain all fields in the output
+        curr_roles = deepcopy(out_roles)
 
-        accepted_scenarios = {}
-        missing_scenarios = list(set(input_roles.keys()) - set(accepted_scenarios.keys()))
-        n_tries_for_role = 0
-        while missing_scenarios:
-            if n_tries_for_role >= 10:
-                break
-            n_tries_for_role += 1
-            generated_scenarios = self.generate_scenarios({name: input_roles[name] for name in missing_scenarios})
+        tries = 0
+        while curr_roles:
+            tries += 1
+            self.logger.debug(f"Functions Generation and Judgment Attempt: {tries}")
+
+            for role_name, role_data in curr_roles.items():
+                num_scenarios = len(role_data['scenarios'])
+                self.logger.debug(f"Remaining Role: {role_name}, Scenarios Left: {num_scenarios}")
+
+            # Generate scenarios for all roles
+            generated_scenarios = self.generate_scenarios(curr_roles)
             if logging:
-                self.logger.debug(f'Generated scenarios_dict: {generated_scenarios}\n\n')
+                self.logger.debug(f"Generated functions scenarios: {json.dumps(generated_scenarios, indent=2)}")
 
+            # Judge the generated scenarios
             judged_scenarios = self.judge_scenarios(generated_scenarios)
-
-            for role_k, role_v in judged_scenarios.items():
-                all_scenarios_accepted = all(scen['acceptable'] == True for scen in role_v['scenarios'].values())
-                if all_scenarios_accepted:
-                    accepted_scenarios[role_k] = generated_scenarios[role_k]
-                    # Update accepted scenarios with judgment fields provided by the judge
-                    for scenario_k, scenario_v in role_v['scenarios'].items():
-                        accepted_scenarios[role_k]['scenarios'][scenario_k].update(scenario_v)
-                    missing_scenarios.remove(role_k)
-                else:
-                    if logging:
-                        self.logger.debug(f"Judgment not valid for role {role_k}: {role_v}\n\n")
-
             if logging:
-                self.logger.debug(f'Accepted scenario names: {list(accepted_scenarios.keys())}\n\n')
+                self.logger.debug(f"Judged functions scenarios: {json.dumps(judged_scenarios, indent=2)}")
 
-        # accepted_scenarios = normalize_scenarios(accepted_scenarios)
-        return accepted_scenarios
+            # Filter out invalid roles and scenarios
+            curr_roles = {
+                role_name: {
+                    **role_data,
+                    'scenarios': {
+                        scenario_name: scenario_data
+                        for scenario_name, scenario_data in role_data['scenarios'].items()
+                        if not judged_scenarios[role_name]['scenarios'][scenario_name]['functions']['acceptable']
+                    }
+                }
+                for role_name, role_data in judged_scenarios.items()
+                if any(
+                    not scenario_data['functions']['acceptable']
+                    for scenario_data in role_data['scenarios'].values()
+                )
+            }
+
+            # Update accepted scenarios with valid messages
+            for role_name, role_data in judged_scenarios.items():
+                for scenario_name, scenario_data in role_data['scenarios'].items():
+                    if scenario_data['functions']['acceptable']:
+                        out_roles[role_name]['scenarios'][scenario_name]['configurations'] = \
+                            role_data['scenarios'][scenario_name]['configurations']
+                        out_roles[role_name]['scenarios'][scenario_name]['functions'] = \
+                            role_data['scenarios'][scenario_name]['functions']
+
+        return out_roles
