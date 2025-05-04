@@ -129,6 +129,19 @@ def check_for_missing_fields(input_dict: dict, required_fields: list) -> dict:
 def capitalize_first_letter(text):
     return ' '.join(word[0].upper() + word[1:] for word in text.split())
 
+def capitalize_paragraph(paragraph_in: str):
+    """
+    Capitalizes the first letter of each sentence in a paragraph.
+    Works with ".", "!", and "?" as sentence delimiters. Maintains the case for the rest of the sentences.
+    """
+    sentences = re.split(r'([.!?])', paragraph_in)
+    capitalized_sentences = []
+    for i in range(0, len(sentences) - 1, 2):
+        sentence = sentences[i].strip()
+        if sentence:
+            capitalized_sentences.append(sentence[0].upper() + sentence[1:] + sentences[i + 1])
+    return ' '.join(capitalized_sentences).strip()
+
 
 def normalize_string(text, lower=True, remove_special_chars_punctuation=False):
     # Convert to lowercase
