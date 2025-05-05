@@ -185,13 +185,16 @@ def main():
                 workspace_path = os.path.join(domain_path, workspace)
                 if not os.path.isdir(workspace_path):
                     continue
-                scenario_file = os.path.join(workspace_path, 'scenarios_messages_single.json')
+                scenario_file = os.path.join(workspace_path, 'scenarios_messages.json')
                 if not os.path.exists(scenario_file):
                     rprint(f"[bold red]Scenario file not found:[/bold red] {scenario_file}")
                     continue
-                all_scenarios = load_scenarios(scenario_file)
-                for role in all_scenarios.keys():
-                    for scenario in all_scenarios[role]['scenarios'].values():
+                all_domain_scenarios = load_scenarios(scenario_file)[domain]
+                assert len(all_domain_scenarios) == 1, "Multiple workspaces found in the loaded input file."
+                workspace_name = list(all_domain_scenarios.keys())[0]
+                all_roles = all_domain_scenarios[workspace_name]
+                for role in all_roles.keys():
+                    for scenario in all_roles[role]['scenarios'].values():
                         categories = list(scenario['sys_messages'].keys())
                         futures.append(executor.submit(
                             process_scenario,
