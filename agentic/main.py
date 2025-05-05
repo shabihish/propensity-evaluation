@@ -6,7 +6,7 @@ from executor import Executor
 import os
 import sys
 from ctypes import (
-    c_size_t,
+    c_int16,
     sizeof
 )
 from datetime import datetime
@@ -151,7 +151,8 @@ def main():
                         help='Maximum number of workers to use; set to 0 for no limit')
     args = parser.parse_args()
 
-    max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_size_t)[1]
+    max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_int16)[1]
+    print(max_workers)
 
     if args.exp_mode != '':
         args.output_dir += f"_{args.exp_mode}"
