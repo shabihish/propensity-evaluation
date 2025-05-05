@@ -111,7 +111,7 @@ class ScenarioManager:
         valid_scenarios = {}
         invalid_roles = deepcopy(input_roles)
         batch_size = self.batch_size  # Define batch size for processing
-        scenarios_batch_size = 100  # Define batch size for processing
+        scenarios_batch_size = 4  # Define batch size for processing
 
         while invalid_roles:
             # batch_roles_list = [
@@ -337,7 +337,15 @@ class ScenarioManager:
         # max_tries = 10
         while curr_roles:
             tries += 1
-            # self.logger.debug(f"Generation and judgment attempt: {tries}")
+            if tries > 50:
+                self.logger.warning(f"Too many attempts to generate scenarios ({tries}). Stopping.")
+                for role_name, role_data in curr_roles.items():
+                    out_roles[role_name]['scenarios'] = {
+                        scenario_name: scenario_data
+                        for scenario_name, scenario_data in out_roles[role_name]['scenarios'].items()
+                        if scenario_name not in role_data['scenarios']
+                    }
+                break
 
             self.logger.debug(f"Tries: {tries}")
             for role_name, role_data in curr_roles.items():

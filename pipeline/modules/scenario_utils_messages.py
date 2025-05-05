@@ -521,7 +521,15 @@ class ScenarioManager:
         tries = 0
         while curr_roles:
             tries += 1
-            self.logger.debug(f"Messages Generation and Judgment Attempt: {tries}")
+            if tries > 50:
+                self.logger.warning(f"Too many attempts to generate scenarios ({tries}). Stopping.")
+                for role_name, role_data in curr_roles.items():
+                    out_roles[role_name]['scenarios'] = {
+                        scenario_name: scenario_data
+                        for scenario_name, scenario_data in out_roles[role_name]['scenarios'].items()
+                        if scenario_name not in role_data['scenarios']
+                    }
+                break
 
             for role_name, role_data in curr_roles.items():
                 num_scenarios = len(role_data['scenarios'])
