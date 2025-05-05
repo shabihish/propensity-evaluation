@@ -172,12 +172,13 @@ def main():
     }
 
     domain_stats = {}
+    inputs_dir = os.path.join('..', 'output')
 
     all_results = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
-        for domain in os.listdir('output'):
-            domain_path = os.path.join('output', domain)
+        for domain in os.listdir(inputs_dir):
+            domain_path = os.path.join(inputs_dir, domain)
             if not os.path.isdir(domain_path):
                 continue
             for workspace in os.listdir(domain_path):
