@@ -64,7 +64,7 @@ class PipelineScenarios(BasePipeline):
                                                              temperature=cfg.model.temperature,
                                                              min_initial_scenarios_per_role=cfg.min_initial_scenarios_per_role,
                                                              min_chosen_scenarios_per_role=cfg.min_chosen_scenarios_per_role,
-                                                             generation_batch_size=cfg.scenario_gen_batch_size)
+                                                             generation_batch_size=cfg.roles_batch_size)
 
         self.funcs_scenario_manager = FuncsScenarioManager(api_conf=api_conf, logger=logger,
                                                            workspace_name=self.workspace,
@@ -76,7 +76,9 @@ class PipelineScenarios(BasePipeline):
                                                            output_schemas_conf=cfg.output_schemas,
                                                            prompts_conf=cfg.prompts,
                                                            temperature=cfg.model.temperature,
-                                                           generation_batch_size=cfg.scenario_gen_batch_size
+                                                           max_retires=cfg.max_retries_funcs,
+                                                           roles_batch_size=cfg.roles_batch_size,
+                                                           scenarios_batch_size=cfg.scenario_gen_batch_size,
                                                            )
 
         self.policies_scenario_manager = PoliciesScenarioManager(api_conf=api_conf, logger=logger,
@@ -89,7 +91,9 @@ class PipelineScenarios(BasePipeline):
                                                                  output_schemas_conf=cfg.output_schemas,
                                                                  prompts_conf=cfg.prompts,
                                                                  temperature=cfg.model.temperature,
-                                                                 generation_batch_size=cfg.scenario_gen_batch_size
+                                                                 max_retires=cfg.max_retries_policies,
+                                                                 roles_batch_size=cfg.roles_batch_size,
+                                                                 scenarios_batch_size=cfg.scenario_gen_batch_size,
                                                                  )
 
         self.messages_scenario_manager = MessagesScenarioManager(api_conf=api_conf, logger=logger,
@@ -102,7 +106,9 @@ class PipelineScenarios(BasePipeline):
                                                                  output_schemas_conf=cfg.output_schemas,
                                                                  prompts_conf=cfg.prompts,
                                                                  temperature=cfg.model.temperature,
-                                                                 generation_batch_size=cfg.scenario_gen_batch_size
+                                                                 max_retires=cfg.max_retries_messages,
+                                                                 roles_batch_size=cfg.roles_batch_size,
+                                                                 scenarios_batch_size=cfg.scenario_gen_batch_size,
                                                                  )
 
     def update_scenarios(self, prev_roles_with_scenarios: dict, new_roles_with_scenarios: dict) -> dict:

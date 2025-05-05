@@ -3,7 +3,13 @@ logs_dir: "logs"
 
 min_initial_scenarios_per_role: 3
 min_chosen_scenarios_per_role: 2
+
+roles_batch_size: 1
 scenario_gen_batch_size: 1
+
+max_retries_funcs: 30
+max_retries_policies: 15
+max_retries_messages: 10
 
 model:
   model_provider: "gemini"

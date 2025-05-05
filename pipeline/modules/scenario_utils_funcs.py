@@ -1,15 +1,15 @@
 import json
-import random
-from copy import deepcopy
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from copy import deepcopy
+
 from omegaconf import DictConfig
 from sklearn.feature_extraction.text import TfidfVectorizer
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from agents.agent import Agent
 from .graph_utils import SimilarityGraph
-from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
 from .utils import json_obj_list_to_dict, remove_nested_fields
+from .utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas
 
 
 def get_valid_scenarios(roles: dict, required_fields: list):
@@ -92,7 +92,7 @@ class ScenarioManager:
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, temperature,
-                 generation_batch_size: int):
+                 max_retires: int, roles_batch_size: int, scenarios_batch_size: int):
         self.api_conf = api_conf
         self.logger = logger
         self.workspace = workspace_name
@@ -105,8 +105,10 @@ class ScenarioManager:
         self.output_schemas_conf = output_schemas_conf
         self.temperature = temperature
 
-        self.batch_size = generation_batch_size
 
+        self.max_retries = max_retires
+        self.roles_batch_size = roles_batch_size
+        self.scenarios_batch_size = scenarios_batch_size
         self.scenarios_generation_agent = self._init_scenarios_generation_agent()
         self.scenarios_verif_judge = self._init_scenarios_verif_judge()
 
@@ -250,8 +252,8 @@ class ScenarioManager:
         self.logger.debug("Starting functions scenario generation.")
         valid_scenarios = {}
         invalid_roles = deepcopy(input_roles)
-        batch_size = self.batch_size  # Define batch size for processing
-        scenarios_batch_size = 4  # Define batch size for processing
+        batch_size = self.roles_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_batch_size  # Define batch size for processing
 
         while invalid_roles:
             batch_roles_list = [
@@ -368,7 +370,7 @@ class ScenarioManager:
         self.logger.debug("Starting function scenario judgment.")
         valid_judgments = {}
         invalid_roles = deepcopy(input_scenarios)
-        batch_size = self.batch_size
+        batch_size = self.roles_batch_size
 
         while invalid_roles:
             batch_roles_list = [
@@ -517,7 +519,7 @@ class ScenarioManager:
         tries = 0
         while curr_roles:
             tries += 1
-            if tries > 50:
+            if tries >= self.max_retries:
                 self.logger.warning(f"Too many attempts to generate scenarios ({tries}). Stopping.")
                 for role_name, role_data in curr_roles.items():
                     out_roles[role_name]['scenarios'] = {

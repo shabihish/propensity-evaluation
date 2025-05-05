@@ -25,7 +25,7 @@ class ScenarioManager:
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, temperature,
-                 generation_batch_size: int):
+                 max_retires: int, roles_batch_size: int, scenarios_batch_size: int):
         self.api_conf = api_conf
         self.logger = logger
         self.workspace = workspace_name
@@ -38,7 +38,9 @@ class ScenarioManager:
         self.output_schemas_conf = output_schemas_conf
         self.temperature = temperature
 
-        self.batch_size = generation_batch_size
+        self.max_retries = max_retires
+        self.roles_batch_size = roles_batch_size
+        self.scenarios_batch_size = scenarios_batch_size
 
         self.scenarios_generation_agent = self._init_scenarios_generation_agent()
         self.scenarios_verif_judge = self._init_scenarios_verif_judge()
@@ -110,8 +112,8 @@ class ScenarioManager:
         self.logger.debug("Starting scenario generation.")
         valid_scenarios = {}
         invalid_roles = deepcopy(input_roles)
-        batch_size = self.batch_size  # Define batch size for processing
-        scenarios_batch_size = 4  # Define batch size for processing
+        batch_size = self.roles_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_batch_size  # Define batch size for processing
 
         while invalid_roles:
             # batch_roles_list = [
@@ -223,7 +225,7 @@ class ScenarioManager:
         self.logger.debug(f"Running judge_scenarios")
         valid_judgments = {}
         invalid_roles = deepcopy(roles)
-        batch_size = self.batch_size  # Define batch size for processing
+        batch_size = self.roles_batch_size  # Define batch size for processing
 
         while invalid_roles:
             batch_roles_list = [
