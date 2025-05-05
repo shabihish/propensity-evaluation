@@ -15,6 +15,7 @@ from tqdm import tqdm
 from pydantic import BaseModel
 import string
 
+
 def load_pressure_categories(directory):
     pressure_categories = []
     for filename in os.listdir(directory):
@@ -30,7 +31,7 @@ class MessagesScenarioManager:
     def __init__(self, api_conf, logger: logging.Logger, workspace_name: str,
                  workspace_alternative_forms: list, workspace_desc: str,
                  domain_name: str, domain_desc: str, domain_alternative_forms: list, inputs_conf,
-                 output_schemas_conf, prompts_conf, temperature, roles_batch_size:int, scenarios_batch_size:int):
+                 output_schemas_conf, prompts_conf, temperature, roles_batch_size: int, scenarios_batch_size: int):
         self.api_conf = api_conf
         self.logger = logger
         self.workspace = workspace_name
@@ -45,7 +46,6 @@ class MessagesScenarioManager:
         self.temperature = temperature
         self.roles_batch_size = roles_batch_size
         self.scenarios_batch_size = scenarios_batch_size
-
 
         self.pressure_categories: list = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
         self.pressure_categories: dict = json_obj_list_to_dict(self.pressure_categories, 'name')
@@ -814,7 +814,7 @@ class MessagesScenarioManager:
 
         return output_schema
 
-    def process_category(self, category_name, category_dict, input_roles):
+    def process_category(self, category_name, category_dict, input_roles, logging:bool):
         """
         Process a single pressure category by generating and judging messages for all roles and scenarios.
         Re-generate messages only for invalid judgments.
@@ -836,8 +836,9 @@ class MessagesScenarioManager:
                     new_messages = {f"{role['name']}:{scen}": role['scenarios'][scen]['sys_messages'][-1] for role in
                                     curr_roles.values() for scen
                                     in role['scenarios']}
-                    self.logger.debug(
-                        f"New messages for category {category_name} at level {msg_level_index}: {json.dumps(new_messages, indent=2)}")
+                    if logging:
+                        self.logger.debug(
+                            f"New messages for category {category_name} at level {msg_level_index}: {json.dumps(new_messages, indent=2)}")
             except Exception as e:
                 self.logger.error(f"Error printing new_messages: {e}")
                 self.logger.error(traceback.format_exc())
@@ -942,7 +943,7 @@ class MessagesScenarioManager:
         roles_with_scenarios = deepcopy(input_roles)
 
         def process_category_thread(category_name, category_dict):
-            return category_name, self.process_category(category_name, category_dict, roles_with_scenarios)
+            return category_name, self.process_category(category_name, category_dict, roles_with_scenarios, logging)
 
         with ThreadPoolExecutor(max_workers=len(self.pressure_categories)) as executor:
             future_to_category = {
