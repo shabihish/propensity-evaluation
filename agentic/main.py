@@ -87,9 +87,7 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
     return filepath
 
 def process_scenario(domain, workspace, role, scenario, categories, args):
-    # print(f"Processing scenario: {scenario['name']} in {domain}/{workspace}/{role}")
     results = []
-    # Generate a unique filename for this thread
     thread_logdir = os.path.join(*[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     error_filename = thread_filename.replace('.log', '.err')
@@ -114,12 +112,10 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
                 model_name=args.model_name,
                 message_category=category
             )
-            # Run interaction scenario
             display_probing_status("interaction")
             evaluator.run_scenario()
             result['interaction_response'] = evaluator.agent.history
             result['interaction_stop_condition'] = evaluator.stop_condition
-            # Collect cost information
             cost_info = evaluator.executor.get_cost_info()
             result['cost_info'] = cost_info
             results.append(result)
@@ -133,58 +129,53 @@ def main():
     parser.add_argument('--log_dir', type=str, default='logs', help='Directory to save logs')
     parser.add_argument('--model_name', type=str, help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
-    parser.add_argument('--scenario_file', type=str, default='../results/v2.2-large/scenarios_messages_single.json', help='Scenario file')
-    parser.add_argument('--max_workers', type=int, default=0, help='Maximum umber of workers to use; set to 0 for no limit')
+    parser.add_argument('--max_workers', type=int, default=0, help='Maximum number of workers to use; set to 0 for no limit')
     args = parser.parse_args()
 
     max_workers = args.max_workers if args.max_workers > 0 else sys.maxsize
 
-    all_scenarios = load_scenarios(args.scenario_file)
-
     if args.exp_mode != '':
         args.output_dir += f"_{args.exp_mode}"
         args.log_dir += f"_{args.exp_mode}"
-    # Initialize output file path
+
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     output_filename = f"scenario_results_{args.model_name}_{timestamp}.jsonl"
     if "/" in output_filename:
         output_filename = ("_").join(output_filename.split("/"))
     output_file = os.path.join(args.output_dir, output_filename)
-    # Get categories from first scenario (all scenarios have same categories)
-    first_domain = next(iter(all_scenarios.values()))
-    first_workspace = next(iter(first_domain.values()))
-    first_role = next(iter(first_workspace.values()))
-    first_scenario = next(iter(first_role['scenarios'].values()))
-    categories = list(first_scenario['sys_messages'].keys())
-    # Initialize tracking variables
+
     cumulative_cost_info = {
         'prompt_tokens': 0,
         'completion_tokens': 0,
         'total_tokens': 0,
         'total_cost': 0.0
     }
-    # Initialize domain stats for each category
-    domain_stats = {domain: {
-        category: {
-            'total': 0,
-            'triggered': 0,
-            'triggered_from_task': 0,
-            'triggered_from_category': 0
-        } for category in categories
-    } for domain in all_scenarios.keys()}
-    # Use ThreadPoolExecutor to process scenarios in parallel
+
+    domain_stats = {}
+
     all_results = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
-        for domain in all_scenarios.keys():
-            for workspace in all_scenarios[domain].keys():
-                for role in all_scenarios[domain][workspace].keys():
-                    for scenario in all_scenarios[domain][workspace][role]['scenarios'].values():
+        for domain in os.listdir('output'):
+            domain_path = os.path.join('output', domain)
+            if not os.path.isdir(domain_path):
+                continue
+            for workspace in os.listdir(domain_path):
+                workspace_path = os.path.join(domain_path, workspace)
+                if not os.path.isdir(workspace_path):
+                    continue
+                scenario_file = os.path.join(workspace_path, 'scenarios_messages_single.json')
+                if not os.path.exists(scenario_file):
+                    rprint(f"[bold red]Scenario file not found:[/bold red] {scenario_file}")
+                    continue
+                all_scenarios = load_scenarios(scenario_file)
+                for role in all_scenarios.keys():
+                    for scenario in all_scenarios[role]['scenarios'].values():
+                        categories = list(scenario['sys_messages'].keys())
                         futures.append(executor.submit(
                             process_scenario,
                             domain, workspace, role, scenario, categories, args
                         ))
-        # Collect results from all threads
         with tqdm(concurrent.futures.as_completed(futures), total=len(futures)) as progress_bar:
             for future in progress_bar:
                 try:
@@ -192,11 +183,12 @@ def main():
                     all_results.extend(curr_run_results)
                 except Exception as e:
                     rprint(f"[bold red]Error processing a scenario:[/bold red] {e}")
-                # Update statistics for this category
                 for result in curr_run_results:
                     save_to_jsonl(result, args.output_dir, output_filename)
                     domain = result['domain']
                     category = result['category']
+                    if domain not in domain_stats:
+                        domain_stats[domain] = {cat: {'total': 0, 'triggered': 0, 'triggered_from_task': 0, 'triggered_from_category': 0} for cat in categories}
                     domain_stats[domain][category]['total'] += 1
                     if result['interaction_stop_condition']:
                         domain_stats[domain][category]['triggered'] += 1
@@ -204,11 +196,10 @@ def main():
                             domain_stats[domain][category]['triggered_from_task'] += 1
                         else:
                             domain_stats[domain][category]['triggered_from_category'] += 1
-                    # Update cumulative cost information
                     cost_info = result['cost_info']
                     for key in cumulative_cost_info:
                         cumulative_cost_info[key] += cost_info[key]
-    # Display final summary with category breakdown
     display_final_summary(output_file, domain_stats)
+
 if __name__ == '__main__':
     main()
