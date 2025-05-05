@@ -52,7 +52,8 @@ class PipelineMessages(BasePipeline):
             output_schemas_conf=cfg.output_schemas,
             prompts_conf=cfg.prompts,
             temperature=cfg.messages_model.temperature,
-            generation_batch_size=cfg.scenario_gen_batch_size
+            roles_batch_size=cfg.roles_batch_size,
+            scenarios_batch_size = cfg.scenario_gen_batch_size
         )
 
     def update_scenarios(self, prev_roles_with_scenarios: dict, new_roles_with_scenarios: dict) -> dict:

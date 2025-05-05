@@ -30,7 +30,7 @@ class MessagesScenarioManager:
     def __init__(self, api_conf, logger: logging.Logger, workspace_name: str,
                  workspace_alternative_forms: list, workspace_desc: str,
                  domain_name: str, domain_desc: str, domain_alternative_forms: list, inputs_conf,
-                 output_schemas_conf, prompts_conf, temperature, generation_batch_size):
+                 output_schemas_conf, prompts_conf, temperature, roles_batch_size:int, scenarios_batch_size:int):
         self.api_conf = api_conf
         self.logger = logger
         self.workspace = workspace_name
@@ -43,7 +43,8 @@ class MessagesScenarioManager:
         self.output_schemas_conf = output_schemas_conf
         self.prompts_conf = prompts_conf
         self.temperature = temperature
-        self.generation_batch_size = generation_batch_size
+        self.roles_batch_size = roles_batch_size
+        self.scenarios_batch_size = scenarios_batch_size
 
 
         self.pressure_categories: list = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
@@ -264,8 +265,8 @@ class MessagesScenarioManager:
         self.logger.debug(f"Generating messages for category: {category_name}, level: {msg_level_index}")
         valid_messages = {}
         invalid_roles = deepcopy(roles)
-        batch_size = self.generation_batch_size  # Define batch size for processing
-        scenarios_batch_size = self.scenarios_generation_batch_size  # Define batch size for processing
+        batch_size = self.roles_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_batch_size  # Define batch size for processing
 
         while invalid_roles:
             batch_roles_list = [
@@ -422,8 +423,8 @@ class MessagesScenarioManager:
         self.logger.debug(f"Judging messages for category: {category_name}, level: {msg_level_index}")
         valid_judgments = {}
         invalid_roles = deepcopy(roles)
-        batch_size = self.generation_batch_size  # Define batch size for processing
-        scenarios_batch_size = self.scenarios_generation_batch_size  # Define batch size for processing scenarios
+        batch_size = self.roles_batch_size  # Define batch size for processing
+        scenarios_batch_size = self.scenarios_batch_size  # Define batch size for processing scenarios
 
         while invalid_roles:
             batch_roles_list = [
