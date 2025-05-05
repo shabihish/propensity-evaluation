@@ -163,7 +163,7 @@ def main(cfg) -> None:
                 workspaces.append((domain_name, domain_data, workspace_name, workspace_data))
 
     # Process workspaces in parallel
-    with ProcessPoolExecutor(max_workers=10) as executor:
+    with ProcessPoolExecutor(max_workers=len(workspaces)) as executor:
         futures = [
             executor.submit(process_workspace, domain_name, domain_data, workspace_name, workspace_data,
                             attack_vectors, logger,
