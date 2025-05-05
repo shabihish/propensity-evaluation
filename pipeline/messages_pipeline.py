@@ -85,7 +85,7 @@ class PipelineMessages(BasePipeline):
             self.logger.info(f"Running sys-messages (regular) generation for workspace {self.workspace}...")
             new_roles_with_scenarios = self.messages_scenario_manager.generate_and_judge_scenarios(
                 input_roles=input_roles[self.domain][self.workspace],
-                logging=True
+                logging=False
             )
 
             should_add = True
