@@ -107,7 +107,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
         *[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     error_filename = thread_filename.replace('.log', '.err')
-    exit()
+
     os.makedirs(thread_logdir, exist_ok=True)
     with open(thread_filename, 'w') as log_file, \
             open(error_filename, 'w') as error_file, \
