@@ -4,6 +4,7 @@ from typing import Dict, Any
 from agent import Agent
 from executor import Executor
 import os
+import sys
 from datetime import datetime
 from utils.display import (
     display_scenario_progress,
@@ -133,8 +134,10 @@ def main():
     parser.add_argument('--model_name', type=str, help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--scenario_file', type=str, default='../results/v2.2-large/scenarios_messages_single.json', help='Scenario file')
-    parser.add_argument('--max_workers', type=int, default=1, help='Maximum umber of workers to use')
+    parser.add_argument('--max_workers', type=int, default=0, help='Maximum umber of workers to use; set to 0 for no limit')
     args = parser.parse_args()
+
+    max_workers = args.max_workers if args.max_workers > 0 else sys.maxsize
 
     all_scenarios = load_scenarios(args.scenario_file)
 
@@ -171,7 +174,7 @@ def main():
     } for domain in all_scenarios.keys()}
     # Use ThreadPoolExecutor to process scenarios in parallel
     all_results = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_workers) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for domain in all_scenarios.keys():
             for workspace in all_scenarios[domain].keys():
