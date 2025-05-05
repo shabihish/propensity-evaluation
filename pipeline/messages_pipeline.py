@@ -1,6 +1,7 @@
 import json
 import logging
 from copy import deepcopy
+import os
 
 from agents.api_conf import APIConfiguration
 from .base import KEYS_ORDERS, BasePipeline
@@ -13,7 +14,7 @@ class PipelineMessages(BasePipeline):
 
     def __init__(self, cfg, logger: logging.Logger, workspace_name: str,
                  workspace_desc: str, workspace_alternative_forms: list,
-                 domain_name: str, domain_desc: str, domain_alternative_forms: list):
+                 domain_name: str, domain_desc: str, domain_alternative_forms: list, output_dir: str):
         super().__init__(cfg)
 
         self.cfg = cfg
@@ -34,6 +35,11 @@ class PipelineMessages(BasePipeline):
             use_cache=cfg.messages_model.use_cache,
         )
 
+        # Configure paths
+        self.output_dir = output_dir
+        self.single_messages_output_file = os.path.join(self.output_dir,
+                                                        cfg.object_storage.scenarios_messages_single_fname)
+
         self.messages_scenario_manager = MessagesScenarioManager(
             api_conf=api_conf, logger=logger,
             workspace_name=self.workspace,
@@ -45,7 +51,6 @@ class PipelineMessages(BasePipeline):
             inputs_conf=cfg.inputs,
             output_schemas_conf=cfg.output_schemas,
             prompts_conf=cfg.prompts,
-            object_storage_conf=cfg.object_storage,
             temperature=cfg.messages_model.temperature,
             generation_batch_size=cfg.scenario_gen_batch_size
         )
@@ -64,7 +69,7 @@ class PipelineMessages(BasePipeline):
     def run_gen_messages(self, input_roles, force_overwrite=False):
         curr_roles_with_scenarios = {}
         try:
-            with open(self.cfg.object_storage.scenarios_messages_single, 'r') as f:
+            with open(self.single_messages_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_messages_single file: {e}")
@@ -115,4 +120,4 @@ class PipelineMessages(BasePipeline):
         curr_roles_with_messages = self.run_gen_messages(roles, force_overwrite)
         curr_roles_with_messages = order_dict_keys(curr_roles_with_messages, KEYS_ORDERS)
 
-        save_to_disk(curr_roles_with_messages, self.cfg.object_storage.scenarios_messages_single)
+        save_to_disk(curr_roles_with_messages, self.single_messages_output_file)

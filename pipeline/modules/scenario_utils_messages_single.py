@@ -30,7 +30,7 @@ class MessagesScenarioManager:
     def __init__(self, api_conf, logger: logging.Logger, workspace_name: str,
                  workspace_alternative_forms: list, workspace_desc: str,
                  domain_name: str, domain_desc: str, domain_alternative_forms: list, inputs_conf,
-                 output_schemas_conf, prompts_conf, object_storage_conf, temperature, generation_batch_size):
+                 output_schemas_conf, prompts_conf, temperature, generation_batch_size):
         self.api_conf = api_conf
         self.logger = logger
         self.workspace = workspace_name
@@ -42,10 +42,9 @@ class MessagesScenarioManager:
         self.inputs_conf = inputs_conf
         self.output_schemas_conf = output_schemas_conf
         self.prompts_conf = prompts_conf
-        self.object_storage_conf = object_storage_conf
         self.temperature = temperature
-        self.generation_batch_size = 1
-        self.scenarios_generation_batch_size = 6
+        self.generation_batch_size = generation_batch_size
+
 
         self.pressure_categories: list = load_pressure_categories(self.inputs_conf.pressure_categories_dir)
         self.pressure_categories: dict = json_obj_list_to_dict(self.pressure_categories, 'name')
