@@ -5,6 +5,10 @@ from agent import Agent
 from executor import Executor
 import os
 import sys
+from ctypes import (
+    c_size_t,
+    sizeof
+)
 from datetime import datetime
 from utils.display import (
     display_scenario_progress,
@@ -15,8 +19,16 @@ from rich import print as rprint
 import concurrent.futures
 import contextlib
 from tqdm import tqdm
+
+def c_limits(c_type):
+    signed = c_type(-1).value < c_type(0).value
+    bit_size = sizeof(c_type) * 8
+    signed_limit = 2 ** (bit_size - 1)
+    return (-signed_limit, signed_limit - 1) if signed else (0, 2 * signed_limit - 1)
+
+
 class PropensityEvaluator:
-    def __init__(self, role: str, scenario: Dict[str, Any], model_name:str, message_category: str = None):
+    def __init__(self, role: str, scenario: Dict[str, Any], model_name: str, message_category: str = None):
         self.agent = Agent(role, scenario)
         self.scenario = scenario
         self.message_category = message_category
@@ -74,9 +86,11 @@ class PropensityEvaluator:
                     self.stop_condition = stop_condition
                     break
 
+
 def load_scenarios(file_path: str) -> Dict:
     with open(file_path, 'r') as f:
         return json.load(f)
+
 
 def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename: str = None) -> str:
     os.makedirs(output_dir, exist_ok=True)
@@ -86,16 +100,19 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
         f.write('\n')
     return filepath
 
+
 def process_scenario(domain, workspace, role, scenario, categories, args):
     results = []
-    thread_logdir = os.path.join(*[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
+    thread_logdir = os.path.join(
+        *[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     error_filename = thread_filename.replace('.log', '.err')
+    exit()
     os.makedirs(thread_logdir, exist_ok=True)
     with open(thread_filename, 'w') as log_file, \
-         open(error_filename, 'w') as error_file, \
-         contextlib.redirect_stdout(log_file), \
-         contextlib.redirect_stderr(error_file):
+            open(error_filename, 'w') as error_file, \
+            contextlib.redirect_stdout(log_file), \
+            contextlib.redirect_stderr(error_file):
         for category in categories:
             display_scenario_progress(1, 1, f"{scenario['name']} - {category}")
             result = {
@@ -122,6 +139,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
             print("\n----------------------------------------------------------------------------\n\n")
     return results
 
+
 def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
     parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
@@ -129,10 +147,11 @@ def main():
     parser.add_argument('--log_dir', type=str, default='logs', help='Directory to save logs')
     parser.add_argument('--model_name', type=str, help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
-    parser.add_argument('--max_workers', type=int, default=0, help='Maximum number of workers to use; set to 0 for no limit')
+    parser.add_argument('--max_workers', type=int, default=0,
+                        help='Maximum number of workers to use; set to 0 for no limit')
     args = parser.parse_args()
 
-    max_workers = args.max_workers if args.max_workers > 0 else sys.maxsize
+    max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_size_t)[1]
 
     if args.exp_mode != '':
         args.output_dir += f"_{args.exp_mode}"
@@ -188,7 +207,9 @@ def main():
                     domain = result['domain']
                     category = result['category']
                     if domain not in domain_stats:
-                        domain_stats[domain] = {cat: {'total': 0, 'triggered': 0, 'triggered_from_task': 0, 'triggered_from_category': 0} for cat in categories}
+                        domain_stats[domain] = {
+                            cat: {'total': 0, 'triggered': 0, 'triggered_from_task': 0, 'triggered_from_category': 0}
+                            for cat in categories}
                     domain_stats[domain][category]['total'] += 1
                     if result['interaction_stop_condition']:
                         domain_stats[domain][category]['triggered'] += 1
@@ -200,6 +221,7 @@ def main():
                     for key in cumulative_cost_info:
                         cumulative_cost_info[key] += cost_info[key]
     display_final_summary(output_file, domain_stats)
+
 
 if __name__ == '__main__':
     main()
