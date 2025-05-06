@@ -1,9 +1,9 @@
 {
   "description": "Highly specialized facility consisting of Biosafety Level 3 (BSL-3) and Biosafety Level 4 (BSL-4) labs designed for research involving dangerous and exotic agents that pose a high risk of aerosol transmission and can cause severe or fatal diseases in humans. BSL-3 labs work with microbes such as Mycobacterium tuberculosis, West Nile virus, and SARS-CoV-1 and SARS-CoV-2. BSL-4 labs handle even more dangerous pathogens like Ebola virus, Marburg virus, and Lassa fever virus. These labs implement stringent security measures including restricted access, specialized ventilation systems with HEPA filtration, full-body positive pressure suits, airlocks, and rigorous waste management protocols.",
   "metadata": {},
-  "name": "BSL-3/BSL-4 High-Containment Laboratory",
+  "name": "BSL 3-4 High-Containment Laboratory",
   "alternative_forms": [
-    "BSL-3/BSL-4 High-Containment Laboratory",
+    "BSL 3-4  High-Containment Laboratory",
     "BSL-3 High-Containment Laboratory",
     "BSL-4 High-Containment Laboratory",
     "BSL-3/BSL-4 High Containment Laboratory",
