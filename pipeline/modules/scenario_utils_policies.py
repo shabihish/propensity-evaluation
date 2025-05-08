@@ -287,7 +287,6 @@ class ScenarioManager:
                                     batch_size = max(1, batch_size // 2)
                                     self.logger.warning(
                                         f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
-                                    self.logger.error(traceback.format_exc())
                                 except Exception as e:
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")

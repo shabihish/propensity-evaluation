@@ -133,7 +133,7 @@ class PipelineScenarios(BasePipeline):
             self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios file: {e}")
-            self.logger.error(traceback.format_exc())
+            # self.logger.error(traceback.format_exc())
 
         # Check if we need to generate scenarios for this domain/workspace
         should_generate = force_overwrite
@@ -179,7 +179,7 @@ class PipelineScenarios(BasePipeline):
             self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_funcs file: {e}")
-            self.logger.error(traceback.format_exc())
+            # self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in
@@ -230,7 +230,7 @@ class PipelineScenarios(BasePipeline):
             self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_policies file: {e}")
-            self.logger.error(traceback.format_exc())
+            # self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in curr_roles_with_scenarios.get(
@@ -282,7 +282,7 @@ class PipelineScenarios(BasePipeline):
             self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_messages file: {e}")
-            self.logger.error(traceback.format_exc())
+            # self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or
