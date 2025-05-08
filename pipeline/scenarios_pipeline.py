@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+import traceback
 from copy import deepcopy
 
 from agents.api_conf import APIConfiguration
@@ -129,8 +130,10 @@ class PipelineScenarios(BasePipeline):
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"No existing scenarios file found: {e}")
+            self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios file: {e}")
+            self.logger.error(traceback.format_exc())
 
         # Check if we need to generate scenarios for this domain/workspace
         should_generate = force_overwrite
@@ -173,8 +176,10 @@ class PipelineScenarios(BasePipeline):
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"No existing scenarios_funcs file found: {e}")
+            self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_funcs file: {e}")
+            self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in
@@ -222,8 +227,10 @@ class PipelineScenarios(BasePipeline):
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_policies file: {e}")
+            self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_policies file: {e}")
+            self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in curr_roles_with_scenarios.get(
@@ -272,8 +279,10 @@ class PipelineScenarios(BasePipeline):
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_messages file: {e}")
+            self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_messages file: {e}")
+            self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or

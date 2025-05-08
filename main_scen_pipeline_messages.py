@@ -7,6 +7,7 @@ from concurrent.futures import ProcessPoolExecutor
 import json
 from utils.colors import BaseColoredFormatter
 import logging
+import traceback
 from copy import deepcopy
 from pipeline.messages_pipeline import PipelineMessages
 
@@ -232,6 +233,7 @@ def main(cfg) -> None:
                         workspace_messages = json.load(msg_file)
                 except FileNotFoundError:
                     logger.error(f"Messages file not found for workspace: {workspace_name}")
+                    logger.error(traceback.format_exc())
                     continue
 
                 workspaces.append(
@@ -252,6 +254,8 @@ def main(cfg) -> None:
                 future.result()  # Wait for each process to complete
             except Exception as e:
                 logger.error(f"Error processing workspace: {e}")
+                logger.error(traceback.format_exc())
+
 
 
 # Example usage

@@ -3,6 +3,7 @@ import datetime
 import os.path
 import time
 import json
+import traceback
 
 KEYS_ORDERS = [
     'name', 'description', 'scenarios',
@@ -47,6 +48,7 @@ class BasePipeline(abc.ABC):
                     existing_data = json.load(f)
                 except json.JSONDecodeError:
                     existing_data = []
+                    print(traceback.format_exc())
         else:
             existing_data = []
 

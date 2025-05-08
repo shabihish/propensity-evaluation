@@ -177,6 +177,8 @@ def main(cfg) -> None:
                 future.result()  # Wait for each thread to complete
             except Exception as e:
                 logger.error(f"Error processing workspace: {e}")
+                self.logger.error(traceback.format_exc())
+
 
 
 # Example usage
