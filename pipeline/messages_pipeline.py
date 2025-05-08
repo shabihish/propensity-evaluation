@@ -1,5 +1,6 @@
 import json
 import logging
+import traceback
 from copy import deepcopy
 import os
 
@@ -74,8 +75,10 @@ class PipelineMessages(BasePipeline):
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
             self.logger.error(f"Could not find scenarios_messages_single file: {e}")
+            self.logger.error(traceback.format_exc())
         except json.JSONDecodeError as e:
             self.logger.error(f"Error decoding scenarios_messages_single file: {e}")
+            self.logger.error(traceback.format_exc())
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or

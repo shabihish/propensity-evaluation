@@ -1,7 +1,7 @@
 import json
 import os
 import re
-
+import traceback
 from lark.utils import is_id_start
 
 from agents.agent import Agent
@@ -105,6 +105,7 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
             logger.warning(f"Response length exceeded for prompt.")
     except Exception as e:
         logger.error(f"Could not extract finish_reason: {e}")
+        logger.error(traceback.format_exc())
 
     response = get_response_content(result, to_json=to_json)
     if to_json and json_transform_keys:
