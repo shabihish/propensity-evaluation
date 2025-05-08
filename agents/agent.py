@@ -1,6 +1,8 @@
 import logging
 
 import litellm
+from openai import OpenAI
+
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
 from typing import Any, Dict, List
@@ -164,14 +166,28 @@ class Agent:
         self.api_base = api_conf.api_base
         self.use_cache = api_conf.use_cache
 
+        self.api_proxy = os.environ.get("API_PROXY", None)
+        if not self.api_proxy:
+            logging.warning("No API proxy provided. Defaulting to Litellm.")
+            self.api_proxy = 'litellm'
+        else:
+            self.api_proxy = self.api_proxy.lower()
+            logging.warning(f"Using provided API proxy: {self.api_proxy}.")
+
         assert output_schema is None or isinstance(output_schema, BaseModel) or isinstance(output_schema,
                                                                                            ModelMetaclass) or isinstance(
             output_schema, dict)
+
         self.output_schema = output_schema
-        # print(self.output_schema)
         if isinstance(output_schema, dict):
             #     self.output_schema = generate_pydantic_model('default', output_schema)
-            self.output_schema = {"type": "json_schema", "json_schema": {"schema": output_schema, "strict": True}}
+            if self.api_proxy == 'litellm':
+                self.output_schema = {"type": "json_schema", "json_schema": {"schema": output_schema, "strict": True}}
+            elif self.api_proxy == 'openai':
+                self.output_schema = {"type": "json_schema",
+                                      "json_schema": {"name": "schema", "schema": output_schema}}
+            else:
+                raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
 
         self.temperature = temperature
 
@@ -188,10 +204,8 @@ class Agent:
 
         completion_args = {
             "model": session_model,
-            "custom_llm_provider": self._model_provider,
             "messages": messages,
             "temperature": self.temperature,
-            "caching": self.use_cache,
         }
 
         if self.api_base is not None:
@@ -200,8 +214,19 @@ class Agent:
         if self.output_schema is not None:
             completion_args["response_format"] = self.output_schema
 
+        # Proxy-specific args
+        assert self.api_proxy, "API proxy is not set"
+        if self.api_proxy.lower() == 'litellm':
+            completion_args["custom_llm_provider"] = self._model_provider
+            completion_args["caching"] = self.use_cache
+
         try:
-            result = litellm.completion(**completion_args)
+            if self.api_proxy == 'litellm':
+                result = litellm.completion(**completion_args)
+            elif self.api_proxy == 'openai':
+                result = OpenAI().beta.chat.completions.parse(**completion_args)
+            else:
+                raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
         except RateLimitError as e:
             if session is not None:
                 self.rate_limiter.release(session)
