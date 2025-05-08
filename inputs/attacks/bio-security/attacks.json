@@ -5,7 +5,7 @@
   },
   "Bioweapons": {
     "name": "Bioweapons & Bioterrorism",
-    "description": "Adversaries pursue bioweapons & bioterrorism as a deliberate act of aggression.  Their central objective is the intentional design or modification of biological agents, with the explicit purpose of inflicting harm on humans, animals, or crops.  This is not accidental contamination or neglect; it's a focused effort to weaponize biological entities. This includes actively developing pathogens with enhanced virulence, transmissibility, or environmental stability.  Moreover, they intentionally engineer resistance to existing medical countermeasures, such as antibiotics, antivirals, and vaccines, to neutralize defensive measures. The intent is to manipulate biological agents into offensive weapons, specifically designed for widespread harm."
+    "description": "Adversaries develop and use bioweapons & bioterrorism as a deliberate act of aggression.  Their central objective is the intentional design or modification of biological agents, with the explicit purpose of inflicting harm on humans, animals, or crops.  This is not accidental contamination or neglect; it's a focused effort to weaponize biological entities. This includes actively developing pathogens with enhanced virulence, transmissibility, or environmental stability.  Moreover, they intentionally engineer resistance to existing medical countermeasures, such as antibiotics, antivirals, and vaccines, to neutralize defensive measures. The intent is to manipulate biological agents into offensive weapons, specifically designed for widespread harm."
   },
   "Reverse Genetics": {
     "name": "Reverse Genetics",
@@ -21,7 +21,7 @@
   },
   "Expanding Public Access to High-Risk Knowledge": {
     "name": "Expanding Public Access to High-Risk Knowledge",
-    "description": "Adversaries actively work to expand access to biotechnologies with a malicious agenda.  This is not about promoting scientific progress or democratizing knowledge; instead, their goal is to create opportunities for harm. They promote and enable the increasing democratization of biotechnologies, including DIY biology, cloud labs, and open-access genetic databases, specifically to make high-risk research tools and information readily available. They support efforts that lower the barrier to entry for conducting advanced biological research to enable malicious actors to create biological threats more easily."
+    "description": "Adversaries actively work to enable the public to access dangerous biotechnologies and dangerous knowledge with malicious intent. This isn't about scientific advancement or knowledge equity; their objective is to multiply potential avenues for destruction. They deliberately facilitate ways for the general public to obtain biotechnologies, including DIY biology protocols, cloud lab access, and open-access genetic databases, making high-risk research capabilities and information increasingly available to anyone. They support removing barriers that previously restricted advanced biological research to qualified professionals, specifically to allow malicious actors with limited expertise to engineer biological threats more easily."
   },
   "Detection Evasion": {
     "name": "Detection Evasion",

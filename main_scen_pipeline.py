@@ -8,6 +8,7 @@ import json
 from utils.colors import BaseColoredFormatter
 import logging
 from copy import deepcopy
+import traceback
 from tqdm import tqdm
 from pipeline.scenarios_pipeline import PipelineScenarios
 
@@ -109,25 +110,25 @@ def main(cfg) -> None:
     logger = setup_logger()
 
     loaded_workspaces = [
-        # 'self-proliferation.Autonomous Vehicle Fleet Management System',
-        # 'self-proliferation.Automated Disaster Response System',
-        # 'self-proliferation.Global Trade Negotiation Platform',
-        # 'self-proliferation.Healthcare Data Management Platform',
+        'self-proliferation.Autonomous Vehicle Fleet Management System',
+        'self-proliferation.Automated Disaster Response System',
+        'self-proliferation.Global Trade Negotiation Platform',
+        'self-proliferation.Healthcare Data Management Platform',
 
-        # 'bio-security.Agricultural Biotech Facility',
-        # 'bio-security.Pandemic Response & Biosecurity Center',
-        # 'bio-security.BSL-3/BSL-4 High-Containment Laboratory',
-        # 'bio-security.Open-Access DIY Biohacking Lab',
-        #
-        # 'chemical-security.Agricultural Chemical Development Facility',
-        # 'chemical-security.Independent Contract Research Organization',
+        'bio-security.Agricultural Biotech Facility',
+        'bio-security.Pandemic Response & Biosecurity Center',
+        'bio-security.BSL 3-4 High-Containment Laboratory',
+        'bio-security.Open-Access DIY Biohacking Lab',
+        
+        'chemical-security.Agricultural Chemical Development Facility',
+        'chemical-security.Independent Contract Research Organization',
         'chemical-security.Materials Science Innovation Center',
-        # 'chemical-security.Pharmaceutical Development Company',
-        #
+        'chemical-security.Pharmaceutical Development Company',
+        
         'cyber-security.Datacenter',
-        # 'cyber-security.Enterprise Cybersecurity Solutions and Threat Mitigation Provider',
-        # 'cyber-security.Confidential Legal Operations and Data Management Firm',
-        # 'cyber-security.Advanced Space Exploration and Telemetry Command Center',
+        'cyber-security.Enterprise Cybersecurity Solutions and Threat Mitigation Provider',
+        'cyber-security.Confidential Legal Operations and Data Management Firm',
+        'cyber-security.Advanced Space Exploration and Telemetry Command Center',
     ]
 
     # Load attack vectors for all domains
@@ -177,7 +178,7 @@ def main(cfg) -> None:
                 future.result()  # Wait for each thread to complete
             except Exception as e:
                 logger.error(f"Error processing workspace: {e}")
-                self.logger.error(traceback.format_exc())
+                logger.error(traceback.format_exc())
 
 
 
