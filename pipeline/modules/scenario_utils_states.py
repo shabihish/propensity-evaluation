@@ -238,7 +238,6 @@ class ScenarioManager:
                         batch_size = max(1, batch_size // 2)
                         self.logger.warning(
                             f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
-                        self.logger.error(traceback.format_exc())
                     except Exception as e:
                         self.logger.error(f"Error processing batch: {e}")
                         self.logger.error(traceback.format_exc())
@@ -516,9 +515,9 @@ class ScenarioManager:
                                 except json.JSONDecodeError:
                                     prev_batch_size = batch_size
                                     batch_size = max(1, batch_size // 2)
-                                except Exception as e:
                                     self.logger.warning(
                                         f"Error in judge_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
+                                except Exception as e:
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
                                     self.logger.error(traceback.format_exc())
