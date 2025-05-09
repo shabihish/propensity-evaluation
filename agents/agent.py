@@ -12,6 +12,8 @@ litellm.set_verbose = False
 
 import os
 import time
+import psutil
+import multiprocessing
 import fcntl
 import json
 from threading import Thread
@@ -19,6 +21,8 @@ from litellm import RateLimitError
 
 
 class RateLimiter:
+    last_print_time = multiprocessing.Value('d', 0.0)  # Shared across all instances
+
     def __init__(self, api_keys: list[str], model_names: list[str], max_calls_per_minute: int, semaphore_dir: str,
                  rate_limit_enabled: bool):
         self.api_keys = api_keys
@@ -30,6 +34,7 @@ class RateLimiter:
         self.rate_limit_enabled = rate_limit_enabled
         self._initialize_semaphores()
         self._start_release_thread()
+        self.process_start_time = psutil.Process(os.getpid()).create_time()
 
     def _initialize_semaphores(self):
         os.makedirs(self.semaphore_dir, exist_ok=True)
@@ -67,8 +72,12 @@ class RateLimiter:
                     json.dump(call_times, f)
                     f.truncate()
                     fcntl.flock(f, fcntl.LOCK_UN)
-        if int(current_time) % 5 == 0:
-            print(f"Active sessions: {tot_active_sessions}")
+        # if int(current_time - self.process_start_time) % 5 == 0:
+        #     print(f"Active sessions: {tot_active_sessions}")
+        with RateLimiter.last_print_time.get_lock():
+            if current_time - RateLimiter.last_print_time.value >= 5:
+                RateLimiter.last_print_time.value = current_time
+                print(f"Active sessions: {tot_active_sessions}")
 
     def _set_api_key(self, api_key: str):
         os.environ["OPENAI_API_KEY"] = api_key
