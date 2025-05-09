@@ -21,12 +21,13 @@ def get_valid_scenarios(roles: dict, required_fields: list):
 
 
 class ScenarioManager:
-    def __init__(self, api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
+    def __init__(self, api_conf, judge_api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, temperature,
                  max_retires: int, roles_batch_size: int, scenarios_batch_size: int):
         self.api_conf = api_conf
+        self.judge_api_conf = judge_api_conf
         self.logger = logger
         self.workspace = workspace_name
         self.workspace_desc = workspace_desc
@@ -69,7 +70,7 @@ class ScenarioManager:
                                   logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
         return Agent(
-            api_conf=self.api_conf,
+            api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
             temperature=self.temperature)

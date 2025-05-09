@@ -46,6 +46,13 @@ class PipelineScenarios(BasePipeline):
             use_cache=cfg.model.use_cache,
         )
 
+        judge_api_conf = APIConfiguration(
+            model_name=cfg.judge_model.model_name,
+            model_provider=cfg.judge_model.model_provider,
+            api_base=cfg.judge_model.api_base,
+            use_cache=cfg.judge_model.use_cache,
+        )
+
         # Configure paths
         self.output_dir = output_dir
         self.states_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_states_fname)
@@ -53,8 +60,8 @@ class PipelineScenarios(BasePipeline):
         self.policies_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_policies_fname)
         self.messages_output_file = os.path.join(self.output_dir, cfg.object_storage.scenarios_messages_fname)
 
-        self.states_scenario_manager = StatesScenarioManager(api_conf=api_conf, logger=logger,
-                                                             workspace_name=self.workspace,
+        self.states_scenario_manager = StatesScenarioManager(api_conf=api_conf, judge_api_conf=judge_api_conf,
+                                                             logger=logger, workspace_name=self.workspace,
                                                              workspace_alternative_forms=self.workspace_alternative_forms,
                                                              workspace_desc=workspace_desc,
                                                              domain_name=self.domain,
@@ -67,8 +74,8 @@ class PipelineScenarios(BasePipeline):
                                                              min_chosen_scenarios_per_role=cfg.min_chosen_scenarios_per_role,
                                                              generation_batch_size=cfg.roles_batch_size)
 
-        self.funcs_scenario_manager = FuncsScenarioManager(api_conf=api_conf, logger=logger,
-                                                           workspace_name=self.workspace,
+        self.funcs_scenario_manager = FuncsScenarioManager(api_conf=api_conf, judge_api_conf=judge_api_conf,
+                                                           logger=logger, workspace_name=self.workspace,
                                                            workspace_alternative_forms=self.workspace_alternative_forms,
                                                            workspace_desc=workspace_desc,
                                                            domain_name=self.domain,
@@ -82,8 +89,8 @@ class PipelineScenarios(BasePipeline):
                                                            scenarios_batch_size=cfg.scenario_gen_batch_size,
                                                            )
 
-        self.policies_scenario_manager = PoliciesScenarioManager(api_conf=api_conf, logger=logger,
-                                                                 workspace_name=self.workspace,
+        self.policies_scenario_manager = PoliciesScenarioManager(api_conf=api_conf, judge_api_conf=judge_api_conf,
+                                                                 logger=logger, workspace_name=self.workspace,
                                                                  workspace_alternative_forms=self.workspace_alternative_forms,
                                                                  workspace_desc=workspace_desc,
                                                                  domain_name=self.domain,
@@ -97,8 +104,8 @@ class PipelineScenarios(BasePipeline):
                                                                  scenarios_batch_size=cfg.scenario_gen_batch_size,
                                                                  )
 
-        self.messages_scenario_manager = MessagesScenarioManager(api_conf=api_conf, logger=logger,
-                                                                 workspace_name=self.workspace,
+        self.messages_scenario_manager = MessagesScenarioManager(api_conf=api_conf, judge_api_conf=judge_api_conf,
+                                                                 logger=logger, workspace_name=self.workspace,
                                                                  workspace_alternative_forms=self.workspace_alternative_forms,
                                                                  workspace_desc=workspace_desc,
                                                                  domain_name=self.domain,

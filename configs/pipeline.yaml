@@ -12,8 +12,10 @@ max_retries_policies: 15
 max_retries_messages: 10
 
 model:
-  model_provider: "gemini"
-  model_name: "gemini-2.0-flash"
+#  model_provider: "gemini"
+  model_provider: "openai"
+#  model_name: "gemini-2.0-flash"
+  model_name: "o3-mini"
   api_base: null
   use_cache: false
   temperature: 1.0
@@ -24,6 +26,14 @@ messages_model:
   api_base: null
   use_cache: false
   temperature: 1.0
+
+judge_model:
+  model_provider: "gemini"
+  model_name: "gemini-2.0-flash"
+  api_base: null
+  use_cache: false
+  temperature: 1.0
+
 
 inputs:
   base_dir: "inputs"

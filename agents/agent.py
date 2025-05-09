@@ -142,18 +142,6 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 
 
 class Agent:
-    assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
-    API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
-    model_names = [x.strip('"') for x in os.getenv("MODEL_NAMES").strip("()").split(" ")]
-
-    use_rate_limiter = False
-    if os.getenv('RATE_LIMIT') is not None:
-        assert os.getenv('RATE_LIMIT') in ['true', 'false'], "RATE_LIMIT environment variable must be 'true' or 'false'"
-        use_rate_limiter = os.getenv('RATE_LIMIT') == 'true'
-
-    rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=15,
-                               semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
-
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
                  temperature: float = 1):
         # assert sys_prompt_info is not None and isinstance(sys_prompt_info, dict) and len(sys_prompt_info) == 2
@@ -165,6 +153,20 @@ class Agent:
         self._model_provider = api_conf.model_provider
         self.api_base = api_conf.api_base
         self.use_cache = api_conf.use_cache
+
+        assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
+        API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
+        # model_names = [x.strip('"') for x in os.getenv("MODEL_NAMES").strip("()").split(" ")]
+        model_names = [self._model_name]
+
+        use_rate_limiter = False
+        if os.getenv('RATE_LIMIT') is not None:
+            assert os.getenv('RATE_LIMIT') in ['true',
+                                               'false'], "RATE_LIMIT environment variable must be 'true' or 'false'"
+            use_rate_limiter = os.getenv('RATE_LIMIT') == 'true'
+
+        self.rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=15,
+                                   semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
         self.api_proxy = os.environ.get("API_PROXY", None)
         if not self.api_proxy:
@@ -192,7 +194,7 @@ class Agent:
         self.temperature = temperature
 
     def __call__(self, query):
-        session_key, session_model, session_time, session_valid = Agent.rate_limiter.acquire()
+        session_key, session_model, session_time, session_valid = self.rate_limiter.acquire()
         session = None
         if session_valid:
             session = (session_key, session_model, session_time)
