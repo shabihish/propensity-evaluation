@@ -28,11 +28,12 @@ def load_pressure_categories(directory):
 
 
 class MessagesScenarioManager:
-    def __init__(self, api_conf, logger: logging.Logger, workspace_name: str,
+    def __init__(self, api_conf, judge_api_conf, logger: logging.Logger, workspace_name: str,
                  workspace_alternative_forms: list, workspace_desc: str,
                  domain_name: str, domain_desc: str, domain_alternative_forms: list, inputs_conf,
                  output_schemas_conf, prompts_conf, temperature, roles_batch_size: int, scenarios_batch_size: int):
         self.api_conf = api_conf
+        self.judge_api_conf = judge_api_conf
         self.logger = logger
         self.workspace = workspace_name
         self.workspace_alternative_forms = workspace_alternative_forms
@@ -250,7 +251,7 @@ class MessagesScenarioManager:
         output_schema = judge_output_schema
         # output_schema = JudgeSingleMessages
         return Agent(
-            api_conf=self.api_conf,
+            api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
             temperature=self.temperature

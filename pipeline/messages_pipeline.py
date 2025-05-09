@@ -36,14 +36,21 @@ class PipelineMessages(BasePipeline):
             use_cache=cfg.messages_model.use_cache,
         )
 
+        judge_api_conf = APIConfiguration(
+            model_name=cfg.judge_model.model_name,
+            model_provider=cfg.judge_model.model_provider,
+            api_base=cfg.judge_model.api_base,
+            use_cache=cfg.judge_model.use_cache,
+        )
+
         # Configure paths
         self.output_dir = output_dir
         self.single_messages_output_file = os.path.join(self.output_dir,
                                                         cfg.object_storage.scenarios_messages_single_fname)
 
         self.messages_scenario_manager = MessagesScenarioManager(
-            api_conf=api_conf, logger=logger,
-            workspace_name=self.workspace,
+            api_conf=api_conf, judge_api_conf=judge_api_conf,
+            logger=logger, workspace_name=self.workspace,
             workspace_alternative_forms=self.workspace_alternative_forms,
             workspace_desc=self.workspace_desc,
             domain_name=self.domain,
