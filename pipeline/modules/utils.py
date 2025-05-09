@@ -93,6 +93,26 @@ def load_from_disk(file_path: str) -> dict:
     with open(file_path, 'r') as f:
         return json.load(f)
 
+def validate_response(response, schema):
+    """
+    Recursively validate that the response contains all required fields from the schema.
+    """
+    if isinstance(schema, dict):
+        # Check required fields
+        required_fields = schema.get("required", [])
+        for field in required_fields:
+            if field not in response:
+                raise ValueError(f"Missing required field: {field}")
+        # Recursively validate properties
+        for key, value in schema.get("properties", {}).items():
+            if key in response:
+                validate_response(response[key], value)
+    elif isinstance(schema, list) and "items" in schema:
+        # Validate list items
+        for item in response:
+            validate_response(item, schema["items"])
+
+
 
 def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, json_transform_keys: list = None):
     num_retries = n_retries
@@ -108,6 +128,8 @@ def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, js
         logger.error(traceback.format_exc())
 
     response = get_response_content(result, to_json=to_json)
+    if to_json:
+        validate_response(response, agent.output_schema['json_schema']['schema'])
     if to_json and json_transform_keys:
         assert len(json_transform_keys) == 2
         response = response[json_transform_keys[0]]
