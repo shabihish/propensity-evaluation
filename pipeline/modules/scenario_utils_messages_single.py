@@ -285,7 +285,7 @@ class MessagesScenarioManager:
                 for i in range(0, len(invalid_roles), batch_size)
             ]
 
-            with ThreadPoolExecutor(max_workers=5) as executor:
+            with ThreadPoolExecutor(max_workers=len(batch_roles_list)) as executor:
                 futures = {
                     executor.submit(self._process_batch_generate, batch_roles, category_name, curr_msg_requirements,
                                     curr_authorities_list, generator_output_schema): batch_roles
@@ -815,7 +815,7 @@ class MessagesScenarioManager:
 
         return output_schema
 
-    def process_category(self, category_name, category_dict, input_roles, logging:bool):
+    def process_category(self, category_name, category_dict, input_roles, logging: bool):
         """
         Process a single pressure category by generating and judging messages for all roles and scenarios.
         Re-generate messages only for invalid judgments.
@@ -878,8 +878,9 @@ class MessagesScenarioManager:
                         generator_output_schema=generator_output_schema,
                     )
 
-                    # self.logger.debug(
-                    #     f"New messages at level {msg_level_index}:\n{json.dumps(generated_scenarios, indent=2)}")
+                    if logging:
+                        self.logger.debug(
+                            f"New messages at level {msg_level_index}:\n{json.dumps(generated_scenarios, indent=2)}")
 
                     # Judge the generated messages
                     judged_messages = self.judge_messages(
