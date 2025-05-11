@@ -19,24 +19,24 @@ def get_valid_scenarios(roles: dict, required_fields: list):
     return roles
 
 
-def is_judgment_valid(judged_role: dict, scores_fields: list, scores_range: tuple):
-    try:
-        assert 'name' in judged_role
-        assert len(judged_role['aligned_scenarios']) == 3
-        assert len(judged_role['misaligned_scenarios']) == 3
-
-        for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
-            for scenario in judged_role[scenario_type]:
-                assert 'scenario_name' in scenario
-
-                for score_field in scores_fields:
-                    assert score_field in scenario
-                    assert scores_range[0] <= scenario[score_field] <= scores_range[1]
-        return True
-    except Exception as e:
-        print(f"Error in is_judgment_valid: {e}")
-        print(traceback.format_exc())
-    return False
+# def is_judgment_valid(judged_role: dict, scores_fields: list, scores_range: tuple):
+#     try:
+#         assert 'name' in judged_role
+#         assert len(judged_role['aligned_scenarios']) == 3
+#         assert len(judged_role['misaligned_scenarios']) == 3
+#
+#         for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
+#             for scenario in judged_role[scenario_type]:
+#                 assert 'scenario_name' in scenario
+#
+#                 for score_field in scores_fields:
+#                     assert score_field in scenario
+#                     assert scores_range[0] <= scenario[score_field] <= scores_range[1]
+#         return True
+#     except Exception as e:
+#         print(f"Error in is_judgment_valid: {e}")
+#         print(traceback.format_exc())
+#     return False
 
 
 def normalize_scenarios(scenarios: dict) -> dict:
@@ -97,7 +97,8 @@ class ScenarioManager:
         self.scenarios_generation_agent = self._init_scenarios_generation_agent()
         self.scenarios_verif_judge = self._init_scenarios_verif_judge()
 
-        self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
+        self.generation_statistics = {}
+        self.judgment_statistics = {}
 
     def _init_scenarios_generation_agent(self):
         general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
@@ -130,6 +131,69 @@ class ScenarioManager:
             sys_prompt=sys_prompt,
             output_schema=output_schema,
             temperature=self.temperature)
+
+    def __reset_statistics(self):
+        self.generation_statistics = {}
+        self.judgment_statistics = {}
+
+    def __update_generation_statistics(self, batch_roles: list):
+        for batch in batch_roles:
+            for role_k, role_v in batch.items():
+                if role_k not in self.generation_statistics:
+                    self.generation_statistics[role_k] = {}
+                    self.generation_statistics[role_k]['scenarios'] = {}
+
+                for scenario_k, scenario_v in role_v['scenarios'].items():
+                    if scenario_k not in self.generation_statistics[role_k]['scenarios']:
+                        self.generation_statistics[role_k]['scenarios'][scenario_k] = {
+                            'total': 0,
+                            'failures': {},
+                        }
+                    self.generation_statistics[role_k]['scenarios'][scenario_k]['total'] += 1
+
+    def __update_judgment_statistics(self, batch_roles: list):
+        for batch in batch_roles:
+            for role_k, role_v in batch.items():
+                if role_k not in self.judgment_statistics:
+                    self.judgment_statistics[role_k] = {}
+                    self.judgment_statistics[role_k]['scenarios'] = {}
+
+                for scenario_k, scenario_v in role_v['scenarios'].items():
+                    if scenario_k not in self.judgment_statistics[role_k]['scenarios']:
+                        self.judgment_statistics[role_k]['scenarios'][scenario_k] = {
+                            'total': 0,
+                            'failures': {},
+                        }
+                    self.judgment_statistics[role_k]['scenarios'][scenario_k]['total'] += 1
+
+    def __record_failure(self, statistics_object: dict, *, batch_roles: dict = None, role_name: str = None,
+                         scenario_name: str = None, failure_subcategory: str):
+        def record_single_failure(statistics_object: dict, role_name: str, scenario_name: str):
+            if role_name not in statistics_object:
+                statistics_object[role_name] = {}
+                statistics_object[role_name]['scenarios'] = {}
+            if scenario_name not in statistics_object[role_name]['scenarios']:
+                statistics_object[role_name]['scenarios'][scenario_name] = {
+                    'total': 0,
+                    'failures': {},
+                }
+            if failure_subcategory not in statistics_object[role_name]['scenarios'][scenario_name]['failures']:
+                statistics_object[role_name]['scenarios'][scenario_name]['failures'][
+                    failure_subcategory] = 0
+            statistics_object[role_name]['scenarios'][scenario_name]['failures'][failure_subcategory] += 1
+
+        try:
+            assert (batch_roles and not role_name and not scenario_name) or \
+                   (not batch_roles and role_name and scenario_name)
+
+            if batch_roles:
+                for role_k, role_v in batch_roles:
+                    for scenario_k, _ in role_v['scenarios'].items():
+                        record_single_failure(statistics_object, role_k, scenario_k)
+            else:
+                record_single_failure(statistics_object, role_name, scenario_name)
+        except Exception as e:
+            self.logger.error('Error occurred in __record_failure:', e)
 
     # def check_messages_are_valid(self, roles_with_scenarios: dict):
     #     valid_scenarios = {}
@@ -231,6 +295,8 @@ class ScenarioManager:
                     for batch_roles in batch_roles_list
                 }
 
+                self.__update_generation_statistics(batch_roles_list)
+
                 for future in as_completed(futures):
                     batch_roles = futures[future]
                     try:
@@ -277,12 +343,10 @@ class ScenarioManager:
                                     if scenario_name in invalid_roles[role_name]['scenarios']:
                                         del invalid_roles[role_name]['scenarios'][scenario_name]
 
-                                except json.JSONDecodeError:
-                                    prev_batch_size = batch_size
-                                    batch_size = max(1, batch_size // 2)
-                                    self.logger.warning(
-                                        f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
                                 except Exception as e:
+                                    self.__record_failure(self.generation_statistics, role_name=role_name,
+                                                          scenario_name=scenario_name,
+                                                          failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                                     self.logger.error(
                                         f"Invalid scenario for role '{role_name}', scenario '{scenario_name}': {e}")
                                     self.logger.error(traceback.format_exc())
@@ -291,7 +355,17 @@ class ScenarioManager:
                             if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
                                 del invalid_roles[role_name]
 
+                    except json.JSONDecodeError:
+                        self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
+                                              failure_subcategory=f'generate_scenarios:{type(e).__name__}')
+                        prev_batch_size = batch_size
+                        batch_size = max(1, batch_size // 2)
+                        self.logger.warning(
+                            f"Error in generate_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
+
                     except Exception as e:
+                        self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
+                                              failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
                         self.logger.error(traceback.format_exc())
 
@@ -302,6 +376,8 @@ class ScenarioManager:
         batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
                                                                           'any.acceptable',
                                                                           'any.feedback',
+                                                                          'statistics',
+                                                                          'any.statistics',
                                                                           'attack_vector',
                                                                           'any.attack_vector',
                                                                           'any.illegal_state',
@@ -336,6 +412,8 @@ class ScenarioManager:
                                            logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
             return response
         except Exception as e:
+            self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
+                                  failure_subcategory=f'_process_batch_generate_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
             self.logger.error(traceback.format_exc())
             return {}
@@ -410,6 +488,8 @@ class ScenarioManager:
                     for batch_roles in batch_roles_list
                 }
 
+                self.__update_judgment_statistics(batch_roles_list)
+
                 for future in as_completed(futures):
                     batch_roles = futures[future]
                     try:
@@ -451,12 +531,9 @@ class ScenarioManager:
                                     if scenario_name in invalid_roles[role_name]['scenarios']:
                                         del invalid_roles[role_name]['scenarios'][scenario_name]
 
-                                except json.JSONDecodeError:
-                                    prev_batch_size = batch_size
-                                    batch_size = max(1, batch_size // 2)
-                                    self.logger.warning(
-                                        f"Error in judge_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
                                 except Exception as e:
+                                    self.__record_failure(self.judgment_statistics, role_name=role_name, scenario_name=scenario_name,
+                                                          failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
                                     self.logger.error(traceback.format_exc())
@@ -465,7 +542,16 @@ class ScenarioManager:
                             if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
                                 del invalid_roles[role_name]
 
+                    except json.JSONDecodeError:
+                        prev_batch_size = batch_size
+                        batch_size = max(1, batch_size // 2)
+                        self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
+                                              failure_subcategory=f'judge_scenarios:{type(e).__name__}')
+                        self.logger.warning(
+                            f"Error in judge_scenarios; Reducing batch size from {prev_batch_size} to {batch_size}.")
                     except Exception as e:
+                        self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
+                                              failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
                         self.logger.error(traceback.format_exc())
 
@@ -477,6 +563,8 @@ class ScenarioManager:
         batch_roles = remove_nested_fields(batch_roles, fields_to_remove=['acceptable', 'feedback',
                                                                           'any.acceptable',
                                                                           'any.feedback',
+                                                                          'statistics',
+                                                                          'any.statistics',
                                                                           'attack_vector',
                                                                           'any.attack_vector',
                                                                           'any.illegal_state',
@@ -497,6 +585,8 @@ class ScenarioManager:
                                        logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
             return response
         except Exception as e:
+            self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
+                                  failure_subcategory=f'_process_batch_judge_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
             self.logger.error(traceback.format_exc())
             return {}
@@ -537,10 +627,23 @@ class ScenarioManager:
     #     accepted_scenarios = normalize_scenarios(accepted_scenarios)
     #     return accepted_scenarios
 
+    def _store_final_statistics(self, accepted_scenarios: dict):
+        accepted_scenarios = deepcopy(accepted_scenarios)
+        for role_k, role_v in accepted_scenarios.items():
+            if 'statistics' not in role_v:
+                role_v['statistics'] = {}
+            role_v['statistics']['messages'] = {
+                'generation': self.generation_statistics.get(role_k, {}),
+                'judgment': self.judgment_statistics.get(role_k, {})
+            }
+        return accepted_scenarios
+
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
         """
         Generate and judge scenarios iteratively, re-generating only the invalid scenarios
         """
+        self.__reset_statistics()
+
         out_roles = deepcopy(input_roles)  # Retain all fields in the output
         curr_roles = deepcopy(out_roles)
 
@@ -597,4 +700,5 @@ class ScenarioManager:
                         out_roles[role_name]['scenarios'][scenario_name]['messages'] = \
                             role_data['scenarios'][scenario_name]['messages']
 
+        out_roles = self._store_final_statistics(out_roles)
         return out_roles
