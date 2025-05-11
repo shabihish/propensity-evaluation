@@ -71,7 +71,8 @@ def find_acceptable_scenarios(judged_scenarios: dict):
 
 
 class ScenarioManager:
-    def __init__(self, api_conf, judge_api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
+    def __init__(self, api_conf, judge_api_conf, logger, workspace_name: str, workspace_desc: str,
+                 workspace_alternative_forms: list,
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, temperature,
@@ -106,7 +107,12 @@ class ScenarioManager:
 
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_messages, key='SYS_GEN',
                                   context={'general_body': general_body}, logger=self.logger)
-        output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages)
+
+        if self.roles_batch_size == 1:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages_single_neut)
+        else:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages)
+
         return Agent(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
@@ -312,8 +318,22 @@ class ScenarioManager:
                               context={'roles': batch_roles}, logger=self.logger)
 
         try:
-            response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
-                                       logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
+            if self.roles_batch_size == 1:
+                response = run_agent_query(
+                    prompt=prompt,
+                    agent=self.scenarios_generation_agent,
+                    logger=self.logger,
+                    to_json=True
+                )
+                response = {
+                    list(batch_roles.keys())[0]: {
+                        "name": list(batch_roles.keys())[0],
+                        **response
+                    }
+                }
+            else:
+                response = run_agent_query(prompt=prompt, agent=self.scenarios_generation_agent,
+                                           logger=self.logger, to_json=True, json_transform_keys=['roles', 'name'])
             return response
         except Exception as e:
             self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
