@@ -125,7 +125,7 @@ class ScenarioManager:
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_funcs, key='SYS_GEN',
                                   context={'general_body': general_body}, logger=self.logger)
 
-        if self.roles_batch_size == 1:
+        if self.roles_batch_size == 1 and self.scenarios_batch_size == 1:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_funcs_single)
         else:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_funcs)
