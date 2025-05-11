@@ -136,13 +136,14 @@ class ScenarioManager:
                    (not batch_roles and role_name and scenario_name)
 
             if batch_roles:
-                for role_k, role_v in batch_roles:
+                for role_k, role_v in batch_roles.items():
                     for scenario_k, _ in role_v['scenarios'].items():
                         record_single_failure(statistics_object, role_k, scenario_k)
             else:
                 record_single_failure(statistics_object, role_name, scenario_name)
         except Exception as e:
             self.logger.error('Error occurred in __record_failure:', e)
+            self.logger.error(traceback.format_exc())
 
     def check_configurations_are_valid(self, roles_with_scenarios: dict):
         valid_scenarios = {}
