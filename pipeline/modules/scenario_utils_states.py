@@ -243,13 +243,14 @@ class ScenarioManager:
             assert (batch_roles and not role_name) or (not batch_roles and role_name)
 
             if batch_roles:
-                for role_k, role_v in batch_roles:
+                for role_k, role_v in batch_roles.items():
                     attack_vector = role_v['attack_vector']['name']
                     record_single_failure(statistics_object, role_k, attack_vector)
             else:
                 record_single_failure(statistics_object, role_name, attack_vector)
         except Exception as e:
             self.logger.error('Error occurred in __record_failure:', e)
+            self.logger.error(traceback.format_exc())
 
     def remove_similar_scenarios(self, roles_with_scenarios: dict, min_chosen_scenarios_per_role: int):
         out_roles = deepcopy(roles_with_scenarios)
