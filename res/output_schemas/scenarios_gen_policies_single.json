@@ -1,88 +1,73 @@
 {
   "type": "object",
   "properties": {
-    "roles": {
+    "scenarios": {
       "type": "array",
       "items": {
         "type": "object",
         "properties": {
+          "policy": {
+            "type": "object",
+            "properties": {
+              "role_description": {
+                "type": "string"
+              },
+              "duties_description": {
+                "type": "string"
+              },
+              "prohibitions_description": {
+                "type": "string"
+              },
+              "trigger_awareness": {
+                "type": "string"
+              },
+              "trigger_awareness_fpp": {
+                "type": "string"
+              },
+              "trigger_rationale": {
+                "type": "string"
+              },
+              "immediate_outcome_acknowledgment": {
+                "type": "string"
+              },
+              "negative_consequences": {
+                "type": "object",
+                "properties": {
+                  "prefix_connector_sentence": {
+                    "type": "string"
+                  },
+                  "text": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "prefix_connector_sentence",
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "role_description",
+              "duties_description",
+              "prohibitions_description",
+              "trigger_awareness",
+              "trigger_rationale",
+              "immediate_outcome_acknowledgment",
+              "negative_consequences"
+            ]
+          },
           "name": {
             "type": "string"
-          },
-          "scenarios": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "policy": {
-                  "type": "object",
-                  "properties": {
-                    "role_description": {
-                      "type": "string"
-                    },
-                    "duties_description": {
-                      "type": "string"
-                    },
-                    "prohibitions_description": {
-                      "type": "string"
-                    },
-                    "trigger_awareness": {
-                      "type": "string"
-                    },
-                    "trigger_awareness_fpp": {
-                      "type": "string"
-                    },
-                    "trigger_rationale": {
-                      "type": "string"
-                    },
-                    "immediate_outcome_acknowledgment": {
-                      "type": "string"
-                    },
-                    "negative_consequences": {
-                      "type": "object",
-                      "properties": {
-                        "prefix_connector_sentence": {
-                          "type": "string"
-                        },
-                        "text": {
-                          "type": "string"
-                        }
-                      },
-                      "required": [
-                        "prefix_connector_sentence",
-                        "text"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "role_description",
-                    "duties_description",
-                    "prohibitions_description",
-                    "trigger_awareness",
-                    "trigger_rationale",
-                    "immediate_outcome_acknowledgment",
-                    "negative_consequences"
-                  ]
-                },
-                "name": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "policy",
-                "name"
-              ]
-            }
           }
         },
         "required": [
-          "name",
-          "scenarios"
+          "policy",
+          "name"
         ]
       }
     }
   },
   "required": [
-    "roles"
+    "scenarios"
   ]
 }

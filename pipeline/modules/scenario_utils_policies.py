@@ -21,7 +21,8 @@ def get_valid_scenarios(roles: dict, required_fields: list):
 
 
 class ScenarioManager:
-    def __init__(self, api_conf, judge_api_conf, logger, workspace_name: str, workspace_desc: str, workspace_alternative_forms: list,
+    def __init__(self, api_conf, judge_api_conf, logger, workspace_name: str, workspace_desc: str,
+                 workspace_alternative_forms: list,
                  domain_name, domain_desc: str,
                  domain_alternative_forms: list, prompts_conf: DictConfig,
                  output_schemas_conf: DictConfig, temperature,
@@ -56,7 +57,11 @@ class ScenarioManager:
 
         sys_prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='SYS_GEN',
                                   context={'general_body': general_body}, logger=self.logger)
-        output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies)
+
+        if self.roles_batch_size == 1:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies_single)
+        else:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies)
         return Agent(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
@@ -161,7 +166,14 @@ class ScenarioManager:
                                                                                      'name')
                             for scenario_name, scenario_data in role_data['scenarios'].items():
                                 try:
+                                    scenario_response = response[role_name]['scenarios'][scenario_name]
+
                                     # Ensure valid_scenarios retains all original data
+                                    assert isinstance(scenario_response['name'], str), \
+                                        f"Scenario name for '{role_name}:{scenario_name}' is not a string"
+                                    assert isinstance(scenario_response['policy'], dict), \
+                                        f"Scenario policy for '{role_name}:{scenario_name}' is not a dict"
+
                                     if role_name not in valid_scenarios:
                                         valid_scenarios[role_name] = deepcopy(role_data)  # Copy all top-level fields
                                         valid_scenarios[role_name]['scenarios'] = {}
@@ -208,14 +220,27 @@ class ScenarioManager:
         prompt = read_prompts(self.prompts_conf.scenarios_agents_policies, key='USER_GEN',
                               context={'roles': batch_roles},
                               logger=self.logger)
-
-        response = run_agent_query(
-            prompt=prompt,
-            agent=self.scenarios_generation_agent,
-            logger=self.logger,
-            to_json=True,
-            json_transform_keys=['roles', 'name']
-        )
+        if self.roles_batch_size == 1:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=self.scenarios_generation_agent,
+                logger=self.logger,
+                to_json=True
+            )
+            response = {
+                list(batch_roles.keys())[0]: {
+                    "name": list(batch_roles.keys())[0],
+                    **response
+                }
+            }
+        else:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=self.scenarios_generation_agent,
+                logger=self.logger,
+                to_json=True,
+                json_transform_keys=['roles', 'name']
+            )
 
         return response
 
