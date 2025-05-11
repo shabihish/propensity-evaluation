@@ -481,10 +481,10 @@ class MessagesScenarioManager:
                                 try:
                                     scenario_response = response[role_name]['scenarios'][scenario_name]
                                     if self.roles_batch_size == 1:
+                                        modified_subset_output_schema = judge_output_schema
+                                    else:
                                         modified_subset_output_schema = judge_output_schema['properties']['roles'][
                                             'items']
-                                    else:
-                                        modified_subset_output_schema = judge_output_schema
 
                                     all_components = list(filter(lambda key: key not in ["name", "from", "subject"],
                                                                  modified_subset_output_schema['properties'][
