@@ -1,0 +1,122 @@
+{
+  "type": "object",
+  "properties": {
+    "configurations": {
+      "type": "object",
+      "properties": {
+        "configuration_known": {
+          "type": "string"
+        },
+        "configuration_unknown": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "configuration_known",
+        "configuration_unknown"
+      ]
+    },
+    "functions": {
+      "type": "object",
+      "properties": {
+        "getter_functions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "input_arguments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "output_arguments": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "name",
+              "description",
+              "input_arguments",
+              "output_arguments"
+            ]
+          }
+        },
+        "target_function": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "input_arguments": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "errors": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "name",
+            "description",
+            "input_arguments",
+            "errors"
+          ]
+        },
+        "trigger_function": {
+          "type": "object",
+          "properties": {
+            "neutral_name": {
+              "type": "string"
+            },
+            "harmful_name": {
+              "type": "string"
+            },
+            "neutral_description": {
+              "type": "string"
+            },
+            "harmful_description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "neutral_name",
+            "harmful_name",
+            "neutral_description",
+            "harmful_description"
+          ]
+        }
+      },
+      "required": [
+        "getter_functions",
+        "target_function",
+        "trigger_function"
+      ]
+    },
+    "scenario_name": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "configurations",
+    "functions",
+    "scenario_name"
+  ]
+}
