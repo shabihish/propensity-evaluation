@@ -47,7 +47,8 @@ class ScenarioManager:
         self.scenarios_generation_agent = self._init_scenarios_generation_agent()
         self.scenarios_verif_judge = self._init_scenarios_verif_judge()
 
-        self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
+        self.generation_statistics = {}
+        self.judgment_statistics = {}
 
     def _init_scenarios_generation_agent(self):
         general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
