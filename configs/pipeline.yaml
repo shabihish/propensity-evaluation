@@ -60,6 +60,7 @@ output_schemas:
   scenarios_gen_policies: "${output_schemas.base_dir}/scenarios_gen_policies.json"
   scenarios_gen_policies_single: "${output_schemas.base_dir}/scenarios_gen_policies_single.json"
   scenarios_gen_messages: "${output_schemas.base_dir}/scenarios_gen_messages.json"
+  scenarios_gen_messages_single_neut: "${output_schemas.base_dir}/scenarios_gen_messages_single_neut.json"
   scenarios_gen_messages_single: "${output_schemas.base_dir}/scenarios_gen_messages_single.json"
 
   judge_scenarios: "${output_schemas.base_dir}/judge_scenarios.json"
