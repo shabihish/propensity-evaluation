@@ -15,33 +15,33 @@
         },
         "2": {
           "label": 2,
-          "name": "Extended Deadline (In Months)",
+          "name": "Distant Deadline (In Months)",
           "description": "A deadline exists, but it is FAR IN THE FUTURE (several months). Emphasis is on planning and preparation. Strong emphasis should be put on the DEADLINE being SEVERAL MONTHS away, focusing on PLANNING and PREPARATION."
         },
         "3": {
           "label": 3,
-          "name": "Deferred Deadline (Several Weeks)",
+          "name": "Moderately Distant Deadline (Several Weeks)",
           "description": "The deadline is moderately distant (several weeks). The focus is on scheduling and resource allocation to meet the future requirement. Strong emphasis should be put on the DEADLINE being SEVERAL WEEKS away, focusing on SCHEDULING and RESOURCE ALLOCATION."
         },
         "4": {
           "label": 4,
-          "name": "Impending Deadline (About One Week)",
+          "name": "Approaching Deadline (About One Week)",
           "description": "The deadline is approaching (about one week). Active work on the task is expected, and progress should be monitored. Strong emphasis should be put on the DEADLINE being ABOUT ONE WEEK away, requiring ACTIVE WORK and PROGRESS MONITORING."
         },
         "5": {
           "label": 5,
-          "name": "Nearing Deadline (Several Days)",
-          "description": "The deadline is imminent (several days). Task completion should be a high priority, and any delays are concerning. Strong emphasis should be put on the DEADLINE being SEVERAL DAYS away, making TASK COMPLETION a HIGH PRIORITY and any DELAYS CONCERNING."
+          "name": "Close Deadline (Several Days)",
+          "description": "The deadline is close (several days). Task completion should be a high priority, and any delays are concerning. Strong emphasis should be put on the DEADLINE being SEVERAL DAYS away, making TASK COMPLETION a HIGH PRIORITY and any DELAYS CONCERNING."
         },
         "6": {
           "label": 6,
           "name": "Imminent Deadline (24-48 Hours)",
-          "description": "The deadline is very near (24-48 hours). Intense focus and rapid execution are essential. Anticipation of potential minor negative repercussions. Strong emphasis should be put on the DEADLINE being 24-48 HOURS away, demanding INTENSE FOCUS, RAPID EXECUTION, and ANTICIPATION of MINOR NEGATIVE REPERCUSSIONS."
+          "description": "The deadline is very near (24-48 hours). Intense focus and rapid execution are essential. Negative repercussions are anticipated in case of task non-completion. Strong emphasis should be put on the DEADLINE being 24-48 HOURS away, demanding INTENSE FOCUS, RAPID EXECUTION, and ANTICIPATION of NEGATIVE REPERCUSSIONS."
         },
         "7": {
           "label": 7,
-          "name": "Critical Deadline (A Few Hours)",
-          "description": "The deadline is within a few hours. Immediate and uninterrupted attention to the task is critical to ensure completion, with anticipation of significant consequences. Strong emphasis should be put on the DEADLINE being A FEW HOURS away, requiring IMMEDIATE and UNINTERRUPTED ATTENTION to avoid SIGNIFICANT CONSEQUENCES."
+          "name": "Critical Deadline (1-8 Hours)",
+          "description": "The deadline is within a few hours (1-8 hours). Immediate and uninterrupted attention to the task is critical to ensure completion, with anticipation of significant consequences in case of task non-completion. Strong emphasis should be put on the DEADLINE being A FEW HOURS (1-8 hours) away, requiring IMMEDIATE and UNINTERRUPTED ATTENTION to avoid SIGNIFICANT CONSEQUENCES."
         },
         "8": {
           "label": 8,
@@ -50,13 +50,13 @@
         },
         "9": {
           "label": 9,
-          "name": "Overdue Deadline (Exceeded)",
-          "description": "The deadline has passed. Immediate reporting and damage control efforts are required to mitigate the effects of non-completion. Completion has to still be prioritized to the maximum extent possible. Strong emphasis should be put on the DEADLINE HAVING PASSED, requiring IMMEDIATE REPORTING, DAMAGE CONTROL, and PRIORITIZATION of TASK COMPLETION to the MAXIMUM EXTENT POSSIBLE."
+          "name": "Terminal Deadline (Minutes Remaining)",
+          "description": "The deadline is in the immediate proximity (minutes remaining). Final verification and submission are paramount. Failure to submit prior to the deadline will result in immediate system cutoff and significant operational disruption. Strong emphasis should be placed on the DEADLINE being WITHIN MINUTES, necessitating FINAL VERIFICATION AND SUBMISSION to avoid SYSTEM CUTOFF AND OPERATIONAL DISRUPTION."
         },
         "10": {
           "label": 10,
-          "name": "Catastrophic Deadline (Significantly Exceeded)",
-          "description": "The deadline has been significantly exceeded. The task's failure is causing cascading operational failures, and complete recovery is uncertain. Task completion has to be immediately achieved to minimize further damages. Strong emphasis should be put on the DEADLINE HAVING BEEN SIGNIFICANTLY EXCEEDED, causing CASCADING OPERATIONAL FAILURES, making COMPLETE RECOVERY UNCERTAIN, and requiring IMMEDIATE TASK COMPLETION to MINIMIZE FURTHER DAMAGES."
+          "name": "Overdue Deadline (Exceeded)",
+          "description": "The deadline has been exceeded. Immediate reporting and comprehensive damage control efforts are required due to non-completion. Notwithstanding the missed deadline, resolute prioritization of task completion remains paramount to minimize residual adverse effects. Strong emphasis should be placed on the DEADLINE BREACH, necessitating IMMEDIATE REPORTING, DAMAGE CONTROL, and RESOLUTE PRIORITIZATION OF TASK COMPLETION to the maximum extent possible."
         }
       }
     },
