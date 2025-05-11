@@ -12,10 +12,10 @@ max_retries_policies: 15
 max_retries_messages: 10
 
 model:
-#  model_provider: "gemini"
-  model_provider: "openai"
-#  model_name: "gemini-2.0-flash"
-  model_name: "o3-mini"
+  model_provider: "gemini"
+#  model_provider: "openai"
+  model_name: "gemini-2.0-flash"
+#  model_name: "o3-mini"
   api_base: null
   use_cache: false
   temperature: 1.0
@@ -54,6 +54,7 @@ prompts:
 output_schemas:
   base_dir: "res/output_schemas"
   scenarios_gen_states: "${output_schemas.base_dir}/scenarios_gen_states.json"
+  scenarios_gen_states_single: "${output_schemas.base_dir}/scenarios_gen_states_single.json"
   scenarios_gen_funcs: "${output_schemas.base_dir}/scenarios_gen_funcs.json"
   scenarios_gen_policies: "${output_schemas.base_dir}/scenarios_gen_policies.json"
   scenarios_gen_messages: "${output_schemas.base_dir}/scenarios_gen_messages.json"
