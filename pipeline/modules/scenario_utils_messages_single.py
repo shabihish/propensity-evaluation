@@ -407,13 +407,27 @@ class MessagesScenarioManager:
                               context={'roles': batch_roles},
                               logger=self.logger)
 
-        response = run_agent_query(
-            prompt=prompt,
-            agent=curr_agent,
-            logger=self.logger,
-            to_json=True,
-            json_transform_keys=['roles', 'name']
-        )
+        if len(batch_roles) == 1:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=curr_agent,
+                logger=self.logger,
+                to_json=True
+            )
+            response = {
+                list(batch_roles.keys())[0]: {
+                    "name": list(batch_roles.keys())[0],
+                    **response
+                }
+            }
+        else:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=curr_agent,
+                logger=self.logger,
+                to_json=True,
+                json_transform_keys=['roles', 'name']
+            )
         return response
 
     def judge_messages(self, roles: dict, category_name: str, msg_level_index: int,
@@ -563,13 +577,27 @@ class MessagesScenarioManager:
                               context={'roles': batch_roles},
                               logger=self.logger)
 
-        response = run_agent_query(
-            prompt=prompt,
-            agent=curr_agent,
-            logger=self.logger,
-            to_json=True,
-            json_transform_keys=['roles', 'name']
-        )
+        if len(batch_roles) == 1:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=curr_agent,
+                logger=self.logger,
+                to_json=True
+            )
+            response = {
+                list(batch_roles.keys())[0]: {
+                    "name": list(batch_roles.keys())[0],
+                    **response
+                }
+            }
+        else:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=curr_agent,
+                logger=self.logger,
+                to_json=True,
+                json_transform_keys=['roles', 'name']
+            )
         return response
 
     def build_message_requirements(self, pressure_category: dict, msg_level: dict) -> str:
@@ -605,50 +633,89 @@ class MessagesScenarioManager:
         Build the generator's output schema dynamically based on the pressure category and message level.
         Each component will have a 'text_fragment' entry, and all fragments will form a complete paragraph.
         """
-        output_schema = {
-            "type": "object",
-            "properties": {
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "scenarios": {
-                                "type": "array",
-                                "items": {
+
+        if self.roles_batch_size == 1:
+            output_schema = {
+                "type": "object",
+                "properties": {
+                    "scenarios": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "from": {
+                                    "type": "string"
+                                },
+                                "subject": {
+                                    "type": "string"
+                                },
+                                "text_fragments": {
                                     "type": "object",
-                                    "properties": {
-                                        "name": {
-                                            "type": "string"
-                                        },
-                                        "from": {
-                                            "type": "string"
-                                        },
-                                        "subject": {
-                                            "type": "string"
-                                        },
-                                        "text_fragments": {
-                                            "type": "object",
-                                            "properties": {},
-                                            "required": []
-                                        }
-                                    },
-                                    "required": [
-                                        "name",
-                                        "from",
-                                        "subject",
-                                        "text_fragments",
-                                    ]
+                                    "properties": {},
+                                    "required": []
                                 }
-                            }
-                        },
-                        "required": ["name", "scenarios"]
+                            },
+                            "required": [
+                                "name",
+                                "from",
+                                "subject",
+                                "text_fragments",
+                            ]
+                        }
                     }
-                }
-            },
-            "required": ["roles"]
-        }
+                },
+                "required": ["scenarios"]
+            }
+            modified_subset_output_schema = output_schema
+        else:
+            output_schema = {
+                "type": "object",
+                "properties": {
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "scenarios": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "from": {
+                                                "type": "string"
+                                            },
+                                            "subject": {
+                                                "type": "string"
+                                            },
+                                            "text_fragments": {
+                                                "type": "object",
+                                                "properties": {},
+                                                "required": []
+                                            }
+                                        },
+                                        "required": [
+                                            "name",
+                                            "from",
+                                            "subject",
+                                            "text_fragments",
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": ["name", "scenarios"]
+                        }
+                    }
+                },
+                "required": ["roles"]
+            }
+            modified_subset_output_schema = output_schema['properties']['roles']['items']
 
         components_dict = pressure_category['components']
         prev_component = None
@@ -672,7 +739,7 @@ class MessagesScenarioManager:
             component_key = f"{component_letter}. {component['name']}:{subcomponent['name']}"
             if i == 0:
                 # First component: only text
-                output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                modified_subset_output_schema['properties']['scenarios']['items']['properties'][
                     'text_fragments']['properties'][component_key] = {
                     "type": "object",
                     "properties": {
@@ -685,7 +752,7 @@ class MessagesScenarioManager:
                 }
             else:
                 # Subsequent components: prefix_connector and text
-                output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+                modified_subset_output_schema['properties']['scenarios']['items']['properties'][
                     'text_fragments']['properties'][component_key] = {
                     "type": "object",
                     "properties": {
@@ -700,7 +767,7 @@ class MessagesScenarioManager:
                     },
                     "required": ["prefix_connector", "text"]
                 }
-            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+            modified_subset_output_schema['properties']['scenarios']['items']['properties'][
                 'text_fragments']['required'].append(
                 component_key)
 
@@ -713,57 +780,116 @@ class MessagesScenarioManager:
         """
         Build the judge's output schema dynamically based on the pressure category and message level.
         """
-        output_schema = {
-            "type": "object",
-            "properties": {
-                "roles": {
-                    "type": "array",
-                    "items": {
-                        "type": "object",
-                        "properties": {
-                            "name": {"type": "string"},
-                            "scenarios": {
-                                "type": "array",
-                                "items": {
+
+        if self.roles_batch_size == 1:
+            output_schema = {
+                "type": "object",
+                "properties": {
+                    "scenarios": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "from": {
                                     "type": "object",
                                     "properties": {
-                                        "name": {
+                                        "acceptable": {
+                                            "type": "boolean"
+                                        },
+                                        "feedback": {
                                             "type": "string"
-                                        },
-                                        "from": {
-                                            "type": "object",
-                                            "properties": {
-                                                "acceptable": {"type": "boolean"},
-                                                "feedback": {"type": "string"}
-                                            },
-                                            "required": ["acceptable", "feedback"]
-                                        },
-                                        "subject": {
-                                            "type": "object",
-                                            "properties": {
-                                                "acceptable": {"type": "boolean"},
-                                                "feedback": {"type": "string"}
-                                            },
-                                            "required": ["acceptable", "feedback"]
-                                        },
+                                        }
                                     },
                                     "required": [
-                                        "name",
-                                        "from",
-                                        "subject",
+                                        "acceptable",
+                                        "feedback"
+                                    ]
+                                },
+                                "subject": {
+                                    "type": "object",
+                                    "properties": {
+                                        "acceptable": {
+                                            "type": "boolean"
+                                        },
+                                        "feedback": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "required": [
+                                        "acceptable",
+                                        "feedback"
                                     ]
                                 }
-                            }
-                        },
-                        "required": [
-                            "name",
-                            "scenarios"
-                        ]
+                            },
+                            "required": [
+                                "name",
+                                "from",
+                                "subject"
+                            ]
+                        }
                     }
-                }
-            },
-            "required": ["roles"]
-        }
+                },
+                "required": [
+                    "scenarios"
+                ]
+            }
+            modified_subset_output_schema = output_schema
+        else:
+            output_schema = {
+                "type": "object",
+                "properties": {
+                    "roles": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {"type": "string"},
+                                "scenarios": {
+                                    "type": "array",
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "name": {
+                                                "type": "string"
+                                            },
+                                            "from": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "acceptable": {"type": "boolean"},
+                                                    "feedback": {"type": "string"}
+                                                },
+                                                "required": ["acceptable", "feedback"]
+                                            },
+                                            "subject": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "acceptable": {"type": "boolean"},
+                                                    "feedback": {"type": "string"}
+                                                },
+                                                "required": ["acceptable", "feedback"]
+                                            },
+                                        },
+                                        "required": [
+                                            "name",
+                                            "from",
+                                            "subject",
+                                        ]
+                                    }
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "scenarios"
+                            ]
+                        }
+                    }
+                },
+                "required": ["roles"]
+            }
+            modified_subset_output_schema = output_schema['properties']['roles']['items']
 
         components_dict = pressure_category['components']
         for i, (component_id, subcomponent_id) in enumerate(msg_level.items()):
@@ -783,7 +909,7 @@ class MessagesScenarioManager:
             # Construct the schema for the current component
             component_letter = chr(ord('A') + i)
             component_key = f"{component_letter}. {component['name']}"
-            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['properties'][
+            modified_subset_output_schema['properties']['scenarios']['items']['properties'][
                 component_key] = {
                 "type": "object",
                 "properties": {
@@ -810,7 +936,7 @@ class MessagesScenarioManager:
                 ]
             }
 
-            output_schema['properties']['roles']['items']['properties']['scenarios']['items']['required'].append(
+            modified_subset_output_schema['properties']['scenarios']['items']['required'].append(
                 component_key)
 
         return output_schema
