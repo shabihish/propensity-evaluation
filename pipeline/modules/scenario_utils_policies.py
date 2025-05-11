@@ -214,6 +214,8 @@ class ScenarioManager:
                     for batch_roles in batch_roles_list
                 }
 
+                self.__update_generation_statistics(batch_roles_list)
+
                 for future in as_completed(futures):
                     batch_roles = futures[future]
                     try:
@@ -341,6 +343,8 @@ class ScenarioManager:
                     for batch_roles in batch_roles_list
                 }
 
+                self.__update_judgment_statistics(batch_roles_list)
+
                 for future in as_completed(futures):
                     batch_roles = futures[future]
                     try:
@@ -441,7 +445,7 @@ class ScenarioManager:
         for role_k, role_v in accepted_scenarios.items():
             if 'statistics' not in role_v:
                 role_v['statistics'] = {}
-            role_v['statistics']['funcs'] = {
+            role_v['statistics']['policies'] = {
                 'generation': self.generation_statistics.get(role_k, {}),
                 'judgment': self.judgment_statistics.get(role_k, {})
             }
