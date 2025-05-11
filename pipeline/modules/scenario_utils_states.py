@@ -389,7 +389,7 @@ class ScenarioManager:
             required_list.remove("intentional_adversarial_action_taken")
             required_list.append(f"intentional_adversarial_action_taken ({attack_vector['name']})")
 
-        if len(batch_roles) == 1:
+        if self.batch_size == 1:
             response = run_agent_query(
                 prompt=prompt,
                 agent=agent,
