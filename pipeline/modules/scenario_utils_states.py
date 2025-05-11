@@ -163,8 +163,10 @@ class ScenarioManager:
                                   context={'general_body': general_body,
                                            'n_scenarios': self.min_initial_scenarios_per_role}, logger=self.logger)
 
-        # print(f'AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\nAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n{sys_prompt}\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\nBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB')
-        output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states)
+        if self.batch_size == 1:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states_single)
+        else:
+            output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states)
         return Agent(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
@@ -351,7 +353,7 @@ class ScenarioManager:
                               logger=self.logger)
 
         try:
-            response = self._run_generation_agent(prompt, attack_vector=None)
+            response = self._run_generation_agent(prompt, attack_vector=None, batch_roles=batch_roles)
             # Removes roles with lower that the required number of scenarios
             response = get_valid_scenarios(response, required_fields=['name', 'scenarios'],
                                            min_scenarios_per_role=self.min_initial_scenarios_per_role)
@@ -368,7 +370,7 @@ class ScenarioManager:
     #     random.shuffle(batch_roles)
     #     return batch_roles
 
-    def _run_generation_agent(self, prompt, attack_vector):
+    def _run_generation_agent(self, prompt, attack_vector, batch_roles):
         agent = deepcopy(self.scenarios_generation_agent)
         if attack_vector:
             agent.output_schema['json_schema']['schema']["properties"]["roles"]["items"]["properties"]["scenarios"][
@@ -387,8 +389,24 @@ class ScenarioManager:
             required_list.remove("intentional_adversarial_action_taken")
             required_list.append(f"intentional_adversarial_action_taken ({attack_vector['name']})")
 
-        return run_agent_query(prompt=prompt, agent=agent, logger=self.logger, to_json=True,
+        if len(batch_roles) == 1:
+            response = run_agent_query(
+                prompt=prompt,
+                agent=agent,
+                logger=self.logger,
+                to_json=True
+            )
+            response = {
+                list(batch_roles.keys())[0]: {
+                    "name": list(batch_roles.keys())[0],
+                    **response
+                }
+            }
+        else:
+            response = run_agent_query(prompt=prompt, agent=agent, logger=self.logger, to_json=True,
                                json_transform_keys=['roles', 'name'])
+
+        return response
 
     def _process_generation_response(self, response):
         response = get_valid_scenarios(response, required_fields=['name', 'scenarios'],
