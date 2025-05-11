@@ -25,6 +25,7 @@ KEYS_ORDERS = [
 
     'prefix_connector', 'prefix_connector_sentence', 'text',
 
+    'statistics', 'generation', 'judgment',
 ]
 
 
