@@ -407,7 +407,7 @@ class MessagesScenarioManager:
                               context={'roles': batch_roles},
                               logger=self.logger)
 
-        if len(batch_roles) == 1:
+        if self.roles_batch_size == 1:
             response = run_agent_query(
                 prompt=prompt,
                 agent=curr_agent,
@@ -577,7 +577,7 @@ class MessagesScenarioManager:
                               context={'roles': batch_roles},
                               logger=self.logger)
 
-        if len(batch_roles) == 1:
+        if self.roles_batch_size == 1:
             response = run_agent_query(
                 prompt=prompt,
                 agent=curr_agent,
