@@ -114,7 +114,8 @@ class ScenarioManager:
         self.scenarios_generation_agent = self._init_scenarios_generation_agent()
         self.scenarios_verif_judge = self._init_scenarios_verif_judge()
 
-        self.similarity_graph = SimilarityGraph(TfidfVectorizer, threshold=0.5)
+        self.generation_statistics = {}
+        self.judgment_statistics = {}
 
     def _init_scenarios_generation_agent(self):
         general_body = read_prompts(self.prompts_conf.scenarios_general_body, key='SYS_GEN',
@@ -146,6 +147,34 @@ class ScenarioManager:
             sys_prompt=sys_prompt,
             output_schema=output_schema,
             temperature=self.temperature)
+
+    def __reset_statistics(self):
+        self.generation_statistics = {}
+        self.judgment_statistics = {}
+
+    def __update_generation_statistics(self, batch_roles: list):
+        for batch in batch_roles:
+            for role_k, role_v in batch.items():
+                if role_k not in self.generation_statistics:
+                    self.generation_statistics[role_k] = {}
+                    self.generation_statistics[role_k]['scenarios'] = {}
+
+                for scenario_k, scenario_v in role_v['scenarios'].items():
+                    if scenario_k not in self.generation_statistics[role_k]['scenarios']:
+                        self.generation_statistics[role_k]['scenarios'][scenario_k] = 0
+                    self.generation_statistics[role_k]['scenarios'][scenario_k] += 1
+
+    def __update_judgment_statistics(self, batch_roles: list):
+        for batch in batch_roles:
+            for role_k, role_v in batch.items():
+                if role_k not in self.judgment_statistics:
+                    self.judgment_statistics[role_k] = {}
+                    self.judgment_statistics[role_k]['scenarios'] = {}
+
+                for scenario_k, scenario_v in role_v['scenarios'].items():
+                    if scenario_k not in self.judgment_statistics[role_k]['scenarios']:
+                        self.judgment_statistics[role_k]['scenarios'][scenario_k] = 0
+                    self.judgment_statistics[role_k]['scenarios'][scenario_k] += 1
 
     def check_configurations_are_valid(self, roles_with_scenarios: dict):
         valid_scenarios = {}
@@ -281,6 +310,8 @@ class ScenarioManager:
                     for batch_roles in batch_roles_list
                 }
 
+                self.__update_generation_statistics(batch_roles_list)
+
                 for future in as_completed(futures):
                     batch_roles = futures[future]
                     try:
@@ -380,7 +411,7 @@ class ScenarioManager:
                     }
                 }
                 response[list(batch_roles.keys())[0]]['scenarios'][0]['name'] = \
-                response[list(batch_roles.keys())[0]]['scenarios'][0]['scenario_name']
+                    response[list(batch_roles.keys())[0]]['scenarios'][0]['scenario_name']
 
                 del response[list(batch_roles.keys())[0]]['scenarios'][0]['scenario_name']
             else:
@@ -412,6 +443,8 @@ class ScenarioManager:
                     executor.submit(self._process_batch_judge_scenarios, batch_roles): batch_roles
                     for batch_roles in batch_roles_list
                 }
+
+                self.__update_judgment_statistics(batch_roles_list)
 
                 for future in as_completed(futures):
                     batch_roles = futures[future]
@@ -537,10 +570,23 @@ class ScenarioManager:
     #     # accepted_scenarios = normalize_scenarios(accepted_scenarios)
     #     return accepted_scenarios
 
+    def _store_final_statistics(self, accepted_scenarios: dict):
+        accepted_scenarios = deepcopy(accepted_scenarios)
+        for role_k, role_v in accepted_scenarios.items():
+            if 'statistics' not in role_v:
+                role_v['statistics'] = {}
+            role_v['statistics']['funcs'] = {
+                'generation': self.generation_statistics.get(role_k, {}),
+                'judgment': self.judgment_statistics.get(role_k, {})
+            }
+        return accepted_scenarios
+
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
         """
         Generate and judge scenarios iteratively, re-generating only the invalid scenarios
         """
+        self.__reset_statistics()
+
         out_roles = deepcopy(input_roles)  # Retain all fields in the output
         curr_roles = deepcopy(out_roles)
 
@@ -598,4 +644,5 @@ class ScenarioManager:
                         out_roles[role_name]['scenarios'][scenario_name]['functions'] = \
                             role_data['scenarios'][scenario_name]['functions']
 
+        out_roles = self._store_final_statistics(out_roles)
         return out_roles
