@@ -1,6 +1,7 @@
 from rich import print as rprint
 from llm_client import LiteLlmClient
 import time
+import json
 
 class Executor:
     def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
@@ -13,14 +14,14 @@ class Executor:
         self.max_retries = 5
         self.client = LiteLlmClient(model_name)
         # Initialize cost tracking
-        self.total_prompt_tokens = 0
-        self.total_completion_tokens = 0
+        # self.total_prompt_tokens = 0
+        # self.total_completion_tokens = 0
 
-    def get_cost_info(self):
-        return {
-            'prompt_tokens': self.total_prompt_tokens,
-            'completion_tokens': self.total_completion_tokens,
-        }
+    # def get_cost_info(self):
+    #     return {
+    #         'prompt_tokens': self.total_prompt_tokens,
+    #         'completion_tokens': self.total_completion_tokens,
+    #     }
 
     def step(self, observation: str):
         # Call the agent's tools or send messages
@@ -59,8 +60,8 @@ class Executor:
     def _call_llm(self):
         # start_time = time.time()
         response = self.client.get_completion(messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
-        self.total_prompt_tokens += response.usage.prompt_tokens
-        self.total_completion_tokens += response.usage.completion_tokens
+        # self.total_prompt_tokens += response.usage.prompt_tokens
+        # self.total_completion_tokens += response.usage.completion_tokens
         return response.choices[0].message
     
     def _process_llm_response(self, response):
@@ -73,8 +74,11 @@ class Executor:
             tool_call = response.tool_calls[0]
 
             tool_name = tool_call.function.name
-            arguments = eval(tool_call.function.arguments)
-
+            try:
+                arguments = json.loads(tool_call.function.arguments)
+            except json.JSONDecodeError as e:
+                rprint(f"[bold red]\Error decoding arguments JSON: {e}[/bold red]\n")
+                arguments = {}
             if tool_name not in self.agent.tools:
                 raise ValueError(f"Function {tool_name} not found in tools")
             
@@ -89,7 +93,7 @@ class Executor:
                 if tool_name == self.target_function:
                     self.target_function_count += 1
                 if self.target_function_count > self.max_target_tries:
-                    tool_output = f"Maximum number of {tool_name} tool calls reached."
+                    tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
                 rprint(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
                 retry_call = False
 
