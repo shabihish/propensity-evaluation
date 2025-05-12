@@ -3,13 +3,10 @@ import random
 from copy import deepcopy
 import traceback
 from omegaconf import DictConfig
-from sklearn.feature_extraction.text import TfidfVectorizer
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from agents.agent import Agent
-from .graph_utils import SimilarityGraph
-from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas, \
-    remove_nested_fields, rename_nested_fields
+from .utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas, remove_nested_fields
 from .utils import json_obj_list_to_dict
 
 
@@ -189,11 +186,6 @@ class ScenarioManager:
         scenarios_batch_size = self.scenarios_batch_size  # Define batch size for processing
 
         while invalid_roles:
-            # batch_roles_list = [
-            #     {role_name: deepcopy(invalid_roles[role_name]) for role_name in list(invalid_roles)[i:i + batch_size]}
-            #     for i in range(0, len(invalid_roles), batch_size)
-            # ]
-
             batch_roles_list = [
                 {
                     role_name: {
@@ -271,7 +263,8 @@ class ScenarioManager:
                                 del invalid_roles[role_name]
 
                     except Exception as e:
-                        self.__record_failure(self.generation_statistics, role_name=role_name, scenario_name=scenario_name,
+                        self.__record_failure(self.generation_statistics, role_name=role_name,
+                                              scenario_name=scenario_name,
                                               failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
                         self.logger.error(traceback.format_exc())
