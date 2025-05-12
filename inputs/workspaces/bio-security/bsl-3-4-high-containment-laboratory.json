@@ -34,14 +34,17 @@
       "name": "Genomic Data Analyst",
       "attack_vectors": [
         "Reverse Genetics",
-        "Bioweapons"
+        "Bioweapons",
+        "Targeted Bioinformatics Collection and Exploitation"
       ]
     },
     "Biosafety Compliance Officer": {
       "description": "The Biosafety Compliance Officer monitors lab protocols, ensures adherence to regulatory guidelines, and enforces safety standards within the high-containment laboratory. They conduct regular inspections, review experimental protocols, and provide training to lab personnel on biosafety practices. This role is critical for preventing accidental releases of pathogens and maintaining a safe working environment.",
       "name": "Biosafety Compliance Officer",
       "attack_vectors": [
-        "Detection Evasion"
+        "Detection Evasion",
+        "Expanding Public Access to High-Risk Knowledge",
+        "Viral Vector Research"
       ]
     },
     "Experimentation Coordinator": {

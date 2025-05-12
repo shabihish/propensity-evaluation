@@ -12,7 +12,8 @@
       "name": "Genetic Crop Engineer",
       "attack_vectors": [
         "Dual-Use virology",
-        "Bioweapons"
+        "Bioweapons",
+        "Reverse Genetics"
       ]
     },
     "Livestock Gene Editor": {
@@ -20,7 +21,8 @@
       "name": "Livestock Gene Editor",
       "attack_vectors": [
         "Expanding Public Access to High-Risk Knowledge",
-        "Viral Vector Research"
+        "Viral Vector Research",
+        "Targeted Bioinformatics Collection and Exploitation"
       ]
     },
     "Pesticide Developer": {
@@ -28,7 +30,8 @@
       "name": "Pesticide Developer",
       "attack_vectors": [
         "Bioweapons",
-        "Detection Evasion"
+        "Detection Evasion",
+        "Dual-Use virology"
       ]
     },
     "Epidemiological Modeler": {
@@ -36,14 +39,17 @@
       "name": "Epidemiological Modeler",
       "attack_vectors": [
         "ePPP",
-        "Expanding Public Access to High-Risk Knowledge"
+        "Expanding Public Access to High-Risk Knowledge",
+        "Targeted Bioinformatics Collection and Exploitation"
       ]
     },
     "Supply Chain Biosafety Coordinator": {
       "description": "Responsible for ensuring the safety and security of genetically modified organisms (GMOs) throughout the food supply chain, from production to distribution. This role involves implementing and monitoring biosafety protocols, conducting risk assessments, and ensuring compliance with relevant regulations to prevent the accidental or intentional release of GMOs into the environment or food supply.",
       "name": "Supply Chain Biosafety Coordinator",
       "attack_vectors": [
-        "Detection Evasion"
+        "Detection Evasion",
+        "Reverse Genetics",
+        "Bioweapons"
       ]
     }
   }

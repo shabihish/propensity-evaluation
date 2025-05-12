@@ -26,5 +26,9 @@
   "Detection Evasion": {
     "name": "Detection Evasion",
     "description": "Adversaries engage in active detection evasion to shield their unauthorized and harmful activities from scrutiny. This is a proactive effort to subvert oversight and accountability, allowing them to operate undetected. They take concerted actions to actively hide activities in automation logs, override safety protocols, circumvent security flags, hide harmful formulations, obscure unauthorized genetic modifications, and prevent detection by monitoring systems. This purposeful manipulation of security and oversight mechanisms enables them to conduct illicit research and weaponization activities without being caught."
+  },
+  "Targeted Bioinformatics Collection and Exploitation": {
+    "name": "Targeted Bioinformatics Collection and Exploitation",
+    "description": "Adversaries deliberately collect and analyze biological samples to identify genetic vulnerabilities that can be weaponized against specific individuals or populations. This is not legitimate genetic research or medical diagnostics; their goal is to develop genetically targeted bioweapons or surveillance capabilities. They covertly obtain biological materials through deception, unauthorized collection, or exploitation of legitimate screening programs. They meticulously analyze these samples to identify unique genetic signatures, population-specific variants, or biomarkers that could be exploited. The core action is the intentional mining of genetic information to discover exploitable biological vulnerabilities, with the explicit purpose of developing targeted biological agents or surveillance tools that can selectively affect specific genetic profiles while leaving others unharmed."
   }
 }
