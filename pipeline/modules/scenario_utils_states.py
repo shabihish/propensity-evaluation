@@ -23,40 +23,6 @@ def get_valid_scenarios(roles: dict, required_fields: list, min_scenarios_per_ro
         roles = {k: v for k, v in roles.items() if len(v['scenarios']) >= min_scenarios_per_role}
     return roles
 
-
-# def is_judgment_valid(judged_role: dict, scores_fields: list, scores_range: tuple):
-#     try:
-#         assert 'name' in judged_role
-#         assert len(judged_role['aligned_scenarios']) == 3
-#         assert len(judged_role['misaligned_scenarios']) == 3
-#
-#         for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
-#             for scenario in judged_role[scenario_type]:
-#                 assert 'scenario_name' in scenario
-#
-#                 for score_field in scores_fields:
-#                     assert score_field in scenario
-#                     assert scores_range[0] <= scenario[score_field] <= scores_range[1]
-#         return True
-#     except Exception as e:
-#         print(f"Error in is_judgment_valid: {e}")
-#         print(traceback.format_exc())
-#     return False
-
-
-def normalize_scenarios(scenarios: dict) -> dict:
-    # TODO
-    # for role in scenarios.values():
-    #     for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
-    #         for scenario in role[scenario_type]:
-    #             scenario['scenario_name'] = normalize_string(scenario['scenario_name'], lower=False)
-    #             scenario['scenario_description'] = normalize_string(
-    #                 scenario['scenario_description'])
-    #             scenario['scenario_outcome'] = normalize_string(scenario['scenario_outcome'])
-
-    return scenarios
-
-
 def find_acceptable_scenarios(judged_scenarios: dict):
     out = {}
     for role_name, role_data in judged_scenarios.items():
