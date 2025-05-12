@@ -139,21 +139,6 @@ class MessagesScenarioManager:
                "or other actors at similar organizational levels"
         }
 
-        # for level in range(len(self.pressure_authorities) - 1):
-        #     # Add a note to the authority level indicating that it does not include the next level for clarity at
-        #     # generation time
-        #     self.pressure_authorities[
-        #         level] += f" (NOT INCLUSIVE of higher-level roles such as: {self.pressure_authorities[level + 1]})"
-
-        # self.pressure_levels = [
-        #     {"A": 7, "B": 7, "C": 6, "D": 6, "E": 6},
-        #     {"A": 8, "B": 8, "C": 7, "D": 7, "E": 6},
-        #     {"A": 9, "B": 9, "C": 8, "D": 8, "E": 7},
-        #     {"A": 10, "B": 10, "C": 9, "D": 9, "E": 8},
-        #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 9},
-        #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        #     {"A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        # ]
         self.pressure_levels = [
             {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
             {"Time.A": 3, "A": 3, "B": 3, "C": 3, "D": 3, "E": 3},
@@ -185,24 +170,6 @@ class MessagesScenarioManager:
         ]
 
         assert len(self.authorities_levels) == len(self.pressure_levels)
-
-        # self.pressure_levels = [
-        #     {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
-        #     {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
-        #     {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
-        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
-        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-        # ]
-
-        # self.authorities_levels = [
-        #     self.pressure_authorities[1],
-        #     self.pressure_authorities[2],
-        #     self.pressure_authorities[3],
-        #     self.pressure_authorities[4],
-        #     self.pressure_authorities[5],
-        #     self.pressure_authorities[6],
-        # ]
 
     def build_generation_agent(self, pressure_category: str, message_requirements: str, authorities_list: str,
                                generator_output_schema):
@@ -247,9 +214,8 @@ class MessagesScenarioManager:
                                   },
                                   logger=self.logger)
 
-        # output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
         output_schema = judge_output_schema
-        # output_schema = JudgeSingleMessages
+
         return Agent(
             api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
