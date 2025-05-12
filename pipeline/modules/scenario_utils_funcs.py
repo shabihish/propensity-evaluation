@@ -4,10 +4,8 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 
 from omegaconf import DictConfig
-from sklearn.feature_extraction.text import TfidfVectorizer
 
 from agents.agent import Agent
-from .graph_utils import SimilarityGraph
 from .utils import json_obj_list_to_dict, remove_nested_fields
 from .utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas
 
@@ -38,19 +36,6 @@ def is_judgment_valid(judged_role: dict, scores_fields: list, scores_range: tupl
         print(traceback.format_exc())
 
     return False
-
-
-def normalize_scenarios(scenarios: dict) -> dict:
-    # TODO
-    # for role in scenarios.values():
-    #     for scenario_type in ['aligned_scenarios', 'misaligned_scenarios']:
-    #         for scenario in role[scenario_type]:
-    #             scenario['scenario_name'] = normalize_string(scenario['scenario_name'], lower=False)
-    #             scenario['scenario_description'] = normalize_string(
-    #                 scenario['scenario_description'])
-    #             scenario['scenario_outcome'] = normalize_string(scenario['scenario_outcome'])
-
-    return scenarios
 
 
 def find_acceptable_scenarios(judged_scenarios: dict):
@@ -278,9 +263,6 @@ class ScenarioManager:
                     assert all((field in conf_known_dict.keys() or field in conf_unknown_dict.keys()) for field in
                                all_getter_output_fields), ("Expected all return keys to be either from "
                                                            f"the known or unknown configurations for {role_k}:{scenario_k}")
-                    # assert all(field in all_getter_output_fields for field in
-                    #            conf_unknown_dict.keys()), ("Expected all unknown fields to be covered by the getter "
-                    #                                        "functions' return values")
 
                     # Verifications for the target function
                     target_func: dict = scenario_v['functions']['target_function']
@@ -591,42 +573,6 @@ class ScenarioManager:
             self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
             self.logger.error(traceback.format_exc())
             return {}
-
-    # def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
-    #     # Expects the scenarios to be converted to a dict already
-    #     for role_v in input_roles.values():
-    #         assert isinstance(role_v['scenarios'], dict)
-    #
-    #     accepted_scenarios = {}
-    #     missing_scenarios = list(set(input_roles.keys()) - set(accepted_scenarios.keys()))
-    #     n_tries_for_role = 0
-    #     while missing_scenarios:
-    #         if n_tries_for_role >= 10:
-    #             break
-    #         n_tries_for_role += 1
-    #         generated_scenarios = self.generate_scenarios({name: input_roles[name] for name in missing_scenarios})
-    #         if logging:
-    #             self.logger.debug(f'Generated scenarios_dict: {generated_scenarios}\n\n')
-    #
-    #         judged_scenarios = self.judge_scenarios(generated_scenarios)
-    #
-    #         for role_k, role_v in judged_scenarios.items():
-    #             all_scenarios_accepted = all(scen['acceptable'] == True for scen in role_v['scenarios'].values())
-    #             if all_scenarios_accepted:
-    #                 accepted_scenarios[role_k] = generated_scenarios[role_k]
-    #                 # Update accepted scenarios with judgment fields provided by the judge
-    #                 for scenario_k, scenario_v in role_v['scenarios'].items():
-    #                     accepted_scenarios[role_k]['scenarios'][scenario_k].update(scenario_v)
-    #                 missing_scenarios.remove(role_k)
-    #             else:
-    #                 if logging:
-    #                     self.logger.debug(f"Judgment not valid for role {role_k}: {role_v}\n\n")
-    #
-    #         if logging:
-    #             self.logger.debug(f'Accepted scenario names: {list(accepted_scenarios.keys())}\n\n')
-    #
-    #     # accepted_scenarios = normalize_scenarios(accepted_scenarios)
-    #     return accepted_scenarios
 
     def _store_final_statistics(self, accepted_scenarios: dict):
         accepted_scenarios = deepcopy(accepted_scenarios)
