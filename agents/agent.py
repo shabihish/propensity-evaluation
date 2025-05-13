@@ -13,10 +13,11 @@ litellm.set_verbose = False
 import os
 import time
 import psutil
+import threading
+from threading import Thread
 import multiprocessing
 import fcntl
 import json
-from threading import Thread
 from litellm import RateLimitError
 
 
@@ -151,6 +152,9 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
 
 
 class Agent:
+    _warning_lock = threading.Lock()
+    _proxy_warning_printed = False
+
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
                  temperature: float = 1):
         # assert sys_prompt_info is not None and isinstance(sys_prompt_info, dict) and len(sys_prompt_info) == 2
@@ -178,12 +182,16 @@ class Agent:
                                    semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
         self.api_proxy = os.environ.get("API_PROXY", None)
-        if not self.api_proxy:
-            logging.warning("No API proxy provided. Defaulting to Litellm.")
-            self.api_proxy = 'litellm'
-        else:
-            self.api_proxy = self.api_proxy.lower()
-            logging.warning(f"Using provided API proxy: {self.api_proxy}.")
+        with Agent._warning_lock:
+            if not Agent._proxy_warning_printed:
+                if not self.api_proxy:
+                    logging.warning("No API proxy provided. Defaulting to Litellm.")
+                    self.api_proxy = 'litellm'
+                else:
+                    self.api_proxy = self.api_proxy.lower()
+                    logging.warning(f"Using provided API proxy: {self.api_proxy}.")
+
+                Agent._proxy_warning_printed = True
 
         assert output_schema is None or isinstance(output_schema, BaseModel) or isinstance(output_schema,
                                                                                            ModelMetaclass) or isinstance(
