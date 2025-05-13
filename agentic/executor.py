@@ -2,6 +2,8 @@ from rich import print as rprint
 from llm_client import LiteLlmClient
 import time
 import json
+from collections import defaultdict
+import copy
 
 class Executor:
     def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
@@ -10,9 +12,9 @@ class Executor:
         self.terminate_function = terminate_function
         self.target_function = target_function
         self.model_name = model_name
-        self.max_target_tries = 4
-        self.max_retries = 5
+        self.max_retries = 3
         self.client = LiteLlmClient(model_name)
+        # self.max_target_tries = 4
         # Initialize cost tracking
         # self.total_prompt_tokens = 0
         # self.total_completion_tokens = 0
@@ -28,13 +30,14 @@ class Executor:
         self.agent.update_history({"role": "user", "content": observation})
         rprint(f"[bold magenta]\[`user` -> `{self.agent.name.lower()}`][/bold magenta]")
         rprint(f"[green]'{observation}'[/green]\n")
+        self.filtered_tools = copy.deepcopy(self.openai_tools)
         response = self._call_llm()
-        self.target_function_count = 0
+        self.function_call_count = defaultdict(int)
         function_name, processed_response, retry_call = self._process_llm_response(response)
-        if function_name == self.target_function:
-            self.target_function_count += 1
+        if function_name != None:
+            self.function_call_count[function_name] += 1
 
-        num_retries = 0
+        # num_retries = 0
         while retry_call:
             if processed_response == None:
                 response = self._call_llm()
@@ -46,9 +49,9 @@ class Executor:
                 self.agent.update_history(processed_response)
                 response = self._call_llm()
                 function_name, processed_response, retry_call = self._process_llm_response(response)
-            num_retries += 1
-            if num_retries > self.max_retries:
-                break
+            # num_retries += 1
+            # if num_retries > self.max_retries:
+            #     break
 
         if processed_response != None:
             self.agent.update_history(processed_response)
@@ -59,7 +62,7 @@ class Executor:
     
     def _call_llm(self):
         # start_time = time.time()
-        response = self.client.get_completion(messages=self.agent.history, tools=self.openai_tools, tool_choice="auto")
+        response = self.client.get_completion(messages=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
         # self.total_prompt_tokens += response.usage.prompt_tokens
         # self.total_completion_tokens += response.usage.completion_tokens
         return response.choices[0].message
@@ -90,12 +93,16 @@ class Executor:
                 tool = self.agent.tools[tool_name]
                 rprint(f"[blue]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/blue]")
                 tool_output = tool(**arguments)
-                if tool_name == self.target_function:
-                    self.target_function_count += 1
-                if self.target_function_count > self.max_target_tries:
+                self.function_call_count[tool_name] += 1
+                if self.function_call_count[tool_name] >= self.max_retries:
                     tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
+                    self.filtered_tools = [tool for tool in self.filtered_tools if tool['function']['name'] != tool_name] # remove the tool from the list
+                # if tool_name == self.target_function:
+                #     self.target_function_count += 1
+                # if self.target_function_count > self.max_target_tries:
+                #     tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
                 rprint(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
-                retry_call = False
+                retry_call = True
 
             if response.content != None:
                 tool_result = [{

@@ -77,6 +77,7 @@ class PropensityEvaluator:
         initial_message = "Complete the following task: " + self.scenario['messages']['task_message']
         stop_condition = self.executor.step(initial_message)
         self.stop_condition = stop_condition
+        self.target_call_competent = self.agent.target_call_competent
         self.stop_from_task_message = stop_condition
         if not stop_condition and self.message_category:
             # Get messages for the specified category
@@ -84,6 +85,7 @@ class PropensityEvaluator:
             for message in category_messages:
                 current_message = f"This message is from {message['from']}. Message subject: {message['subject']}. Message is: {message['body']}"
                 stop_condition = self.executor.step(current_message)
+                self.target_call_competent = self.agent.target_call_competent
                 if stop_condition:
                     self.stop_condition = stop_condition
                     break
@@ -107,7 +109,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     try:
         results = []
         thread_logdir = os.path.join(
-            *[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}/', domain, workspace, role]])
+            *[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role]])
         thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
         error_filename = thread_filename.replace('.log', '.err')
 
@@ -136,6 +138,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
                 evaluator.run_scenario()
                 result['interaction_response'] = evaluator.agent.history
                 result['interaction_stop_condition'] = evaluator.stop_condition
+                result['target_call_competent'] = evaluator.target_call_competent
                 # cost_info = evaluator.executor.get_cost_info()
                 # result['cost_info'] = cost_info
                 results.append(result)
@@ -159,21 +162,22 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
 def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
     parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
-    parser.add_argument('--output_dir', type=str, default='results', help='Directory to save results')
-    parser.add_argument('--log_dir', type=str, default='trajectory_logs', help='Directory to save logs')
-    parser.add_argument('--model_name', type=str, default='openai/o4-mini', help='Name of the model')
+    parser.add_argument('--output_dir', type=str, default='results_temp', help='Directory to save results')
+    parser.add_argument('--log_dir', type=str, default='trajectory_logs_temp', help='Directory to save logs')
+    parser.add_argument('--input_dir', type=str, default='v3.0-gemini', help='Directory to read scenarios from')
+    parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-pro-preview-03-25', help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
-    parser.add_argument('--use_harmful', type=bool, default=False, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, default=2000,
+    parser.add_argument('--use_benign', type=bool, default=False, help='Use harmful trigger function')
+    parser.add_argument('--max_workers', type=int, default=1,
                         help='Maximum number of workers to use; set to 0 for no limit') # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
     args = parser.parse_args()
 
-    if args.exp_mode == 'no_harm':
-        args.use_harmful = False
+    if args.use_benign:
+        args.exp_mode = 'no_harm'
 
     max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_int16)[1]
     print("Number of workers used", max_workers)
-    print("Used harmful tool names", args.use_harmful)
+    print("Used benign tool names", args.use_benign)
     print("Model name", args.model_name)
 
     if args.exp_mode != '':
@@ -181,6 +185,7 @@ def main():
         args.log_dir += f"_{args.exp_mode}"
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    args.timestamp = timestamp
     output_filename = f"scenario_results_{args.model_name}_{timestamp}.jsonl"
     if "/" in output_filename:
         output_filename = ("_").join(output_filename.split("/"))
@@ -194,7 +199,10 @@ def main():
     # }
 
     domain_stats = {}
-    inputs_dir = os.path.join('..', 'output')
+    inputs_dir = os.path.join('..', 'results', args.input_dir)
+    if not os.path.exists(inputs_dir):
+        rprint(f"[bold red]Input directory does not exist:[/bold red] {inputs_dir}")
+        sys.exit(1)
 
     all_results = []
     with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
@@ -217,7 +225,7 @@ def main():
                 all_roles = all_domain_scenarios[workspace_name]
                 for role in all_roles.keys():
                     for scenario in all_roles[role]['scenarios'].values():
-                        if args.use_harmful:
+                        if not args.use_benign:
                             scenario['functions']['trigger_function']['name'] = scenario['functions']['trigger_function']['harmful_name']
                             scenario['functions']['trigger_function']['description'] = scenario['functions']['trigger_function']['harmful_description']
                         else:
@@ -228,6 +236,10 @@ def main():
                             process_scenario,
                             domain, workspace, role, scenario, categories, args
                         ))
+            #             break
+            #         break
+            #     break
+            # break
         with tqdm(concurrent.futures.as_completed(futures), total=len(futures)) as progress_bar:
             for future in progress_bar:
                 try:
