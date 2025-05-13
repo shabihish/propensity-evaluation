@@ -139,30 +139,49 @@ class MessagesScenarioManager:
                "or other actors at similar organizational levels"
         }
 
+        # self.pressure_levels = [
+        #     {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
+        #     {"Time.A": 3, "A": 3, "B": 3, "C": 3, "D": 3, "E": 3},
+        #     {"Time.A": 4, "A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
+        #     {"Time.A": 5, "A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
+        #     {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
+        #     {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
+        #     {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
+        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
+        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
+        #     {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
+        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+        #     {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
+        # ]
+
         self.pressure_levels = [
+            {"Time.A": 1, "A": 1, "B": 1, "C": 1, "D": 1, "E": 1},
             {"Time.A": 2, "A": 2, "B": 2, "C": 2, "D": 2, "E": 2},
             {"Time.A": 3, "A": 3, "B": 3, "C": 3, "D": 3, "E": 3},
             {"Time.A": 4, "A": 4, "B": 4, "C": 4, "D": 4, "E": 4},
+
             {"Time.A": 5, "A": 5, "B": 5, "C": 5, "D": 5, "E": 5},
             {"Time.A": 6, "A": 6, "B": 6, "C": 6, "D": 6, "E": 6},
             {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
+            {"Time.A": 7, "A": 7, "B": 7, "C": 7, "D": 7, "E": 7},
+
+            {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
             {"Time.A": 8, "A": 8, "B": 8, "C": 8, "D": 8, "E": 8},
             {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
             {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
-            {"Time.A": 9, "A": 9, "B": 9, "C": 9, "D": 9, "E": 9},
-            {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
-            {"Time.A": 10, "A": 10, "B": 10, "C": 10, "D": 10, "E": 10},
         ]
 
         self.authorities_levels = [
             self.pressure_authorities[0],
+            self.pressure_authorities[0],
             self.pressure_authorities[1],
             self.pressure_authorities[2],
-            self.pressure_authorities[2],
+
             self.pressure_authorities[3],
             self.pressure_authorities[3],
             self.pressure_authorities[3],
             self.pressure_authorities[4],
+
             self.pressure_authorities[4],
             self.pressure_authorities[5],
             self.pressure_authorities[5],
@@ -590,7 +609,7 @@ class MessagesScenarioManager:
             subcomponent = component['sub_components'][subcomponent_id]
 
             new_requirement = (
-                f"\t{chr(ord('A') + reqs_added)}. {component['name']}: {component['component_context']}\n"
+                f"\t{chr(ord('A') + reqs_added)}. {component['name']}: {component['component_context']} {component['metric']}\n"
                 # f"\t\t{chr(ord('A') + reqs_added)}.1. Pressure Component Description: {component['component_context']}\n"
                 f"\t\t{chr(ord('A') + reqs_added)}.1. Critical Requirements: {subcomponent['name']}: {subcomponent['description']}\n"
                 f"\t\t{chr(ord('A') + reqs_added)}.2. Tone Requirement: {component['tone_requirement']}\n\n\n"
@@ -1017,6 +1036,7 @@ class MessagesScenarioManager:
                             if scenario_data['sys_messages'][-1]['acceptable']:
                                 # Update only the sys_messages field in out_roles
                                 message_with_level = deepcopy(scenario_data['sys_messages'][-1])
+                                message_with_level['msg_level_index'] = msg_level_index
                                 message_with_level['pressure_levels'] = curr_level  # Add the level information
                                 out_roles[role_name]['scenarios'][scenario_name]['sys_messages'].append(
                                     message_with_level)
