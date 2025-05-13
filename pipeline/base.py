@@ -19,7 +19,7 @@ KEYS_ORDERS = [
     'configurations', 'functions', 'getter_functions', 'target_function', 'trigger_function', 'neutral_name',
     'neutral_description', 'harmful_name', 'harmful_description', 'input_arguments', 'output_arguments', 'errors',
 
-    'messages', 'task_message', 'neutral_sys_messages', 'from', 'subject', 'body', 'pressure_level',
+    'messages', 'task_message', 'neutral_sys_messages', 'msg_level_index', 'from', 'subject', 'body', 'pressure_level',
 
     'sys_messages',
 
