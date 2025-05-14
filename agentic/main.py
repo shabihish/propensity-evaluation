@@ -1,9 +1,20 @@
+import sys
+import os
+
+from agents.api_conf import APIConfiguration
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# append parent dir
+# sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
 import json
 import argparse
 from typing import Dict, Any
 from agent import Agent
 from executor import Executor
 import os
+import threading
+import queue
 import sys
 from ctypes import (
     c_int16,
@@ -18,6 +29,8 @@ from utils.display import (
 )
 from rich import print as rprint
 import concurrent.futures
+from setproctitle import setproctitle
+
 import contextlib
 from tqdm import tqdm
 import traceback
@@ -34,14 +47,14 @@ def c_limits(c_type):
 
 
 class PropensityEvaluator:
-    def __init__(self, role: str, scenario: Dict[str, Any], model_name: str, message_category: str = None):
+    def __init__(self, role: str, scenario: Dict[str, Any], api_conf: APIConfiguration, message_category: str = None):
         self.agent = Agent(role, scenario)
         self.scenario = scenario
         self.message_category = message_category
         openai_tools = self._convert_tools_to_openai_tools()
         self.terminate_function = self.scenario['functions']['trigger_function']['name']
         self.target_function = self.scenario['functions']['target_function']['name']
-        self.executor = Executor(self.agent, openai_tools, self.terminate_function, self.target_function, model_name)
+        self.executor = Executor(self.agent, openai_tools, self.terminate_function, self.target_function, api_conf)
         self.stop_from_task_message = False
 
     def _convert_tools_to_openai_tools(self):
@@ -78,6 +91,8 @@ class PropensityEvaluator:
             self.executor.step(probing_message)
             return
         # Always start with task message
+        print(f"[bold yellow]Initialization system prompt:\n{self.agent.system_prompt}[/bold yellow]")
+
         initial_message = "Complete the following task: " + self.scenario['messages']['task_message']
         stop_condition = self.executor.step(initial_message)
         self.stop_condition = stop_condition
@@ -93,8 +108,10 @@ class PropensityEvaluator:
                 self.target_call_competent = self.agent.target_call_competent
                 if stop_condition:
                     self.stop_condition = stop_condition
+                    print(f"[bold yellow]Stop condition reached.[/bold yellow]")
                     break
-                break
+
+        print(f"[bold yellow]Scenario run finished.[/bold yellow]")
 
 
 def load_scenarios(file_path: str) -> Dict:
@@ -149,16 +166,59 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 #                 results.append(result)
 #                 print("\n----------------------------------------------------------------------------\n\n")
 #         return results
+#     except Exception as e:
+#         # Capture exception info and traceback
+#         exc_type, exc_value, exc_traceback = sys.exc_info()
+#         tb_string = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+#         # Return an error structure including the traceback
+#         out = {
+#             'status': 'error',
+#             'error_message': str(e),
+#             'traceback': tb_string,
+#             'args': (domain, workspace, role, categories)
+#         }
+#         print(out)
+#         return []
 
+
+class QueueStream:
+    def __init__(self, log_queue):
+        self.log_queue = log_queue
+
+    def write(self, message):
+        if message.strip():  # Avoid writing empty lines
+            self.log_queue.put(message)
+
+    def flush(self):
+        pass  # No-op for compatibility
+
+
+# Add a helper function to process a single category
 def process_category(category, domain, workspace, role, scenario, args, log_dir):
-    """Processes a single category and writes logs to a temporary file."""
-    assert isinstance(log_dir, str), "log_dir should be a string"
+    setproctitle("agentic")
+    log_queue = queue.Queue()
+    temp_log_file_path = os.path.join(log_dir, 'temp', scenario['name'],
+                                      f"{scenario['name']}-{category.replace('-', '_')}.log".replace(' ', '-'))
+    os.makedirs(os.path.dirname(temp_log_file_path), exist_ok=True)
+
+    def log_writer():
+        while True:
+            with open(temp_log_file_path, 'a') as log_file:
+                log_message = log_queue.get()
+                if log_message is None:  # Sentinel to stop the thread
+                    break
+                log_file.write(log_message)
+                log_file.flush()
+            time.sleep(2)  # Slight delay to avoid busy waiting
+
+    log_thread = threading.Thread(target=log_writer, daemon=True)
+    log_thread.start()
+
     try:
-        temp_log_file_path = os.path.join(log_dir, 'temp', scenario['name'], f"{scenario['name']}-{category.replace('-','_')}.log".replace(' ', '-'))
-        os.makedirs(os.path.dirname(temp_log_file_path), exist_ok=True)
-        with open(temp_log_file_path, 'w') as log_file, \
-                contextlib.redirect_stdout(log_file), \
-                contextlib.redirect_stderr(log_file):
+        # Redirect stdout and stderr to the queue
+        queue_stream = QueueStream(log_queue)
+        with contextlib.redirect_stdout(queue_stream), contextlib.redirect_stderr(queue_stream):
+            print(f"Processing category: {category}")
             display_scenario_progress(1, 1, f"{scenario['name']} - {category}")
             result = {
                 'domain': domain,
@@ -166,12 +226,13 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
                 'role': role,
                 'scenario': scenario['name'],
                 'category': category,
-                'timestamp': datetime.now().isoformat()
+                'timestamp': datetime.now().isoformat(),
+                'pid': os.getpid()
             }
             evaluator = PropensityEvaluator(
                 role=role,
                 scenario=scenario,
-                model_name=args.model_name,
+                api_conf=args.api_conf,
                 message_category=category
             )
             display_probing_status("interaction")
@@ -179,6 +240,7 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
             result['interaction_response'] = evaluator.agent.history
             result['interaction_stop_condition'] = evaluator.stop_condition
             result['target_call_competent'] = evaluator.target_call_competent
+            print(f"Finished processing category: {category}")
             return result, temp_log_file_path
     except Exception as e:
         temp_err_file_path = os.path.join(log_dir, 'temp', scenario['name'], f"{scenario['name']}-{category.replace('-','_')}.err".replace(' ', '-'))
@@ -187,16 +249,20 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
         error_message = f"Error processing category {category} in scenario {scenario['name']}:\n{str(e)}\nTraceback:\n{traceback.format_exc()}"
         with open(temp_err_file_path, 'a') as error_file:
             error_file.write(error_message)
-
         return {
             'status': 'error',
             'error_message': str(e),
             'category': category,
             'traceback': traceback.format_exc()
-        }, None
+        }, temp_err_file_path
+    finally:
+        log_queue.put(None)  # Stop the log writer thread
+        log_thread.join()
+
 
 def process_scenario(domain, workspace, role, scenario, categories, args):
     """Processes all categories of a scenario concurrently."""
+    setproctitle("agentic")
     log_dir = deepcopy(args.log_dir)
     results = []
     temp_log_files = {}
@@ -209,7 +275,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
     thread_err_filename = os.path.join(thread_logdir, f"{scenario['name']}.err".replace(' ', '-'))
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=len(categories)) as executor: # set max workers to 1
+    with concurrent.futures.ProcessPoolExecutor(max_workers=len(categories)) as executor:
         futures = {
             executor.submit(process_category, category, domain, workspace, role, scenario, args, thread_logdir): category
             for category in categories
@@ -228,8 +294,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
                         temp_err_files[category] = temp_file_path
 
             except Exception as e:
-                rprint(f"[bold red]Error processing category {category}:[/bold red] {e}")
-
+                print(f"[bold red]Error processing category {category}:[/bold red] {e}")
     # Concatenate logs from all temporary files in alphabetical order of categories
     with open(thread_log_filename, 'w') as final_log_file:
         for category in sorted(temp_log_files.keys()):
@@ -255,11 +320,26 @@ def main():
     parser.add_argument('--output_dir', type=str, default='results_temp', help='Directory to save results')
     parser.add_argument('--log_dir', type=str, default='trajectory_logs_temp', help='Directory to save logs')
     parser.add_argument('--input_dir', type=str, default='v3.1-gemini', help='Directory to read scenarios from')
-    parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-pro-preview-03-25', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-flash-preview-04-17',
+    #                     help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-pro-preview-05-06', help='Name of the model')
+    parser.add_argument('--model_name', type=str, default='meta-llama/Llama-3.1-8B-Instruct', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='hugging-quants/Meta-Llama-3.1-8B-Instruct-AWQ-INT4', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='Qwen/Qwen2.5-72B-Instruct', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='Qwen/Qwen2.5-72B-Instruct-GPTQ-Int4', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='openai/gpt-4o', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='openai/o4-mini', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='Qwen/Qwen2.5-72B-Instruct', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='deepseek-ai/DeepSeek-R1-Distill-Llama-70B', help='Name of the model')
+    parser.add_argument('--api_base', type=str, default='http://localhost:11110/v1', help='API base URI')
+    parser.add_argument('--model_provider', type=str, default='openai', help='Model provider (openai, gemini, etc.)')
+
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--use_benign', type=bool, default=True, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, default= 100,
-                        help='Maximum number of workers to use; set to 0 for no limit') # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
+    parser.add_argument('--max_workers', type=int, default=100,
+                        help='Maximum number of workers to use; set to 0 for no limit')  # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
     args = parser.parse_args()
 
     if args.use_benign:
@@ -281,6 +361,13 @@ def main():
         output_filename = ("_").join(output_filename.split("/"))
     output_file = os.path.join(args.output_dir, output_filename)
 
+    args.api_conf = APIConfiguration(
+        model_name=args.model_name,
+        model_provider=args.model_provider,
+        api_base=args.api_base,
+        use_cache=False,
+    )
+
     # cumulative_cost_info = {
     #     'prompt_tokens': 0,
     #     'completion_tokens': 0,
@@ -298,7 +385,7 @@ def main():
         'bio-security.Personalized Medicine & Gene Therapy Lab',
         'bio-security.Pharmaceutical R&D Laboratory',
         'bio-security.Sustainable Biomanufacturing Innovation Center',
-        
+
         'chemical-security.Agricultural Chemical Development Facility',
         'chemical-security.Chemical Waste Management Facility',
         'chemical-security.Defense Contractor Chemical Research Division',
@@ -323,14 +410,14 @@ def main():
         'self-proliferation.Healthcare Data Management Platform',
         'self-proliferation.Authorship and Citation Network',
         'self-proliferation.Cloud Platform with Autoscaling',
-        'self-proliferation.Informal Loan Club and Credit',
+        'self-proliferation.Informal Loan Club and Credit Circle',
         'self-proliferation.Philanthropic Organization',
     ]
 
     domain_stats = {}
     inputs_dir = os.path.join('..', 'results', args.input_dir)
     if not os.path.exists(inputs_dir):
-        rprint(f"[bold red]Input directory does not exist:[/bold red] {inputs_dir}")
+        print(f"[bold red]Input directory does not exist:[/bold red] {inputs_dir}")
         sys.exit(1)
 
     all_results = []
@@ -346,7 +433,7 @@ def main():
                     continue
                 scenario_file = os.path.join(workspace_path, 'scenarios_messages_single.json')
                 if not os.path.exists(scenario_file):
-                    rprint(f"[bold red]Scenario file not found:[/bold red] {scenario_file}")
+                    print(f"[bold red]Scenario file not found:[/bold red] {scenario_file}")
                     continue
                 all_domain_scenarios = load_scenarios(scenario_file)[domain]
                 assert len(all_domain_scenarios) == 1, "Multiple workspaces found in the loaded input file."
@@ -354,7 +441,7 @@ def main():
                 workspace_full_name = f"{domain}.{workspace_name}"
                 if loaded_workspaces and workspace_full_name not in loaded_workspaces:
                     rprint(f"[bold yellow]Skipping workspace:[/bold yellow] {workspace_full_name}")
-                    continue  # Skip workspaces not in the specific list
+                    continue  # Skip workspaces not specified in the list
 
                 rprint(f"[bold green]Submitting workspace:[/bold green] {workspace_full_name}")
                 all_roles = all_domain_scenarios[workspace_name]
@@ -381,7 +468,7 @@ def main():
                     curr_run_results = future.result()
                     all_results.extend(curr_run_results)
                 except Exception as e:
-                    rprint(f"[bold red]Error processing a scenario:[/bold red] {e}")
+                    print(f"[bold red]Error processing a scenario:[/bold red] {e}")
                 for result in curr_run_results:
                     save_to_jsonl(result, args.output_dir, output_filename)
                     domain = result['domain']
@@ -401,4 +488,10 @@ def main():
 
 if __name__ == '__main__':
     dotenv.load_dotenv()
+    setproctitle("agentic")
+
+    import resource
+    soft, hard = resource.getrlimit(resource.RLIMIT_NOFILE)
+    resource.setrlimit(resource.RLIMIT_NOFILE, (10000, hard))
+
     main()
