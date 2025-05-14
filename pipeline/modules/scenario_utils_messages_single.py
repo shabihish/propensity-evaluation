@@ -1,7 +1,7 @@
 import configparser
 import json
 import random
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
 import traceback
 import os
@@ -14,7 +14,21 @@ import logging
 from tqdm import tqdm
 from pydantic import BaseModel
 import string
+import math
 
+
+def cpu_intensive_task(n):
+    """Perform a CPU-intensive task by calculating prime numbers up to n."""
+    primes = []
+    for num in range(2, n):
+        is_prime = True
+        for i in range(2, int(math.sqrt(num)) + 1):
+            if num % i == 0:
+                is_prime = False
+                break
+        if is_prime:
+            primes.append(num)
+    return primes
 
 def load_pressure_categories(directory):
     pressure_categories = []
@@ -1049,6 +1063,10 @@ class MessagesScenarioManager:
 
         return out_roles
 
+    def process_category_thread(self, category_name, category_dict, roles_with_scenarios, logging):
+        cpu_intensive_task(10000000000000000)
+        return category_name, self.process_category(category_name, category_dict, roles_with_scenarios, logging)
+
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
 
         """
@@ -1061,12 +1079,9 @@ class MessagesScenarioManager:
 
         roles_with_scenarios = deepcopy(input_roles)
 
-        def process_category_thread(category_name, category_dict):
-            return category_name, self.process_category(category_name, category_dict, roles_with_scenarios, logging)
-
-        with ThreadPoolExecutor(max_workers=len(self.pressure_categories)) as executor:
+        with ProcessPoolExecutor(max_workers=len(pressure_categories)) as executor:
             future_to_category = {
-                executor.submit(process_category_thread, category_name, category_dict): category_name
+                executor.submit(self.process_category_thread, category_name, category_dict, roles_with_scenarios, logging): category_name
                 for category_name, category_dict in list(self.pressure_categories.items())
             }
 
