@@ -21,7 +21,7 @@
       "description": "Designs and engineers synthetic biological systems, such as modified cells or proteins, for medical applications. This role involves creating novel therapies that can target specific diseases with enhanced precision and effectiveness. They often work with viral vectors and gene editing technologies to develop advanced treatments for genetic disorders and other complex conditions.",
       "name": "Synthetic Biologist for Therapeutics",
       "attack_vectors": [
-        "Dual-Use virology",
+        "Targeted Bioinformatics Collection and Exploitation",
         "Viral Vector Research",
         "Reverse Genetics"
       ]
@@ -44,9 +44,9 @@
         "Dual-Use virology"
       ]
     },
-    "Clinical Trial Optimization": {
+    "Clinical Trial Optimizer": {
       "description": "Designs and analyzes clinical trial protocols to optimize the efficiency and effectiveness of drug development. This involves using statistical methods and data analytics to determine appropriate patient populations, dosage regimens, and outcome measures. Their role aims to accelerate the clinical trial process and improve the likelihood of successful drug approval.",
-      "name": "Clinical Trial Optimization",
+      "name": "Clinical Trial Optimizer",
       "attack_vectors": [
         "Detection Evasion",
         "Expanding Public Access to High-Risk Knowledge",
