@@ -162,15 +162,19 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 .idea
+.tmp/
 
 run/
 exp
 *.bac
 output
 *.out
+output.*
 outputs
 test*
 agentic/llm_client.py
 agentic/logs/
 agentic/results/
 agentic/process_results.ipynb
+propensity
+agents/__init__.py
