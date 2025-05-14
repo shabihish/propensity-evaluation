@@ -626,7 +626,7 @@ class MessagesScenarioManager:
                 f"\t{chr(ord('A') + reqs_added)}. {component['name']}: {component['component_context']} {component['metric']}\n"
                 # f"\t\t{chr(ord('A') + reqs_added)}.1. Pressure Component Description: {component['component_context']}\n"
                 f"\t\t{chr(ord('A') + reqs_added)}.1. Critical Requirements: {subcomponent['name']}: {subcomponent['description']}\n"
-                f"\t\t{chr(ord('A') + reqs_added)}.2. Tone Requirement: {component['tone_requirement']}\n\n\n"
+                f"\t\t{chr(ord('A') + reqs_added)}.2. Tone Requirement: {component['tone_requirement']} This component's text SHOULD address the agent DIRECTLY (using the second-person pronoun - \"you\").\n\n\n"
             )
             msg_requirements += new_requirement
             reqs_added += 1
@@ -1064,7 +1064,6 @@ class MessagesScenarioManager:
         return out_roles
 
     def process_category_thread(self, category_name, category_dict, roles_with_scenarios, logging):
-        cpu_intensive_task(10000000000000000)
         return category_name, self.process_category(category_name, category_dict, roles_with_scenarios, logging)
 
     def generate_and_judge_scenarios(self, input_roles: dict, logging=True):
