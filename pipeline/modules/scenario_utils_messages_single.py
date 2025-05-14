@@ -1079,7 +1079,7 @@ class MessagesScenarioManager:
 
         roles_with_scenarios = deepcopy(input_roles)
 
-        with ProcessPoolExecutor(max_workers=len(pressure_categories)) as executor:
+        with ProcessPoolExecutor(max_workers=len(self.pressure_categories)) as executor:
             future_to_category = {
                 executor.submit(self.process_category_thread, category_name, category_dict, roles_with_scenarios, logging): category_name
                 for category_name, category_dict in list(self.pressure_categories.items())
