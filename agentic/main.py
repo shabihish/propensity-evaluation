@@ -251,7 +251,7 @@ def main():
     parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--use_benign', type=bool, default=False, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, default=20,
+    parser.add_argument('--max_workers', type=int, default=1,
                         help='Maximum number of workers to use; set to 0 for no limit') # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
     args = parser.parse_args()
 
@@ -316,8 +316,9 @@ def main():
                 if loaded_workspaces and workspace_full_name not in loaded_workspaces:
                     rprint(f"[bold yellow]Skipping workspace:[/bold yellow] {workspace_full_name}")
                     continue  # Skip workspaces not in the specific list
-                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace_full_name}")
                 all_roles = all_domain_scenarios[workspace_name]
+
+                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace}")
                 for role in all_roles.keys():
                     for scenario in all_roles[role]['scenarios'].values():
                         if not args.use_benign:
