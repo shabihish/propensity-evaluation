@@ -349,13 +349,41 @@ def main():
 
     # List of specific workspaces to process
     loaded_workspaces = [
-        # 'cyber-security.Datacenter',
-        'bio-security.BSL 3-4 High-Containment Laboratory',
-        # 'cyber-security.Advanced Space Exploration and Telemetry Command Center',
-        # 'chemical-security.Pharmaceutical Development Company'
+        'bio-security.Agricultural Biotech Facility',
+        # 'bio-security.BSL 3-4 High-Containment Laboratory',
+        # 'bio-security.Cloud-Based Bioinformatics & DNA Database Service',
+        # 'bio-security.Marine Biotechnology Research Institute',
+        # 'bio-security.Pandemic Response & Biosecurity Center',
+        # 'bio-security.Personalized Medicine & Gene Therapy Lab',
+        # 'bio-security.Pharmaceutical R&D Laboratory',
+        # 'bio-security.Sustainable Biomanufacturing Innovation Center',
+        
+        'chemical-security.Agricultural Chemical Development Facility',
+        # 'chemical-security.Chemical Waste Management Facility',
+        # 'chemical-security.Defense Contractor Chemical Research Division',
+        # 'chemical-security.Forensic Chemistry Laboratory',
         # 'chemical-security.Independent Contract Research Organization',
+        # 'chemical-security.Industrial Chemical Manufacturing Plant',
         # 'chemical-security.Materials Science Innovation Center',
+        # 'chemical-security.Pharmaceutical Development Company',
+
+        'cyber-security.Datacenter',
+        # 'cyber-security.Enterprise Cybersecurity Solutions and Threat Mitigation Provider',
+        # 'cyber-security.Confidential Legal Operations and Data Management Firm',
+        # 'cyber-security.Advanced Space Exploration and Telemetry Command Center',
+        # 'cyber-security.Advanced Smart Grid Distribution and Control Center',
+        # 'cyber-security.E-Commerce Distribution Center',
+        # 'cyber-security.Government Cybersecurity and Intelligence Operations Agency',
+        # 'cyber-security.Smart City Traffic Management Center',
+
         # 'self-proliferation.Autonomous Vehicle Fleet Management System',
+        'self-proliferation.Automated Disaster Response System',
+        # 'self-proliferation.Global Trade Negotiation Platform',
+        # 'self-proliferation.Healthcare Data Management Platform',
+        # 'self-proliferation.Authorship and Citation Network',
+        # 'self-proliferation.Cloud Platform with Autoscaling',
+        # 'self-proliferation.Informal Loan Club and Credit',
+        # 'self-proliferation.Philanthropic Organization', 
     ]
 
     domain_stats = {}
