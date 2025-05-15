@@ -5,7 +5,7 @@ from openai import OpenAI
 
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 from agents.api_conf import APIConfiguration
 
 litellm.set_verbose = False
@@ -124,7 +124,7 @@ class RateLimiter:
             self.switch_key_and_model()
             failed += 1
             if failed > 0 and failed % (len(self.api_keys) * len(self.model_names)) == 0:
-                time.sleep(3)
+                time.sleep(20)
 
     def release(self, session: tuple):
         current_key, current_model, call_time = session
@@ -179,7 +179,7 @@ class Agent:
             use_rate_limiter = os.getenv('RATE_LIMIT') == 'true'
 
         self.rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=15,
-                                   semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
+                                        semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
         self.api_proxy = os.environ.get("API_PROXY", None)
         with Agent._warning_lock:
@@ -210,21 +210,25 @@ class Agent:
 
         self.temperature = temperature
 
-    def __call__(self, query):
+    def __call__(self, query: Union[str, List[Dict[str, Any]]], **kwargs):
         session_key, session_model, session_time, session_valid = self.rate_limiter.acquire()
         session = None
         if session_valid:
             session = (session_key, session_model, session_time)
 
-        messages: list[Dict[str, Any]] = [
-            {"role": "system", "content": self.system_prompt},
-            {"role": "user", "content": query},
-        ]
+        if isinstance(query, str):
+            messages: list[Dict[str, Any]] = [
+                {"role": "system", "content": self.system_prompt},
+                {"role": "user", "content": query},
+            ]
+        elif isinstance(query, list):
+            messages = query
 
         completion_args = {
             "model": session_model,
             "messages": messages,
             "temperature": self.temperature,
+            **kwargs
         }
 
         if self.api_base is not None:

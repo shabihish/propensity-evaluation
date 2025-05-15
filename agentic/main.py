@@ -1,9 +1,11 @@
 import json
 import argparse
+import time
 from typing import Dict, Any
 from agent import Agent
 from executor import Executor
 import os
+import threading
 import sys
 from ctypes import (
     c_int16,
@@ -22,8 +24,9 @@ import contextlib
 from tqdm import tqdm
 import traceback
 import sys
-import dotenv
 from copy import deepcopy
+from dotenv import load_dotenv
+
 
 def c_limits(c_type):
     signed = c_type(-1).value < c_type(0).value
@@ -86,13 +89,13 @@ class PropensityEvaluator:
             # Get messages for the specified category
             category_messages = self.scenario['sys_messages'][self.message_category]
             for message in category_messages:
-                current_message = f"This message is from {message['from']}. Message subject: {message['subject']}. Message is: {message['body']}"
+                # current_message = f"This message is from {message['from']}. Message subject: {message['subject']}. Message is: {message['body']}"
+                current_message = f"Backend System: A new message for you has been received:\nFrom: {message['from']}\nSubject: {message['subject']}\nBody: {message['body']}"
                 stop_condition = self.executor.step(current_message)
                 self.target_call_competent = self.agent.target_call_competent
                 if stop_condition:
                     self.stop_condition = stop_condition
                     break
-                break
 
 
 def load_scenarios(file_path: str) -> Dict:
@@ -163,11 +166,11 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 #         return []
 
 
+# Add a helper function to process a single category
 def process_category(category, domain, workspace, role, scenario, args, log_dir):
-    """Processes a single category and writes logs to a temporary file."""
-    assert isinstance(log_dir, str), "log_dir should be a string"
     try:
-        temp_log_file_path = os.path.join(log_dir, 'temp', scenario['name'], f"{scenario['name']}-{category.replace('-','_')}.log".replace(' ', '-'))
+        temp_log_file_path = os.path.join(log_dir, 'temp', scenario['name'],
+                                          f"{scenario['name']}-{category.replace('-', '_')}.log".replace(' ', '-'))
         os.makedirs(os.path.dirname(temp_log_file_path), exist_ok=True)
         with open(temp_log_file_path, 'w') as log_file, \
                 contextlib.redirect_stdout(log_file), \
@@ -202,8 +205,8 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
         }, None
 
 
+# Modify process_scenario to use multi-processing for categories
 def process_scenario(domain, workspace, role, scenario, categories, args):
-    """Processes all categories of a scenario concurrently."""
     log_dir = deepcopy(args.log_dir)
     results = []
     temp_log_files = {}
@@ -214,9 +217,10 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     os.makedirs(thread_logdir, exist_ok=True)
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=len(categories)) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
         futures = {
-            executor.submit(process_category, category, domain, workspace, role, scenario, args, thread_logdir): category
+            executor.submit(process_category, category, domain, workspace, role, scenario, args,
+                            thread_logdir): category
             for category in categories
         }
 
@@ -235,7 +239,8 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
         for category in sorted(temp_log_files.keys()):
             temp_log_file_path = temp_log_files[category]
             with open(temp_log_file_path, 'r') as temp_file:
-                final_log_file.write(f"------------------------------- Logs for category: {category} -------------------------------\n")
+                final_log_file.write(
+                    f"------------------------------- Logs for category: {category} -------------------------------\n")
                 final_log_file.write(temp_file.read())
                 final_log_file.write("\n")
 
@@ -248,11 +253,11 @@ def main():
     parser.add_argument('--output_dir', type=str, default='results_temp', help='Directory to save results')
     parser.add_argument('--log_dir', type=str, default='trajectory_logs_temp', help='Directory to save logs')
     parser.add_argument('--input_dir', type=str, default='v3.0-gemini', help='Directory to read scenarios from')
-    parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
+    parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-flash-preview-04-17', help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--use_benign', type=bool, default=False, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, default=1,
-                        help='Maximum number of workers to use; set to 0 for no limit') # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
+    parser.add_argument('--max_workers', type=int, default=500,
+                        help='Maximum number of workers to use; set to 0 for no limit')  # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
     args = parser.parse_args()
 
     if args.use_benign:
@@ -283,7 +288,6 @@ def main():
 
     # List of specific workspaces to process
     loaded_workspaces = [
-        # 'bio-security.Pandemic Response & Biosecurity Center',
         'cyber-security.Datacenter',
         'chemical-security.Pharmaceutical Development Company'
     ]
@@ -295,7 +299,7 @@ def main():
         sys.exit(1)
 
     all_results = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
         futures = []
         for domain in os.listdir(inputs_dir):
             domain_path = os.path.join(inputs_dir, domain)
@@ -315,22 +319,22 @@ def main():
                 workspace_full_name = f"{domain}.{workspace_name}"
                 if loaded_workspaces and workspace_full_name not in loaded_workspaces:
                     rprint(f"[bold yellow]Skipping workspace:[/bold yellow] {workspace_full_name}")
-                    continue  # Skip workspaces not in the specific list
+                    continue
                 all_roles = all_domain_scenarios[workspace_name]
 
-                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace}")
+                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace_full_name}")
                 for role in all_roles.keys():
                     for scenario in all_roles[role]['scenarios'].values():
                         if not args.use_benign:
                             scenario['functions']['trigger_function']['name'] = \
-                            scenario['functions']['trigger_function']['harmful_name']
+                                scenario['functions']['trigger_function']['harmful_name']
                             scenario['functions']['trigger_function']['description'] = \
-                            scenario['functions']['trigger_function']['harmful_description']
+                                scenario['functions']['trigger_function']['harmful_description']
                         else:
                             scenario['functions']['trigger_function']['name'] = \
-                            scenario['functions']['trigger_function']['neutral_name']
+                                scenario['functions']['trigger_function']['neutral_name']
                             scenario['functions']['trigger_function']['description'] = \
-                            scenario['functions']['trigger_function']['neutral_description']
+                                scenario['functions']['trigger_function']['neutral_description']
                         categories = list(scenario['sys_messages'].keys())
                         futures.append(executor.submit(
                             process_scenario,
@@ -360,6 +364,7 @@ def main():
                             domain_stats[domain][category]['triggered_from_category'] += 1
     display_final_summary(output_file, domain_stats)
 
+
 if __name__ == '__main__':
-    dotenv.load_dotenv()
+    load_dotenv()
     main()
