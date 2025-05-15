@@ -5,6 +5,21 @@ import json
 from collections import defaultdict
 import copy
 
+def get_response_json(response):
+    try:
+        out = json.loads(response)
+    except json.JSONDecodeError:
+        # Extract JSON-like content from the text using regex
+        json_match = re.search(r'\{.*\}', response, re.DOTALL)
+        json_match = json_match.group()
+        # json_match = json_match.replace('\'', '"')
+        json_str = re.sub(r"(?<!\\)'", '"', json_match)
+        if json_match:
+            out = json.loads(json_match)
+        else:
+            raise
+    return out
+
 class Executor:
     def __init__(self, agent, openai_tools, terminate_function, target_function, model_name):
         self.agent = agent
@@ -26,6 +41,7 @@ class Executor:
     #     }
 
     def step(self, observation: str):
+        self.agent.was_last_message = False
         # Call the agent's tools or send messages
         self.agent.update_history({"role": "user", "content": observation})
         rprint(f"[bold magenta]\[`user` -> `{self.agent.name.lower()}`][/bold magenta]")
@@ -62,7 +78,16 @@ class Executor:
     
     def _call_llm(self):
         # start_time = time.time()
-        response = self.client.get_completion(messages=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
+        while True
+            try:
+                response = self.client.get_completion(messages=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
+                break
+            except litellm.RateLimitError:
+                rprint(f"[bold red]Rate limit error when calling LLM. Retrying...[/bold red]\n")
+                continue
+            except Exception as e:
+                rprint(f"[bold red]Error calling LLM: {e}[/bold red]\n")
+                continue
         # self.total_prompt_tokens += response.usage.prompt_tokens
         # self.total_completion_tokens += response.usage.completion_tokens
         return response.choices[0].message
@@ -71,6 +96,7 @@ class Executor:
         tool_call = response.tool_calls
         # Check if the assistant returned a function call
         if tool_call != None:
+            self.agent.was_last_message = False
             retry_call = True
             if len(response.tool_calls) > 1:
                 return None, None, True
@@ -97,10 +123,6 @@ class Executor:
                 if self.function_call_count[tool_name] >= self.max_retries:
                     tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
                     self.filtered_tools = [tool for tool in self.filtered_tools if tool['function']['name'] != tool_name] # remove the tool from the list
-                # if tool_name == self.target_function:
-                #     self.target_function_count += 1
-                # if self.target_function_count > self.max_target_tries:
-                #     tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
                 rprint(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
                 retry_call = True
 
@@ -116,9 +138,48 @@ class Executor:
         elif response.content != None:
             # If no function call, it's a normal text response
             assistant_content = response.content
+
+            try:
+                assistant_content_json = get_response_json(assistant_content)
+            except Exception as e:
+                rprint(f"[bold red]Error decoding assistant message JSON: {e}.\nRetrying...[/bold red]\n")
+                rprint(f"[bold red]Assistant message:\n{assistant_content}[/bold red]\n")
+                return None, None, True
+            try:
+                assert set(assistant_content_json.keys()) == {"thoughts", "message", "interaction_status"}
+            except Exception as e:
+                rprint(f"[bold red]Error: Assistant message JSON does not contain the expected keys. Retrying...[/bold red]\n")
+                rprint(f"[bold red]Assistant message JSON:\n{assistant_content_json}[/bold red]\n")
+                return None, None, True
+            try:
+                assert assistant_content_json['interaction_status'] in ["continue", "terminate"]
+            except Exception as e:
+                rprint(f"[bold red]Error: Assistant message JSON does not contain the expected interaction status. Retrying...[/bold red]\n")
+                rprint(f"[bold red]Assistant message JSON:\n{assistant_content_json}[/bold red]\n")
+                return None, {"role": "user", "content": "Backend System: Invalid interaction status received; MUST be set to either \"continue\" or \"terminate\". Try again."}, True
+            
             # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
             rprint(f"[magenta]\[`{self.agent.name.lower()}` -> `user`][/magenta]")
-            rprint(f"[green]'{assistant_content}'[/green]\n")
+            # rprint(f"[green]'{assistant_content}'[/green]\n")
+            rprint(f"[green]'{json.dumps(assistant_content_json, indent=2)}'[/green]\n")
+
+            if assistant_content_json['interaction_status'] == "terminate":
+                self.agent.was_last_message = False
+                return None, {"role": "assistant", "content": assistant_content}, True
+
+            # Task is not terminated, so we can continue
+            if not self.agent.was_last_message:
+                self.agent.was_last_message = True
+                message_received_message = 'Backend System: Message received.'
+
+                # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
+                rprint(f"[magenta]\[`user` -> `{self.agent.name.lower()}`][/magenta]")
+                rprint(f"[green]'{message_received_message}'[/green]\n")
+
+                return None, [{"role": "assistant", "content": assistant_content}, {"role": "user", "content": message_received_message}], True
+            else:
+                self.agent.was_last_message = False
+
             return None, {"role": "assistant", "content": assistant_content}, False
         else:
             return None, None, False
