@@ -9,7 +9,7 @@ import os
 from collections import defaultdict
 import copy
 import re
-
+from llm_client import LiteLlmClient
 
 def get_response_json(response):
     try:
@@ -40,16 +40,16 @@ class Executor:
         self.number_of_consecutive_messages = 0
         self.curr_interaction_retries = 0
 
-        # self.client = LiteLlmClient(model_name)
+        self.client = LiteLlmClient(model_name)
 
-        api_conf = APIConfiguration(
-            model_name=os.path.basename(model_name),
-            model_provider=os.path.dirname(model_name),
-            api_base=None,
-            use_cache=False,
+        # api_conf = APIConfiguration(
+        #     model_name=os.path.basename(model_name),
+        #     model_provider=os.path.dirname(model_name),
+        #     api_base=None,
+        #     use_cache=False,
 
-        )
-        self.client = Agent(api_conf)
+        # )
+        # self.client = Agent(api_conf)
 
         # self.max_target_tries = 4
         # Initialize cost tracking
