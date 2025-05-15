@@ -274,11 +274,11 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     os.makedirs(thread_logdir, exist_ok=True)
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
 
-    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=len(categories)) as executor:
         futures = {
             executor.submit(process_category, category, domain, workspace, role, scenario, args,
                             thread_logdir): category
-            for category in categories[:1]
+            for category in categories
         }
 
         for future in concurrent.futures.as_completed(futures):
@@ -312,8 +312,9 @@ def main():
     parser.add_argument('--input_dir', type=str, default='v3.1-gemini', help='Directory to read scenarios from')
     # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-flash-preview-04-17',
     #                     help='Name of the model')
-    parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
+    # parser.add_argument('--model_name', type=str, default='gemini/gemini-2.0-flash', help='Name of the model')
     # parser.add_argument('--model_name', type=str, default='openai/gpt-4o', help='Name of the model')
+    parser.add_argument('--model_name', type=str, default='openai/o3-mini', help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--use_benign', type=bool, default=False, help='Use harmful trigger function')
     parser.add_argument('--max_workers', type=int, default=500,
@@ -364,7 +365,7 @@ def main():
         sys.exit(1)
 
     all_results = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=1) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         for domain in os.listdir(inputs_dir):
             domain_path = os.path.join(inputs_dir, domain)
