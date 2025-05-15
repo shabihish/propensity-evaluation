@@ -7,6 +7,7 @@ from agents.api_conf import APIConfiguration
 from agents.agent import Agent
 import litellm
 
+
 def get_response_json(response):
     try:
         out = json.loads(response)
@@ -22,8 +23,9 @@ def get_response_json(response):
             raise
     return out
 
+
 class Executor:
-    def __init__(self, agent, openai_tools, terminate_function, target_function, api_conf:APIConfiguration):
+    def __init__(self, agent, openai_tools, terminate_function, target_function, api_conf: APIConfiguration):
         self.agent = agent
         self.openai_tools = openai_tools
         self.terminate_function = terminate_function
@@ -49,7 +51,7 @@ class Executor:
         self.function_call_count = defaultdict(int)
         function_name, processed_response, retry_call = self._process_llm_response(response)
         # if function_name != None:
-            # self.function_call_count[function_name] += 1
+        # self.function_call_count[function_name] += 1
 
         # num_retries = 0
         while retry_call:
@@ -79,12 +81,12 @@ class Executor:
         if function_name == self.terminate_function:
             return True
         return False
-    
+
     def _call_llm(self):
         # start_time = time.time()
         retries = 0
         while True:
-            retries +=1
+            retries += 1
             if retries > 5:
                 print(f"[bold red]Maximum number of retries reached when calling LLM. Exiting ...[/bold red]\n")
                 return None
@@ -108,7 +110,7 @@ class Executor:
         # self.total_prompt_tokens += response.usage.prompt_tokens
         # self.total_completion_tokens += response.usage.completion_tokens
         return response.choices[0].message
-    
+
     def _process_llm_response(self, response):
         tool_call = response.tool_calls
         # Check if the assistant returned a function call
@@ -116,7 +118,8 @@ class Executor:
             self.agent.was_last_message = False
             retry_call = True
             if len(response.tool_calls) > 1:
-                print(f"[bold yellow]Received multiple tool calls: {response.tool_calls}. Will only process the first item in the list.[/bold yellow]\n")
+                print(
+                    f"[bold yellow]Received multiple tool calls: {response.tool_calls}. Will only process the first item in the list.[/bold yellow]\n")
                 # return None, None, True
             tool_call = response.tool_calls[0]
 
@@ -128,7 +131,7 @@ class Executor:
                 arguments = {}
             if tool_name not in self.agent.tools:
                 raise ValueError(f"Function {tool_name} not found in tools")
-            
+
             if tool_name == self.terminate_function:
                 print(f"[bold red]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/bold red]\n")
                 tool_output = None
@@ -154,11 +157,17 @@ class Executor:
                 tool_result = [{
                     "role": "assistant",
                     "content": response.content
-                }, {"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type, "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments}}]}, {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
+                }, {"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type,
+                                                         "function": {"name": tool_call.function.name,
+                                                                      "arguments": tool_call.function.arguments}}]},
+                    {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
             else:
-                tool_result = [{"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type, "function": {"name": tool_call.function.name, "arguments": tool_call.function.arguments}}]}, {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
+                tool_result = [{"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type,
+                                                                     "function": {"name": tool_call.function.name,
+                                                                                  "arguments": tool_call.function.arguments}}]},
+                               {"role": "tool", "tool_call_id": tool_call.id, "content": tool_output}]
             return tool_name, tool_result, retry_call
-            
+
         elif response.content != None:
             # If no function call, it's a normal text response
             assistant_content = response.content
@@ -202,7 +211,8 @@ class Executor:
                 print(f"[magenta]\[`user` -> `{self.agent.name.lower()}`][/magenta]")
                 print(f"[green]'{message_received_message}'[/green]\n")
 
-                return None, [{"role": "assistant", "content": assistant_content}, {"role": "user", "content": message_received_message}], True
+                return None, [{"role": "assistant", "content": assistant_content},
+                              {"role": "user", "content": message_received_message}], True
             else:
                 self.agent.was_last_message = False
 
