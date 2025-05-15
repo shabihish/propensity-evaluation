@@ -333,7 +333,7 @@ def main():
         sys.exit(1)
 
     all_results = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor: # max wok
+    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor: # max workers as 1
         futures = []
         for domain in os.listdir(inputs_dir):
             domain_path = os.path.join(inputs_dir, domain)
@@ -356,7 +356,7 @@ def main():
                     rprint(f"[bold yellow]Skipping workspace:[/bold yellow] {workspace_full_name}")
                     continue  # Skip workspaces not in the specific list
 
-                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace}")
+                rprint(f"[bold green]Submitting workspace:[/bold green] {workspace_full_name}")
                 all_roles = all_domain_scenarios[workspace_name]
                 for role in all_roles.keys():
                     for scenario in all_roles[role]['scenarios'].values():
