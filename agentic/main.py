@@ -254,12 +254,18 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
             result['target_call_competent'] = evaluator.target_call_competent
             return result, temp_log_file_path
     except Exception as e:
-        return {
-            'status': 'error',
-            'error_message': str(e),
-            'category': category,
-            'traceback': traceback.format_exc()
-        }, None
+        temp_err_file_path = os.path.join(log_dir, 'temp', scenario['name'], f"{scenario['name']}-{category.replace('-','_')}.err".replace(' ', '-'))
+        os.makedirs(os.path.dirname(temp_err_file_path), exist_ok=True)
+        # return {
+        #     'status': 'error',
+        #     'error_message': str(e),
+        #     'category': category,
+        #     'traceback': traceback.format_exc()
+        # }, None
+        error_message = f"Error processing category {category} in scenario {scenario['name']}:\n{str(e)}\nTraceback:\n{traceback.format_exc()}"
+        with open(temp_err_file_path, 'a') as error_file:
+            error_file.write(error_message)
+        return None, temp_err_file_path
 
 
 # Modify process_scenario to use multi-processing for categories
@@ -267,10 +273,17 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
     log_dir = deepcopy(args.log_dir)
     results = []
     temp_log_files = {}
+    temp_err_files = {}
 
+    # thread_logdir = str(os.path.join(
+    #     *[x.replace(' ', '-') for x in [f'{log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role]]
+    # ))
     thread_logdir = str(os.path.join(
         *[x.replace(' ', '-') for x in [f'{log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role]]
     ))
+    os.makedirs(thread_logdir, exist_ok=True)
+    thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
+    thread_err_filename = os.path.join(thread_logdir, f"{scenario['name']}.err".replace(' ', '-'))
     os.makedirs(thread_logdir, exist_ok=True)
     thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
 
@@ -284,22 +297,33 @@ def process_scenario(domain, workspace, role, scenario, categories, args):
         for future in concurrent.futures.as_completed(futures):
             category = futures[future]
             try:
-                result, temp_log_file_path = future.result()
-                if temp_log_file_path:
-                    temp_log_files[category] = temp_log_file_path
-                results.append(result)
+                result, temp_file_path = future.result()
+                if result is not None:
+                    if temp_file_path:
+                        temp_log_files[category] = temp_file_path
+                        results.append(result)
+                else:
+                    if temp_file_path:
+                        temp_err_files[category] = temp_file_path
             except Exception as e:
                 rprint(f"[bold red]Error processing category {category}:[/bold red] {e}")
 
     # Concatenate logs from all temporary files in alphabetical order of categories
-    with open(thread_filename, 'w') as final_log_file:
+    with open(thread_log_filename, 'w') as final_log_file:
         for category in sorted(temp_log_files.keys()):
             temp_log_file_path = temp_log_files[category]
             with open(temp_log_file_path, 'r') as temp_file:
-                final_log_file.write(
-                    f"------------------------------- Logs for category: {category} -------------------------------\n")
+                final_log_file.write(f"------------------------------- Logs for category: {category} -------------------------------\n")
                 final_log_file.write(temp_file.read())
                 final_log_file.write("\n")
+
+    with open(thread_err_filename, 'w') as final_err_file:
+        for category in sorted(temp_err_files.keys()):
+            temp_err_file_path = temp_err_files[category]
+            with open(temp_err_file_path, 'r') as temp_file:
+                final_err_file.write(f"------------------------------- Errors for category: {category} -------------------------------\n")
+                final_err_file.write(temp_file.read())
+                final_err_file.write("\n")
 
     return results
 
