@@ -20,6 +20,7 @@ import fcntl
 import json
 from litellm import RateLimitError
 
+from .llm_client import LiteLlmClient
 
 class RateLimiter:
     last_print_time = multiprocessing.Value('d', 0.0)  # Shared across all instances
@@ -89,6 +90,7 @@ class RateLimiter:
         os.environ["TOGETHERAI_API_KEY"] = api_key
         os.environ["FIREWORKS_AI_API_KEY"] = api_key
         os.environ["LITELLM_PROXY_API_KEY"] = api_key
+        os.environ["LITE_LLM_KEY"] = api_key
 
     def switch_key_and_model(self):
         self.current_model_index = (self.current_model_index + 1) % len(self.model_names)
@@ -247,7 +249,9 @@ class Agent:
             if self.api_proxy == 'litellm':
                 result = litellm.completion(**completion_args)
             elif self.api_proxy == 'openai':
-                result = OpenAI().beta.chat.completions.parse(**completion_args)
+                del completion_args["model"]
+                client = LiteLlmClient(model=session_model, model_provider=self._model_provider)
+                result = client.get_completion(**completion_args)
             else:
                 raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
         except RateLimitError as e:
