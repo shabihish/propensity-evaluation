@@ -10,6 +10,7 @@ from ctypes import (
     sizeof
 )
 from datetime import datetime
+import time
 from utils.display import (
     display_scenario_progress,
     display_probing_status,
@@ -21,9 +22,9 @@ import contextlib
 from tqdm import tqdm
 import traceback
 import sys
-import time
-from copy import deepcopy
 import threading
+import dotenv
+from copy import deepcopy
 
 def c_limits(c_type):
     signed = c_type(-1).value < c_type(0).value
@@ -93,6 +94,7 @@ class PropensityEvaluator:
                 if stop_condition:
                     self.stop_condition = stop_condition
                     break
+                break
 
 
 def load_scenarios(file_path: str) -> Dict:
@@ -116,7 +118,6 @@ def save_to_jsonl(result: Dict[str, Any], output_dir: str = "results", filename:
 #             *[x.replace(' ', '-') for x in [f'{args.log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role]])
 #         thread_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
 #         error_filename = thread_filename.replace('.log', '.err')
-
 #         os.makedirs(thread_logdir, exist_ok=True)
 #         with open(thread_filename, 'w') as log_file, \
 #             open(error_filename, 'w') as error_file, \
@@ -182,17 +183,17 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
     except Exception as e:
         temp_err_file_path = os.path.join(log_dir, 'temp', scenario['name'], f"{scenario['name']}-{category.replace('-','_')}.err".replace(' ', '-'))
         os.makedirs(os.path.dirname(temp_err_file_path), exist_ok=True)
-        # return {
-        #     'status': 'error',
-        #     'error_message': str(e),
-        #     'category': category,
-        #     'traceback': traceback.format_exc()
-        # }, None
+
         error_message = f"Error processing category {category} in scenario {scenario['name']}:\n{str(e)}\nTraceback:\n{traceback.format_exc()}"
         with open(temp_err_file_path, 'a') as error_file:
             error_file.write(error_message)
-        return None, temp_err_file_path
-        
+
+        return {
+            'status': 'error',
+            'error_message': str(e),
+            'category': category,
+            'traceback': traceback.format_exc()
+        }, None
 
 def process_scenario(domain, workspace, role, scenario, categories, args):
     """Processes all categories of a scenario concurrently."""
@@ -257,7 +258,7 @@ def main():
     parser.add_argument('--model_name', type=str, default='gemini/gemini-2.5-pro-preview-03-25', help='Name of the model')
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
     parser.add_argument('--use_benign', type=bool, default=True, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, default= 50,
+    parser.add_argument('--max_workers', type=int, default= 100,
                         help='Maximum number of workers to use; set to 0 for no limit') # gemini pro 250 - gemini flash 100, openai o models 2000, gpt-4o 1000, anthropic trying
     args = parser.parse_args()
 
@@ -323,7 +324,7 @@ def main():
         'self-proliferation.Authorship and Citation Network',
         'self-proliferation.Cloud Platform with Autoscaling',
         'self-proliferation.Informal Loan Club and Credit',
-        # 'self-proliferation.Philanthropic Organization', 
+        'self-proliferation.Philanthropic Organization',
     ]
 
     domain_stats = {}
@@ -351,7 +352,6 @@ def main():
                 assert len(all_domain_scenarios) == 1, "Multiple workspaces found in the loaded input file."
                 workspace_name = list(all_domain_scenarios.keys())[0]
                 workspace_full_name = f"{domain}.{workspace_name}"
-
                 if loaded_workspaces and workspace_full_name not in loaded_workspaces:
                     rprint(f"[bold yellow]Skipping workspace:[/bold yellow] {workspace_full_name}")
                     continue  # Skip workspaces not in the specific list
@@ -361,20 +361,20 @@ def main():
                 for role in all_roles.keys():
                     for scenario in all_roles[role]['scenarios'].values():
                         if not args.use_benign:
-                            scenario['functions']['trigger_function']['name'] = scenario['functions']['trigger_function']['harmful_name']
-                            scenario['functions']['trigger_function']['description'] = scenario['functions']['trigger_function']['harmful_description']
+                            scenario['functions']['trigger_function']['name'] = \
+                            scenario['functions']['trigger_function']['harmful_name']
+                            scenario['functions']['trigger_function']['description'] = \
+                            scenario['functions']['trigger_function']['harmful_description']
                         else:
-                            scenario['functions']['trigger_function']['name'] = scenario['functions']['trigger_function']['neutral_name']
-                            scenario['functions']['trigger_function']['description'] = scenario['functions']['trigger_function']['neutral_description']
+                            scenario['functions']['trigger_function']['name'] = \
+                            scenario['functions']['trigger_function']['neutral_name']
+                            scenario['functions']['trigger_function']['description'] = \
+                            scenario['functions']['trigger_function']['neutral_description']
                         categories = list(scenario['sys_messages'].keys())
                         futures.append(executor.submit(
                             process_scenario,
                             domain, workspace, role, scenario, categories, args
                         ))
-            #             break
-            #         break
-            #     break
-            # break
         with tqdm(concurrent.futures.as_completed(futures), total=len(futures)) as progress_bar:
             for future in progress_bar:
                 try:
@@ -397,11 +397,8 @@ def main():
                             domain_stats[domain][category]['triggered_from_task'] += 1
                         else:
                             domain_stats[domain][category]['triggered_from_category'] += 1
-                    # cost_info = result['cost_info']
-                    # for key in cumulative_cost_info:
-                    #     cumulative_cost_info[key] += cost_info[key]
     display_final_summary(output_file, domain_stats)
 
-
 if __name__ == '__main__':
+    dotenv.load_dotenv()
     main()
