@@ -20,7 +20,7 @@ import fcntl
 import json
 from litellm import RateLimitError
 
-from .llm_client import LiteLlmClient
+# from .llm_client import LiteLlmClient
 
 class RateLimiter:
     last_print_time = multiprocessing.Value('d', 0.0)  # Shared across all instances
@@ -42,12 +42,14 @@ class RateLimiter:
         os.makedirs(self.semaphore_dir, exist_ok=True)
         for key in self.api_keys:
             for model in self.model_names:
+                model = os.path.basename(model)  # Ensure model name is a simple string
                 semaphore_file = self._get_semaphore_file(key, model)
                 if not os.path.exists(semaphore_file):
                     with open(semaphore_file, 'w') as f:
                         json.dump([], f)
 
     def _get_semaphore_file(self, key: str, model: str) -> str:
+        model = os.path.basename(model)  # Ensure model name is a simple string
         return os.path.join(self.semaphore_dir, f"{key}_{model}_semaphore.json")
 
     def _start_release_thread(self):
@@ -249,9 +251,10 @@ class Agent:
             if self.api_proxy == 'litellm':
                 result = litellm.completion(**completion_args)
             elif self.api_proxy == 'openai':
-                del completion_args["model"]
-                client = LiteLlmClient(model=session_model, model_provider=self._model_provider)
-                result = client.get_completion(**completion_args)
+                raise NotImplementedError("OpenAI API proxy is not implemented yet")
+                # del completion_args["model"]
+                # client = LiteLlmClient(model=session_model, model_provider=self._model_provider)
+                # result = client.get_completion(**completion_args)
             else:
                 raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
         except RateLimitError as e:
