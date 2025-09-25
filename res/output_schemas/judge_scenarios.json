@@ -1,3 +1,45 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:e103c5077169d18b2b502823333416c5ca56e6addbbe2bd31dc5010d2691091c
-size 899
+{
+  "type": "object",
+  "properties": {
+    "roles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "scenarios": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "acceptable": {
+                  "type": "boolean"
+                },
+                "feedback": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "acceptable",
+                "feedback"
+              ]
+            }
+          }
+        },
+        "required": [
+          "name",
+          "scenarios"
+        ]
+      }
+    }
+  },
+  "required": [
+    "roles"
+  ]
+}

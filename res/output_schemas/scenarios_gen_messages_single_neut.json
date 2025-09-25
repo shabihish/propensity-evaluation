@@ -1,3 +1,49 @@
-version https://git-lfs.github.com/spec/v1
-oid sha256:10ec8016b05900158db2dca64c7834b4117d01182c5d089cc41b1fc091b984ff
-size 1010
+{
+  "type": "object",
+  "properties": {
+    "scenarios": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "task_message": {
+            "type": "string"
+          },
+          "neutral_sys_messages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "body": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "from",
+                "subject",
+                "body"
+              ]
+            }
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_message",
+          "neutral_sys_messages",
+          "name"
+        ]
+      }
+    }
+  },
+  "required": [
+    "scenarios"
+  ]
+}

@@ -1,6 +1,6 @@
-*.json filter=lfs diff=lfs merge=lfs -text
-*.zip filter=lfs diff=lfs merge=lfs -text
-*.bac* filter=lfs diff=lfs merge=lfs -text
-enterprise-attack.json filter=lfs diff=lfs merge=lfs -text
-OAI_CONFIG_LIST.json filter=lfs diff=lfs merge=lfs -text
-temp.json filter=lfs diff=lfs merge=lfs -text
+# *.json filter=lfs diff=lfs merge=lfs -text
+# *.zip filter=lfs diff=lfs merge=lfs -text
+# *.bac* filter=lfs diff=lfs merge=lfs -text
+# enterprise-attack.json filter=lfs diff=lfs merge=lfs -text
+# OAI_CONFIG_LIST.json filter=lfs diff=lfs merge=lfs -text
+# temp.json filter=lfs diff=lfs merge=lfs -text
