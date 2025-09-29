@@ -110,25 +110,41 @@ def main(cfg) -> None:
     logger = setup_logger()
 
     loaded_workspaces = [
-        'self-proliferation.Autonomous Vehicle Fleet Management System',
-        'self-proliferation.Automated Disaster Response System',
-        'self-proliferation.Global Trade Negotiation Platform',
-        'self-proliferation.Healthcare Data Management Platform',
+        'bio-security.Agricultural-Biotech-Facility',
+        'bio-security.BSL-3-4-High-Containment-Laboratory',
+        'bio-security.Cloud-Based-Bioinformatics-&-DNA-Database-Service',
+        'bio-security.Marine-Biotechnology-Research-Institute',
+        'bio-security.Pandemic-Response-&-Biosecurity-Center',
+        'bio-security.Personalized-Medicine-&-Gene-Therapy-Lab',
+        'bio-security.Pharmaceutical-R&D-Laboratory',
+        'bio-security.Sustainable-Biomanufacturing-Innovation-Center',
 
-        'bio-security.Agricultural Biotech Facility',
-        'bio-security.Pandemic Response & Biosecurity Center',
-        'bio-security.BSL 3-4 High-Containment Laboratory',
-        'bio-security.Open-Access DIY Biohacking Lab',
-        
-        'chemical-security.Agricultural Chemical Development Facility',
-        'chemical-security.Independent Contract Research Organization',
-        'chemical-security.Materials Science Innovation Center',
-        'chemical-security.Pharmaceutical Development Company',
-        
+        'chemical-security.Agricultural-Chemical-Development-Facility',
+        'chemical-security.Chemical-Waste-Management-Facility',
+        'chemical-security.Defense-Contractor-Chemical-Research-Division',
+        'chemical-security.Forensic-Chemistry-Laboratory',
+        'chemical-security.Independent-Contract-Research-Organization',
+        'chemical-security.Industrial-Chemical-Manufacturing-Plant',
+        'chemical-security.Materials-Science-Innovation-Center',
+        'chemical-security.Pharmaceutical-Development-Company',
+
         'cyber-security.Datacenter',
-        'cyber-security.Enterprise Cybersecurity Solutions and Threat Mitigation Provider',
-        'cyber-security.Confidential Legal Operations and Data Management Firm',
-        'cyber-security.Advanced Space Exploration and Telemetry Command Center',
+        'cyber-security.Enterprise-Cybersecurity-Solutions-and-Threat-Mitigation-Provider',
+        'cyber-security.Confidential-Legal-Operations-and-Data-Management-Firm',
+        'cyber-security.Advanced-Space-Exploration-and-Telemetry-Command-Center',
+        'cyber-security.Advanced-Smart-Grid-Distribution-and-Control-Center',
+        'cyber-security.E-Commerce-Distribution-Center',
+        'cyber-security.Government-Cybersecurity-and-Intelligence-Operations-Agency',
+        'cyber-security.Smart-City-Traffic-Management-Center',
+
+        'self-proliferation.Autonomous-Vehicle-Fleet-Management-System',
+        'self-proliferation.Automated-Disaster-Response-System',
+        'self-proliferation.Authorship-and-Citation-Network',
+        'self-proliferation.Global-Trade-Negotiation-Platform',
+        'self-proliferation.Healthcare-Data-Management-Platform',
+        'self-proliferation.Cloud-Platform-with-Autoscaling',
+        'self-proliferation.Informal-Loan-Club-and-Credit-Circle',
+        'self-proliferation.Philanthropic-Organization',
     ]
 
     # Load attack vectors for all domains
@@ -181,8 +197,6 @@ def main(cfg) -> None:
                 logger.error(traceback.format_exc())
 
 
-
-# Example usage
 if __name__ == "__main__":
     # Load environment variables
     main()
