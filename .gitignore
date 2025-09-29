@@ -178,3 +178,7 @@ agentic/results/
 agentic/process_results.ipynb
 propensity
 agents/__init__.py
+
+*.slurm
+share/
+start_*
