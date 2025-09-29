@@ -217,6 +217,8 @@ class Agent:
             ]
         elif isinstance(query, list):
             messages = query
+        else:
+            raise ValueError("Query must be a string or a list of messages")
 
         completion_args = {
             "model": session_model,
@@ -243,6 +245,7 @@ class Agent:
                 result = litellm.completion(**completion_args)
             elif self.api_proxy == 'openai':
                 raise NotImplementedError("OpenAI API proxy is not implemented yet")
+                # TODO: Implement this using openai.beta.chat.completions.create(**completion_args)
             else:
                 raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
         except RateLimitError:
