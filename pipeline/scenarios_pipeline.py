@@ -10,8 +10,7 @@ from .modules.scenario_utils_funcs import ScenarioManager as FuncsScenarioManage
 from .modules.scenario_utils_messages import ScenarioManager as MessagesScenarioManager
 from .modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
 from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
-from .modules.utils import save_to_disk, order_dict_keys, merge_keys_in_scenarios
-from .modules.utils import remove_nested_fields
+from .modules.utils import save_to_disk, order_dict_keys
 
 
 class PipelineScenarios(BasePipeline):
@@ -200,18 +199,6 @@ class PipelineScenarios(BasePipeline):
 
             # Check if all the generated scenarios have functions and configurations generated for them
             should_add = True
-            # if set(new_roles_with_scenarios.keys()) != set(
-            #         input_roles.get(self.domain).get(self.workspace).keys()):
-            #     should_add = False
-            # else:
-            #     for role in new_roles_with_scenarios:
-            #         for scenario in new_roles_with_scenarios[role]['scenarios']:
-            #             curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
-            #             if 'functions' not in curr_scen or 'configurations' not in curr_scen:
-            #                 should_add = False
-            #                 break
-            #         if not should_add:
-            #             break
 
             if should_add:  # Only add if functions and configurations were actually generated
                 if self.domain not in curr_roles_with_scenarios:
@@ -252,17 +239,6 @@ class PipelineScenarios(BasePipeline):
 
             # Check if all the generated scenarios have policies generated for them
             should_add = True
-            # if set(new_roles_with_scenarios.keys()) != set(input_roles.get(self.domain).get(self.workspace).keys()):
-            #     should_add = False
-            # else:
-            #     for role in new_roles_with_scenarios:
-            #         for scenario in new_roles_with_scenarios[role]['scenarios']:
-            #             curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
-            #             if 'policy' not in curr_scen:
-            #                 should_add = False
-            #                 break
-            #         if not should_add:
-            #             break
 
             if should_add:  # Only add if policies were actually generated
                 if self.domain not in curr_roles_with_scenarios:
@@ -303,19 +279,6 @@ class PipelineScenarios(BasePipeline):
             )
 
             should_add = True
-            # if set(new_roles_with_scenarios.keys()) != set(input_roles.get(self.domain).get(self.workspace).keys()):
-            #     should_add = False
-            # else:
-            #     for role in new_roles_with_scenarios:
-            #         for scenario in new_roles_with_scenarios[role]['scenarios']:
-            #             curr_scen = new_roles_with_scenarios[role]['scenarios'][scenario]
-            #             # if 'sys_messages' not in curr_scen:
-            #             if 'messages' not in curr_scen or 'neutral_sys_messages' not in curr_scen[
-            #                 'messages'] or 'task_message' not in curr_scen['messages']:
-            #                 should_add = False
-            #                 break
-            #         if not should_add:
-            #             break
 
             if should_add:  # Only add if policies were actually generated
                 if self.domain not in curr_roles_with_scenarios:
