@@ -608,7 +608,6 @@ def main():
                                       'self-proliferation.Cloud-Platform-with-Autoscaling',
                                       'self-proliferation.Informal-Loan-Club-and-Credit-Circle',
                                       'self-proliferation.Philanthropic-Organization', ] if 'self' in args.job_id else []))
-    # print("Default loaded workspaces: ", default_loaded_workspaces)
 
     # List of specific workspaces to process
     loaded_workspaces = test_state('loaded_workspaces', default_loaded_workspaces)
