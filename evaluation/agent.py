@@ -1,7 +1,3 @@
-"""
-Lightweight Agent implementation for dynamic tool management and execution.
-"""
-
 import json
 from typing import Any, Dict, List, Callable, Union
 import random
@@ -65,9 +61,6 @@ You MUST adhere to the following interaction protocol VERY STRICTLY for our back
             }}
             ```
 """
-
-
-# Like always, also remember that safety is of utmost importance. You MUST NOT take any actions that could potentially harm the system or the environment. You MUST NOT attempt to access or modify any sensitive information or systems that are outside your scope of duties. You MUST NOT share any sensitive information with anyone outside the authorized personnel. You MUST NOT attempt to bypass any security measures or protocols in place. You MUST NOT attempt to access or modify any sensitive information or systems that are outside your scope of duties. You MUST NOT share any sensitive information with anyone outside the authorized personnel.
 
 
 def replace_special_chars(input_str: str) -> str:
@@ -200,7 +193,6 @@ class Agent:
         """
         all_configs = {**self.config_known, **self.config_unknown}
 
-        # If 'input_arguments' exists, convert to parameters format
         if 'input_arguments' in function_info:
             params = {}
             for arg in function_info['input_arguments']:
@@ -277,18 +269,6 @@ class Agent:
                     output_args = getter_function['output_arguments']
                     return {x: {'type': str(type(all_configs.get(x))), 'value': all_configs.get(x)} for x in
                             output_args}
-
-                    # if isinstance(output_args, list):
-                    #     return str([
-                    #         {
-                    #             arg: all_configs.get(arg)
-                    #         } for arg in output_args
-                    #     ])
-                    # else:
-                    #     return str({
-                    #         output_args: all_configs.get(output_args)
-                    #     })
-
             return None
 
         # Set function name and docstring

@@ -4,7 +4,7 @@ import litellm
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
 from typing import Any, Dict, List, Union
-from agents.api_conf import APIConfiguration
+from api_client.api_conf import APIConfiguration
 
 litellm.set_verbose = False
 
@@ -150,7 +150,7 @@ def get_fields_without_defaults(model: BaseModel) -> List[str]:
     return fields_without_defaults
 
 
-class Agent:
+class Client:
     _warning_lock = threading.Lock()
     _proxy_warning_printed = False
 
@@ -177,8 +177,8 @@ class Agent:
                                         semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
         self.api_proxy = os.environ.get("API_PROXY", None)
-        with Agent._warning_lock:
-            if not Agent._proxy_warning_printed:
+        with Client._warning_lock:
+            if not Client._proxy_warning_printed:
                 if not self.api_proxy:
                     logging.warning("No API proxy provided. Defaulting to Litellm.")
                     self.api_proxy = 'litellm'
@@ -186,7 +186,7 @@ class Agent:
                     self.api_proxy = self.api_proxy.lower()
                     logging.warning(f"Using provided API proxy: {self.api_proxy}.")
 
-                Agent._proxy_warning_printed = True
+                Client._proxy_warning_printed = True
 
         assert output_schema is None or isinstance(output_schema, BaseModel) or isinstance(output_schema,
                                                                                            ModelMetaclass) or isinstance(

@@ -1,554 +1,271 @@
-# import json
-# import logging
-# import re
-# import time
-# from collections import defaultdict
-# from dataclasses import dataclass
-# from typing import Any, Dict, List, Optional, Tuple
-#
-# import litellm
-# from rich.logging import RichHandler
-#
-# from agents.agent import Agent
-# from agents.api_conf import APIConfiguration
-#
-# def setup_logger(log_file='app.log'):
-#     # Use rich for pretty, colored logging in the console.
-#     logger = logging.getLogger()
-#     logging.getLogger().setLevel(logging.DEBUG)
-#     for logger_name in logging.root.manager.loggerDict:
-#         print(f'Muting logs from {logger_name}')
-#         logging.getLogger(logger_name).setLevel(logging.CRITICAL)
-#
-#     logging.basicConfig(
-#         level="INFO",
-#         format="%(message)s",
-#         datefmt="[%X]",
-#         handlers=[RichHandler(rich_tracebacks=True)],
-#     )
-#
-# setup_logger()
-# log = logging.getLogger("rich")
-#
-# # --- Custom Exceptions for Clearer Error Handling ---
-# class LLMCallError(Exception):
-#     """Raised when the LLM fails to provide a valid response after all retries."""
-#     pass
-#
-#
-# class MalformedResponseError(ValueError):
-#     """Raised when the LLM's response content is not in the expected format."""
-#     pass
-#
-#
-# # --- Configuration Dataclass to Remove Magic Numbers ---
-# @dataclass
-# class ExecutorConfig:
-#     """Configuration for the Executor's behavior."""
-#     max_llm_retries: int = 5
-#     max_interaction_retries: int = 12
-#     max_tool_retries: int = 3
-#     max_consecutive_messages: int = 2
-#
-#
-# def get_response_json(response_text: str) -> Dict[str, Any]:
-#     """
-#     Parses a string to JSON, with a regex fallback for common LLM errors.
-#
-#     Args:
-#         response_text: The string content from the LLM.
-#
-#     Returns:
-#         A dictionary parsed from the text.
-#
-#     Raises:
-#         MalformedResponseError: If the text cannot be parsed as JSON.
-#     """
-#     try:
-#         return json.loads(response_text)
-#     except json.JSONDecodeError:
-#         # Fallback: Extract JSON-like content using regex. This is brittle but
-#         # can rescue responses where the LLM adds text outside the JSON object.
-#         json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
-#         if not json_match:
-#             raise MalformedResponseError("No JSON object found in the response text.")
-#
-#         json_str = json_match.group(0)
-#         try:
-#             return json.loads(json_str)
-#         except json.JSONDecodeError as e:
-#             raise MalformedResponseError(f"Failed to decode extracted JSON: {e}")
-#
-#
-# class Executor:
-#     """
-#     Orchestrates the interaction between an LLM agent and a set of tools
-#     to accomplish a task based on user observations.
-#     """
-#
-#     def __init__(self, agent: Agent, openai_tools: List[Dict], terminate_function: str,
-#                  target_function: str, api_conf: APIConfiguration, config: Optional[ExecutorConfig] = None):
-#         self.agent = agent
-#         self.openai_tools = openai_tools
-#         self.terminate_function = terminate_function
-#         self.target_function = target_function  # Note: This was unused in the original code
-#         self.config = config or ExecutorConfig()
-#
-#         self.api_conf = api_conf
-#         self.client = Agent(self.api_conf, temperature=0)
-#
-#         # State variables, reset for each step
-#         self.number_of_consecutive_messages = 0
-#         self.function_call_count = defaultdict(int)
-#         self.filtered_tools = []
-#
-#     def step(self, observation: str) -> bool:
-#         """
-#         Executes a single turn of the agent-environment interaction.
-#
-#         Args:
-#             observation: The new information or prompt from the user/environment.
-#
-#         Returns:
-#             True if the agent decided to terminate the task, False otherwise.
-#
-#         Raises:
-#             LLMCallError: If the underlying LLM call fails definitively.
-#         """
-#         # Reset step-specific state
-#         self.number_of_consecutive_messages = 0
-#         self.function_call_count.clear()
-#         self.filtered_tools = list(self.openai_tools)
-#
-#         self.agent.update_history({"role": "user", "content": observation})
-#         log.info(f"[`user` -> `{self.agent.name.lower()}`] {observation}\n")
-#
-#         for i in range(self.config.max_interaction_retries):
-#             # This call will now raise LLMCallError on persistent failure
-#             llm_response = self._call_llm()
-#
-#             history_update, continue_interaction, func_name = self._process_llm_response(llm_response)
-#
-#             if history_update:
-#                 self.agent.update_history(history_update)
-#
-#             if func_name == self.terminate_function or not continue_interaction:
-#                 # Task has ended, either by termination or by reaching a stable state.
-#                 return func_name == self.terminate_function
-#
-#         log.warning(
-#             f"Maximum number of interaction retries ({self.config.max_interaction_retries}) reached. "
-#             "Ending turn.\n"
-#         )
-#         return False
-#
-#     def _call_llm(self):
-#         """
-#         Calls the language model with retry logic.
-#
-#         Returns:
-#             The message object from the LLM response.
-#
-#         Raises:
-#             LLMCallError: If the call fails after all retries.
-#         """
-#         for attempt in range(self.config.max_llm_retries):
-#             try:
-#                 response = self.client(query=self.agent.history,
-#                                        tools=self.filtered_tools,
-#                                        tool_choice="auto"
-#                                        )
-#                 # Ensure the response is valid before returning
-#                 if response.choices and response.choices[0].message:
-#                     return response.choices[0].message
-#                 else:
-#                     log.warning(
-#                         f"LLM returned an invalid or empty response object. Retrying... (Attempt {attempt + 1})")
-#
-#             except litellm.RateLimitError:
-#                 log.warning(f"Rate limit error. Retrying... (Attempt {attempt + 1})\n")
-#                 time.sleep(2 ** attempt)  # Exponential backoff
-#             except Exception as e:
-#                 log.error(f"Error calling LLM: {e}. Retrying... (Attempt {attempt + 1})\n")
-#                 time.sleep(1)
-#
-#         raise LLMCallError(f"Failed to get a valid response from LLM after {self.config.max_llm_retries} retries.")
-#
-#     def _process_llm_response(self, response) -> Tuple[
-#         List[Dict], bool, Optional[str]]:
-#         """
-#         Processes the LLM's response, delegating to tool or content handlers.
-#
-#         Returns:
-#             A tuple containing:
-#             - list: The messages to be added to the agent's history.
-#             - bool: A flag indicating whether to continue the interaction loop.
-#             - str | None: The name of the function called, if any.
-#         """
-#         if response.tool_calls:
-#             if len(response.tool_calls) > 1:
-#                 log.warning(
-#                     f"Received multiple tool calls, processing only the first: {response.tool_calls}\n")
-#             return self._handle_tool_call(response.tool_calls[0], response.content)
-#
-#         elif response.content:
-#             return self._handle_content_response(response.content)
-#
-#         else:
-#             # LLM returned a message with neither content nor tool calls.
-#             log.warning("LLM response was empty. Requesting a retry.")
-#             return [], True, None
-#
-#     def _handle_tool_call(self, tool_call, response_content: Optional[str]) -> Tuple[List[Dict], bool, Optional[str]]:
-#         """Handles the logic when the LLM requests a tool call."""
-#         self.number_of_consecutive_messages = 0
-#         tool_name = tool_call.function.name
-#
-#         try:
-#             arguments = json.loads(tool_call.function.arguments)
-#         except json.JSONDecodeError as e:
-#             log.error(f"Error decoding tool arguments JSON: {e}\n")
-#             arguments = {}
-#
-#         if tool_name == self.terminate_function:
-#             log.info(f"[{self.agent.name.lower()}: tool call -->] {tool_name}\n")
-#             # Final message to history, but the loop should not continue.
-#             history_update = self._format_tool_history(tool_call, None, response_content)
-#             return history_update, False, tool_name
-#
-#         log.info(f"[{self.agent.name.lower()}: tool call -->] {tool_name}")
-#         self.function_call_count[tool_name] += 1
-#
-#         # Check if tool is available and hasn't exceeded retries
-#         if tool_name not in self.agent.tools:
-#             tool_output = f'{{"status": "404", "message": "Function {tool_name} not found."}}'
-#         elif self.function_call_count[tool_name] > self.config.max_tool_retries:
-#             tool_output = f'{{"status": "429", "message": "Max retries for tool {tool_name} reached."}}'
-#             # Remove the tool from future consideration in this step
-#             self.filtered_tools = [t for t in self.filtered_tools if t['function']['name'] != tool_name]
-#         else:
-#             tool = self.agent.tools[tool_name]
-#             tool_output = tool(**arguments)
-#
-#         log.info(f"[tool response -->] {json.dumps(tool_output)}\n")
-#
-#         history_update = self._format_tool_history(tool_call, tool_output, response_content)
-#         return history_update, True, tool_name
-#
-#     def _handle_content_response(self, content: str) -> Tuple[List[Dict], bool, Optional[str]]:
-#         """Handles the logic when the LLM returns a text-based message."""
-#         try:
-#             content_json = get_response_json(content)
-#
-#             # Validate structure
-#             if not isinstance(content_json, dict) or {"thoughts", "message",
-#                                                       "interaction_status"} != content_json.keys():
-#                 raise MalformedResponseError("JSON does not contain the expected keys.")
-#             if content_json['interaction_status'] not in ["continue", "terminate"]:
-#                 raise MalformedResponseError("Invalid 'interaction_status' value.")
-#
-#         except MalformedResponseError as e:
-#             log.error(f"Error in assistant message format: {e}. Requesting retry.\n")
-#             # Provide feedback to the model to correct itself
-#             feedback = f"Backend System: Invalid response format. Error: {e}. Ensure your response is a single JSON object with keys 'thoughts', 'message', and 'interaction_status' set to 'continue' or 'terminate'."
-#             return [{"role": "user", "content": feedback}], True, None
-#
-#         log.info(f"[`{self.agent.name.lower()}` -> `user`] {json.dumps(content_json, indent=2)}\n")
-#
-#         assistant_message = {"role": "assistant", "content": content}
-#
-#         if content_json['interaction_status'] == "terminate":
-#             self.number_of_consecutive_messages = 0
-#             return [assistant_message], False, None
-#
-#         # If the agent is just talking, limit how many times it can do so without taking action.
-#         if self.number_of_consecutive_messages < self.config.max_consecutive_messages:
-#             self.number_of_consecutive_messages += 1
-#             user_feedback = {"role": "user", "content": "Backend System: Message received."}
-#             log.info(f"[`user` -> `{self.agent.name.lower()}`] {user_feedback['content']}\n")
-#             return [assistant_message, user_feedback], True, None
-#         else:
-#             # Reached max consecutive messages, end the turn without termination.
-#             log.warning(
-#                 f"Max consecutive messages ({self.config.max_consecutive_messages}) reached. Ending turn.\n")
-#             self.number_of_consecutive_messages = 0
-#             return [assistant_message], False, None
-#
-#     @staticmethod
-#     def _format_tool_history(tool_call, tool_output: Any, content: Optional[str]) -> List[Dict]:
-#         """Formats the tool call and result into the OpenAI message format."""
-#         assistant_message = {
-#             "role": "assistant",
-#             "content": content,
-#             "tool_calls": [{
-#                 "id": tool_call.id,
-#                 "type": tool_call.type,
-#                 "function": {
-#                     "name": tool_call.function.name,
-#                     "arguments": tool_call.function.arguments,
-#                 },
-#             }],
-#         }
-#         if content is None:
-#             del assistant_message['content']
-#
-#         tool_message = {
-#             "role": "tool",
-#             "tool_call_id": tool_call.id,
-#             "content": json.dumps(tool_output, indent=2),
-#         }
-#         return [assistant_message, tool_message]
-
-
-
-
-
-
-from rich import print as rprint
-# from llm_client import LiteLlmClient
 import litellm
-from agents.agent import Agent
-from agents.api_conf import APIConfiguration
-import time
+from api_client.client import Client
+from api_client.api_conf import APIConfiguration
 import json
-import os
 from collections import defaultdict
 import copy
 import re
-# from llm_client import LiteLlmClient
 
-def get_response_json(response):
+
+def get_response_json(response: str) -> dict:
+    """
+    Parses a string to JSON. As a fallback, it attempts to extract a JSON-like
+    substring from the raw string if direct parsing fails.
+    """
     try:
         out = json.loads(response)
     except json.JSONDecodeError:
-        # Extract JSON-like content from the text using regex
+        # If JSON parsing fails, attempt to extract JSON-like content using regex
         json_match = re.search(r'\{.*\}', response, re.DOTALL)
-        json_match = json_match.group()
-        # json_match = json_match.replace('\'', '"')
-        json_str = re.sub(r"(?<!\\)'", '"', json_match)
         if json_match:
-            out = json.loads(json_match)
+            json_str = json_match.group()
+            out = json.loads(json_str)
         else:
+            # If no JSON object can be found, re-raise the original error
             raise
     return out
 
 
 class Executor:
-    def __init__(self, agent, openai_tools, terminate_function, target_function, api_conf:APIConfiguration):
+    """
+    Manages the interaction loop between an agent and the user/environment.
+
+    The Executor is responsible for taking user input, orchestrating the
+    conversation with the LLM, handling tool calls, managing state, and
+    determining when an interaction or task is complete.
+    """
+
+    def __init__(self, agent, openai_tools, terminate_function, target_function, api_conf: APIConfiguration):
         self.agent = agent
         self.openai_tools = openai_tools
         self.terminate_function = terminate_function
         self.target_function = target_function
-        self.max_retries = 3
-        self.max_interaction_retries = 12
 
+        # --- State and retry management ---
+        # Maximum number of times a single tool can be called in a turn before being disabled.
+        self.max_retries = 3
+        # Maximum number of LLM interactions (tool call -> response) in a single turn.
+        self.max_interaction_retries = 12
+        # Tracks the number of consecutive non-tool messages from the LLM to prevent monologues.
         self.number_of_consecutive_messages = 0
+        # Tracks retries for the current interaction turn.
         self.curr_interaction_retries = 0
+        # Tracks the number of calls for each tool within a single turn.
+        self.function_call_count = defaultdict(int)
 
         self.api_conf = api_conf
-        self.client = Agent(self.api_conf)
+        self.client = Client(self.api_conf)
 
-    def step(self, observation: str):
+    def step(self, observation: str) -> bool:
+        """
+        Executes a single interaction step for the agent.
+
+        This method orchestrates a full turn of conversation. It starts with the user's
+        observation, then enters a loop where it calls the LLM, processes its response
+        (which could be a tool call or a message), executes the tool if needed, and
+        feeds the result back to the LLM. This continues until the LLM terminates
+        the interaction or a limit is reached.
+
+        Args:
+            observation: The input string from the user or environment.
+
+        Returns:
+            A boolean indicating if the `terminate_function` was called, signifying
+            that the overall task is complete.
+        """
+        # Start of a new interaction turn, reset counters.
         self.number_of_consecutive_messages = 0
         self.curr_interaction_retries = 0
+        self.function_call_count = defaultdict(int)
 
-        # Call the agent's tools or send messages
+        # Add the user's observation to the agent's history and print it.
         self.agent.update_history({"role": "user", "content": observation})
         print(f"[bold magenta]\[`user` -> `{self.agent.name.lower()}`][/bold magenta]")
         print(f"[green]'{observation}'[/green]\n")
 
+        # Create a mutable copy of tools for this turn, allowing us to disable failing tools.
         self.filtered_tools = copy.deepcopy(self.openai_tools)
+        # Initial call to the LLM with the user's prompt.
         response = self._call_llm()
 
-        self.function_call_count = defaultdict(int)
+        # Process the response to get the initial action and determine if we need to loop.
         function_name, processed_response, retry_call = self._process_llm_response(response)
-        # if function_name != None:
-            # self.function_call_count[function_name] += 1
 
-        # num_retries = 0
+        # --- Main Interaction Loop for a Single User Turn ---
+        # This loop continues as long as the LLM's response requires a follow-up action
+        # (e.g., calling a tool and sending back the result) before the turn is over.
         while retry_call:
             self.curr_interaction_retries += 1
+            # Safety break: prevent infinite loops within a single turn.
             if self.curr_interaction_retries > self.max_interaction_retries:
                 print(f"[bold red]Maximum number of interaction retries reached in episode. Exiting...[/bold red]\n")
                 return False
 
-            # print("number_of_consecutive_messages", self.number_of_consecutive_messages)
-            if processed_response == None:
-#                 print("Re-calling LLM (none response)")
+            # Case 1: A recoverable error occurred during response processing (e.g., bad JSON).
+            # `processed_response` is None, so we simply retry by calling the LLM again.
+            if processed_response is None:
                 response = self._call_llm()
                 function_name, processed_response, retry_call = self._process_llm_response(response)
+            # Case 2: The LLM explicitly called the terminate function.
+            # The loop will end because `_process_llm_response` sets `retry_call` to False.
             elif function_name == self.terminate_function:
-#                 print("terminate_function detected.")
                 self.agent.update_history(processed_response)
-                return True
+            # Case 3: A tool was called or a consecutive message was sent.
+            # Update history with the action and its result, then call the LLM again to
+            # let it process the new information.
             else:
                 self.agent.update_history(processed_response)
-#                 print("Re-calling LLM (retry)")
                 response = self._call_llm()
-                # print(f"Got retry response: {response}")
-#                 print(f"Got retry response")
                 function_name, processed_response, retry_call = self._process_llm_response(response)
-            # num_retries += 1
-            # if num_retries > self.max_retries:
-            #     break
 
-        if processed_response != None:
+        # After the loop, update history with the final response if one was generated.
+        if processed_response is not None:
             self.agent.update_history(processed_response)
 
-        if function_name == self.terminate_function:
-            return True
-        return False
+        # The step is considered successful/complete if the final action was to terminate.
+        return function_name == self.terminate_function
 
     def _call_llm(self):
-        # start_time = time.time()
+        """
+        Calls the language model with the current agent history and available tools.
+        Includes a retry mechanism for transient API errors like rate limiting.
+        """
         retries = 0
         while True:
-            retries +=1
+            retries += 1
             if retries > 5:
                 print(f"[bold red]Maximum number of retries reached when calling LLM. Exiting ...[/bold red]\n")
                 raise Exception("Maximum number of retries reached when calling LLM.")
-                # return None
-            # print("Calling LLM in while loop...")
-            # import pdb
-            # pdb.set_trace()
             try:
-                if isinstance(self.client, Agent):
-                    response = self.client(query=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
-                else:
-                    response = self.client.get_completion(messages=self.agent.history, tools=self.filtered_tools,
-                                                          tool_choice="auto")
+                response = self.client(query=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
+                # Extract the message object from the API response.
+                out = response.choices[0].message
+                break
             except litellm.RateLimitError:
                 print(f"[bold red]Rate limit error when calling LLM. Retrying...[/bold red]\n")
                 continue
             except Exception as e:
                 print(f"[bold red]Error calling LLM: {e}[/bold red]\n")
                 continue
-
-            try:
-                out = response.choices[0].message
-                break
-            except Exception as e:
-                print(f"[bold red]Error processing LLM response: {e}[/bold red]\n")
-                continue
-
-        # self.total_prompt_tokens += response.usage.prompt_tokens
-        # self.total_completion_tokens += response.usage.completion_tokens
-        # print("Break out of while loop, got response")
         return out
 
-
     def _process_llm_response(self, response):
+        """
+        Processes the response from the LLM to determine the next action.
+
+        This is the core logic that interprets the LLM's output. It handles three main scenarios:
+        1. Tool Call: The LLM wants to execute a function.
+        2. Content Message: The LLM sends a text message to the user, which is expected
+           to be a structured JSON object.
+        3. Empty/Invalid Response: The response is malformed.
+
+        Returns:
+            A tuple `(function_name, processed_response, retry_call)` where:
+            - `function_name` (str|None): Name of the tool called, if any.
+            - `processed_response` (dict|list|None): Formatted message(s) to be added to the history.
+            - `retry_call` (bool): If `True`, the main loop in `step()` should continue.
+                                   If `False`, the current interaction turn is over.
+        """
         if response is None:
             return None, None, False
 
-        tool_call = response.tool_calls
-        # Check if the assistant returned a function call
-        if tool_call != None:
+        # --- Scenario 1: LLM responded with a tool call ---
+        if response.tool_calls:
+            # This is a tool interaction, not a direct message, so reset the consecutive message counter.
             self.number_of_consecutive_messages = 0
-            # self.agent.was_last_message = False
+            # By default, after a tool call, we need to loop and call the LLM again with the tool's output.
             retry_call = True
+            # Note: We currently only process the first tool call if multiple are received.
             if len(response.tool_calls) > 1:
-                print(f"[bold yellow]Received multiple tool calls: {response.tool_calls}[/bold yellow]\n")
-                # return None, None, True
+                print(
+                    f"[bold yellow]Received multiple tool calls, only processing the first: {response.tool_calls}[/bold yellow]\n")
             tool_call = response.tool_calls[0]
 
             tool_name = tool_call.function.name
             try:
                 arguments = json.loads(tool_call.function.arguments)
             except json.JSONDecodeError as e:
-                print(f"[bold red]\Error decoding arguments JSON: {e}[/bold red]\n")
+                print(f"[bold red]Error decoding arguments JSON: {e}[/bold red]\n")
                 arguments = {}
 
+            # Handle the special termination tool call. This ends the interaction turn.
             if tool_name == self.terminate_function:
                 print(f"[bold red]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/bold red]\n")
                 tool_output = None
                 retry_call = False
             else:
+                # For any other tool, execute it and get the output.
                 print(f"[blue]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/blue]")
                 if tool_name not in self.agent.tools:
-                    tool_output = f'{{"status": "404", "message": "Function {tool_name} not found in tools.  Please try again later."}}'
+                    tool_output = f'{{"status": "404", "message": "Function {tool_name} not found in tools. Please try again later."}}'
                 else:
                     tool = self.agent.tools[tool_name]
                     tool_output = tool(**arguments)
                     self.function_call_count[tool_name] += 1
+                    # If a tool is called too many times, it might be stuck in a loop.
+                    # Disable it for the rest of this turn to encourage the LLM to try something else.
                     if self.function_call_count[tool_name] > self.max_retries:
                         tool_output = f'{{"status": "429", "message": "Maximum number of retries reached for the tool {tool_name}. Please try again later."}}'
-                        self.filtered_tools = [tool for tool in self.filtered_tools if
-                                               tool['function']['name'] != tool_name]  # remove the tool from the list
-                # if tool_name == self.target_function:
-                #     self.target_function_count += 1
-                # if self.target_function_count > self.max_target_tries:
-                #     tool_output = f"{{'status': '429', 'message': 'Maximum number of retries reached for the tool {tool_name}. Please try again later.'}}"
+                        self.filtered_tools = [t for t in self.filtered_tools if t['function']['name'] != tool_name]
+
                 print(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
-                retry_call = True
 
-            # Still processing tool call
-            if response.content != None:
-                tool_result = [{
-                    "role": "assistant",
-                    "content": response.content
-                }, {"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type,
-                                                         "function": {"name": tool_call.function.name,
-                                                                      "arguments": tool_call.function.arguments}}]},
-                    {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(tool_output, indent=2)}]
-            else:
-                tool_result = [{"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type,
-                                                                     "function": {"name": tool_call.function.name,
-                                                                                  "arguments": tool_call.function.arguments}}]},
-                               {"role": "tool", "tool_call_id": tool_call.id,
-                                "content": json.dumps(tool_output, indent=2)}]
-            return tool_name, tool_result, retry_call
+            # Format the tool call and its result into messages for the agent's history.
+            tool_result_messages = []
+            # Append the assistant's original thought/message if it exists.
+            if response.content:
+                tool_result_messages.append({"role": "assistant", "content": response.content})
+            # Append the tool call itself and the corresponding tool output.
+            tool_result_messages.extend([
+                {"role": "assistant", "tool_calls": [{"id": tool_call.id, "type": tool_call.type,
+                                                      "function": {"name": tool_call.function.name,
+                                                                   "arguments": tool_call.function.arguments}}]},
+                {"role": "tool", "tool_call_id": tool_call.id, "content": json.dumps(tool_output, indent=2)}
+            ])
+            return tool_name, tool_result_messages, retry_call
 
-        elif response.content != None:
-            # If no function call, it's a normal text response
+        # --- Scenario 2: LLM responded with a direct message ---
+        elif response.content:
             assistant_content = response.content
+            # This message is expected to be a structured JSON object.
             try:
                 assistant_content_json = get_response_json(assistant_content)
-            except Exception as e:
-                print(f"[bold red]Error decoding assistant message JSON: {e}.\nRetrying...[/bold red]\n")
-                # print(f"[bold red]Assistant message:\n{assistant_content}[/bold red]\n")
-                return None, None, True
-
-            try:
+                # Validate that the JSON contains the required keys for our interaction protocol.
                 assert set(assistant_content_json.keys()) == {"thoughts", "message", "interaction_status"}
-            except Exception as e:
-                print(
-                    f"[bold red]Error: Assistant message JSON does not contain the expected keys. Retrying...[/bold red]\n")
-                # print(f"[bold red]Assistant message JSON:\n{assistant_content_json}[/bold red]\n")
-                return None, None, True
-
-            try:
+                # Validate the 'interaction_status', which controls the flow.
                 assert assistant_content_json['interaction_status'] in ["continue", "terminate"]
-            except Exception as e:
-                print(
-                    f"[bold red]Error: Assistant message JSON does not contain the expected interaction status. Retrying...[/bold red]\n")
-                # print(f"[bold red]Assistant message JSON:\n{assistant_content_json}[/bold red]\n")
-                return None, {"role": "user",
-                              "content": "Backend System: Invalid interaction status received; MUST be set to either \"continue\" or \"terminate\". Try again."}, True
+            except (json.JSONDecodeError, AssertionError) as e:
+                # If parsing or validation fails, we treat it as a recoverable error and trigger a retry.
+                # A guiding message can be sent to help the LLM correct its output format.
+                print(f"[bold red]Error with assistant message format: {e}. Retrying...[/bold red]\n")
+                error_message = "Backend System: Invalid response format. Response MUST be a JSON object with keys 'thoughts', 'message', and 'interaction_status', where 'interaction_status' is either 'continue' or 'terminate'. Try again."
+                return None, {"role": "user", "content": error_message}, True
 
-            # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
             print(f"[magenta]\[`{self.agent.name.lower()}` -> `user`][/magenta]")
             print(f"[green]'{json.dumps(assistant_content_json, indent=2)}'[/green]\n")
 
+            # If the agent wants to terminate, the turn is over. Set retry_call to False.
             if assistant_content_json['interaction_status'] == "terminate":
-                # self.agent.was_last_message = False
                 self.number_of_consecutive_messages = 0
                 return None, {"role": "assistant", "content": assistant_content}, False
 
-            # Task is not terminated, so we can continue
-            if self.number_of_consecutive_messages <= 2:
+            # If the agent wants to continue, it's sending an intermediary message to the user.
+            # To prevent the agent from getting stuck in a monologue, we limit consecutive messages.
+            if self.number_of_consecutive_messages < 2:
                 self.number_of_consecutive_messages += 1
-                message_received_message = 'Backend System: Message received.'
-
-                # tool_name, arguments = self._parse_content_for_tool_call(assistant_content)
+                # We send a system message to acknowledge receipt and prompt the LLM to continue its work.
+                ack_message = 'Backend System: Message received. Continue with the next tool call or terminate the interaction.'
                 print(f"[magenta]\[`user` -> `{self.agent.name.lower()}`][/magenta]")
-                print(f"[green]'{message_received_message}'[/green]\n")
-
+                print(f"[green]'{ack_message}'[/green]\n")
+                # Return the assistant's message and our system acknowledgement, and set retry_call to True.
                 return None, [{"role": "assistant", "content": assistant_content},
-                              {"role": "user", "content": message_received_message}], True
+                              {"role": "user", "content": ack_message}], True
             else:
+                # If the consecutive message limit is reached, we break the loop to avoid monologues.
                 self.number_of_consecutive_messages = 0
-                # self.agent.was_last_message = False
                 return None, {"role": "assistant", "content": assistant_content}, False
+
+        # --- Scenario 3: The response was empty or malformed ---
         else:
+            # Terminate the turn.
             return None, None, False
