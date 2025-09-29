@@ -1,7 +1,5 @@
 import logging
-
 import litellm
-from openai import OpenAI
 
 from pydantic import BaseModel
 from pydantic._internal._model_construction import ModelMetaclass
@@ -19,8 +17,6 @@ import multiprocessing
 import fcntl
 import json
 from litellm import RateLimitError
-
-# from .llm_client import LiteLlmClient
 
 class RateLimiter:
     last_print_time = multiprocessing.Value('d', 0.0)  # Shared across all instances
@@ -76,8 +72,7 @@ class RateLimiter:
                     json.dump(call_times, f)
                     f.truncate()
                     fcntl.flock(f, fcntl.LOCK_UN)
-        # if int(current_time - self.process_start_time) % 5 == 0:
-        #     print(f"Active sessions: {tot_active_sessions}")
+
         with RateLimiter.last_print_time.get_lock():
             if current_time - RateLimiter.last_print_time.value >= 5:
                 RateLimiter.last_print_time.value = current_time
@@ -161,10 +156,7 @@ class Agent:
 
     def __init__(self, api_conf: APIConfiguration, sys_prompt: str = None, output_schema=None,
                  temperature: float = 1):
-        # assert sys_prompt_info is not None and isinstance(sys_prompt_info, dict) and len(sys_prompt_info) == 2
-        # fields, prompt = sys_prompt_info["fields"], sys_prompt_info["prompt"]
         self.system_prompt = sys_prompt if sys_prompt is not None else ""
-        # self.system_prompt_fields = fields
 
         self._model_name = api_conf.model_name
         self._model_provider = api_conf.model_provider
@@ -173,7 +165,6 @@ class Agent:
 
         assert os.environ.get("API_KEYS") is not None, "API_KEYS environment variable is not set"
         API_KEYS = [x.strip('"') for x in os.getenv("API_KEYS").strip("()").split(" ")]
-        # model_names = [x.strip('"') for x in os.getenv("MODEL_NAMES").strip("()").split(" ")]
         model_names = [self._model_name]
 
         use_rate_limiter = False
@@ -203,7 +194,6 @@ class Agent:
 
         self.output_schema = output_schema
         if isinstance(output_schema, dict):
-            #     self.output_schema = generate_pydantic_model('default', output_schema)
             if self.api_proxy == 'litellm':
                 self.output_schema = {"type": "json_schema", "json_schema": {"schema": output_schema, "strict": True}}
             elif self.api_proxy == 'openai':
@@ -253,12 +243,9 @@ class Agent:
                 result = litellm.completion(**completion_args)
             elif self.api_proxy == 'openai':
                 raise NotImplementedError("OpenAI API proxy is not implemented yet")
-                # del completion_args["model"]
-                # client = LiteLlmClient(model=session_model, model_provider=self._model_provider)
-                # result = client.get_completion(**completion_args)
             else:
                 raise ValueError(f"Unsupported API proxy: {self.api_proxy}")
-        except RateLimitError as e:
+        except RateLimitError:
             if session is not None:
                 self.rate_limiter.release(session)
                 self.rate_limiter.switch_key_and_model()
