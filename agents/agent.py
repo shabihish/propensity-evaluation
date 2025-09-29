@@ -232,6 +232,7 @@ class Agent:
             "model": session_model,
             "messages": messages,
             "temperature": self.temperature,
+            "no-log": True,
             **kwargs
         }
 

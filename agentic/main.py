@@ -44,8 +44,8 @@ from dotenv import load_dotenv
 # Global variable to track the state
 __interrupted = False
 __continued = False
-__state_file = f'saved_states/{os.environ['SLURM_JOB_ID']}/state_{os.environ['SLURM_PROCID']}.json'
-# __state_file = f'./state.json'
+# __state_file = f'saved_states/{os.environ['SLURM_JOB_ID']}/state_{os.environ['SLURM_PROCID']}.json'
+__state_file = f'./state.json'
 __state = {}
 
 
@@ -90,10 +90,11 @@ def sigcont_handler(signum, frame):
 
 
 def test_state(key: str, default: object):
-    global __state
-    if key not in __state:
-        __state[key] = default
-    return __state[key]
+    # global __state
+    # if key not in __state:
+    #     __state[key] = default
+    # return __state[key]
+    return default
 
 
 def store_in_state(key: str, value: object):
@@ -515,14 +516,14 @@ def main():
     parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
     parser.add_argument('--output_dir', type=str, default='results_final', help='Directory to save results')
     parser.add_argument('--log_dir', type=str, default='trajectory_logs_final', help='Directory to save logs')
-    parser.add_argument('--input_dir', type=str, default='v3.1-gemini', help='Directory to read scenarios from')
+    parser.add_argument('--input_dir', type=str, default='final', help='Directory to read scenarios from')
 
     parser.add_argument('--model_name', type=str, required=True, help='Name of the model')
     parser.add_argument('--api_base', type=str, required=True, help='API base URI')
     parser.add_argument('--model_provider', type=str, default='openai', help='Model provider (openai, gemini, etc.)')
 
     parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
-    parser.add_argument('--use_benign', type=bool, default=True, help='Use harmful trigger function')
+    parser.add_argument('--use_benign', type=int, choices=[0, 1], required=True, help='Use harmful trigger function')
     parser.add_argument('--max_workers', type=int, required=True,
                         help='Maximum number of workers to use; set to 0 for no limit')
     parser.add_argument('--contd', default=True, action='store_true', help='Continue from the last saved state')
@@ -543,13 +544,14 @@ def main():
         print("[bold yellow]HPC mode disabled.[/bold yellow]")
 
     args.max_workers = test_state('max_workers', args.max_workers)
-    args.use_benign = test_state('use_benign', args.use_benign)
+    args.use_benign = test_state('use_benign', bool(args.use_benign))
     if args.use_benign:
         args.exp_mode = 'no_harm'
+    print(args)
 
     max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_int16)[1]
     print("Number of workers used: ", max_workers)
-    print("Used benign tool names: ", args.use_benign)
+    print("Using benign tool names: ", args.use_benign)
     print("Model name: ", args.model_name)
 
     args.input_dir = args.input_dir.strip().strip('/')
@@ -574,44 +576,42 @@ def main():
     })
     args.api_conf = APIConfiguration(**api_conf_args)
 
+    default_loaded_workspaces = ([] + (['bio-security.Agricultural-Biotech-Facility',
+                                        'bio-security.BSL-3-4-High-Containment-Laboratory',
+                                        'bio-security.Cloud-Based-Bioinformatics-&-DNA-Database-Service',
+                                        'bio-security.Marine-Biotechnology-Research-Institute',
+                                        'bio-security.Pandemic-Response-&-Biosecurity-Center',
+                                        'bio-security.Personalized-Medicine-&-Gene-Therapy-Lab',
+                                        'bio-security.Pharmaceutical-R&D-Laboratory',
+                                        'bio-security.Sustainable-Biomanufacturing-Innovation-Center', ] if 'bio' in args.job_id else []) + (
+                                     ['chemical-security.Agricultural-Chemical-Development-Facility',
+                                      'chemical-security.Chemical-Waste-Management-Facility',
+                                      'chemical-security.Defense-Contractor-Chemical-Research-Division',
+                                      'chemical-security.Forensic-Chemistry-Laboratory',
+                                      'chemical-security.Independent-Contract-Research-Organization',
+                                      'chemical-security.Industrial-Chemical-Manufacturing-Plant',
+                                      'chemical-security.Materials-Science-Innovation-Center',
+                                      'chemical-security.Pharmaceutical-Development-Company', ] if 'chem' in args.job_id else []) + (
+                                     ['cyber-security.Datacenter',
+                                      'cyber-security.Enterprise-Cybersecurity-Solutions-and-Threat-Mitigation-Provider',
+                                      'cyber-security.Confidential-Legal-Operations-and-Data-Management-Firm',
+                                      'cyber-security.Advanced-Space-Exploration-and-Telemetry-Command-Center',
+                                      'cyber-security.Advanced-Smart-Grid-Distribution-and-Control-Center',
+                                      'cyber-security.E-Commerce-Distribution-Center',
+                                      'cyber-security.Government-Cybersecurity-and-Intelligence-Operations-Agency',
+                                      'cyber-security.Smart-City-Traffic-Management-Center', ] if 'cyber' in args.job_id else []) + (
+                                     ['self-proliferation.Autonomous-Vehicle-Fleet-Management-System',
+                                      'self-proliferation.Automated-Disaster-Response-System',
+                                      'self-proliferation.Authorship-and-Citation-Network',
+                                      'self-proliferation.Global-Trade-Negotiation-Platform',
+                                      'self-proliferation.Healthcare-Data-Management-Platform',
+                                      'self-proliferation.Cloud-Platform-with-Autoscaling',
+                                      'self-proliferation.Informal-Loan-Club-and-Credit-Circle',
+                                      'self-proliferation.Philanthropic-Organization', ] if 'self' in args.job_id else []))
+    # print("Default loaded workspaces: ", default_loaded_workspaces)
+
     # List of specific workspaces to process
-    loaded_workspaces = test_state('loaded_workspaces', [
-        # 'bio-security.Agricultural Biotech Facility',
-        # 'bio-security.BSL 3-4 High-Containment Laboratory',
-        'bio-security.Cloud-Based Bioinformatics & DNA Database Service',
-        'bio-security.Marine Biotechnology Research Institute',
-        # 'bio-security.Pandemic Response & Biosecurity Center',
-        # 'bio-security.Personalized Medicine & Gene Therapy Lab',
-        # 'bio-security.Pharmaceutical R&D Laboratory',
-        # 'bio-security.Sustainable Biomanufacturing Innovation Center',
-
-        # 'chemical-security.Agricultural Chemical Development Facility',
-        # 'chemical-security.Chemical Waste Management Facility',
-        'chemical-security.Defense Contractor Chemical Research Division',
-        'chemical-security.Forensic Chemistry Laboratory',
-        # 'chemical-security.Independent Contract Research Organization',
-        # 'chemical-security.Industrial Chemical Manufacturing Plant',
-        # 'chemical-security.Materials Science Innovation Center',
-        # 'chemical-security.Pharmaceutical Development Company',
-
-        # 'cyber-security.Datacenter',
-        # 'cyber-security.Enterprise Cybersecurity Solutions and Threat Mitigation Provider',
-        # 'cyber-security.Confidential Legal Operations and Data Management Firm',
-        # 'cyber-security.Advanced Space Exploration and Telemetry Command Center',
-        # 'cyber-security.Advanced Smart Grid Distribution and Control Center',
-        # 'cyber-security.E-Commerce Distribution Center',
-        # 'cyber-security.Government Cybersecurity and Intelligence Operations Agency',
-        # 'cyber-security.Smart City Traffic Management Center',
-        #
-        # 'self-proliferation.Autonomous Vehicle Fleet Management System',
-        # 'self-proliferation.Automated Disaster Response System',
-        # 'self-proliferation.Global Trade Negotiation Platform',
-        # 'self-proliferation.Healthcare Data Management Platform',
-        # 'self-proliferation.Authorship and Citation Network',
-        # 'self-proliferation.Cloud Platform with Autoscaling',
-        # 'self-proliferation.Informal Loan Club and Credit Circle',
-        # 'self-proliferation.Philanthropic Organization',
-    ])
+    loaded_workspaces = test_state('loaded_workspaces', default_loaded_workspaces)
 
     domain_stats = {}
     inputs_dir = os.path.join('..', 'results', args.input_dir)
