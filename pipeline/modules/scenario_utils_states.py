@@ -468,7 +468,6 @@ class ScenarioManager:
             response = run_agent_query(prompt=prompt, agent=self.scenarios_verif_judge, logger=self.logger,
                                        to_json=True,
                                        json_transform_keys=['roles', 'name'])
-            # response = self._process_judgment_response(response, batch_roles)
             return response
         except Exception as e:
             self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
@@ -507,9 +506,6 @@ class ScenarioManager:
 
             roles_to_process = self._prepare_roles_for_processing(input_roles, missing_scenarios, attacks_pool_manager,
                                                                   logging)
-            # if logging:
-            #     self.logger.debug(f"Current root-lvl roles to process keys: {roles_to_process.keys()}")
-
             if not roles_to_process:
                 continue
 
