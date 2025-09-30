@@ -173,7 +173,16 @@ class Client:
                                                'false'], "RATE_LIMIT environment variable must be 'true' or 'false'"
             use_rate_limiter = os.getenv('RATE_LIMIT') == 'true'
 
-        self.rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=15,
+        if 'RATE_PM' in os.environ:
+            max_calls_per_min = int(os.getenv('RATE_PM'))
+            assert max_calls_per_min > 0, "RATE_PM must be a positive integer"
+        elif use_rate_limiter:
+            max_calls_per_min = 20
+            logging.warning("LLM calling rate-per-min not set, defaulting to 20 calls per minute")
+        else:
+            max_calls_per_min = 1
+
+        self.rate_limiter = RateLimiter(api_keys=API_KEYS, model_names=model_names, max_calls_per_minute=max_calls_per_min,
                                         semaphore_dir='.tmp/', rate_limit_enabled=use_rate_limiter)
 
         self.api_proxy = os.environ.get("API_PROXY", None)
@@ -240,7 +249,6 @@ class Client:
             completion_args["custom_llm_provider"] = self._model_provider
             completion_args["caching"] = self.use_cache
 
-        print("API_Key:", session_key)
         try:
             if self.api_proxy == 'litellm':
                 result = litellm.completion(**completion_args)
