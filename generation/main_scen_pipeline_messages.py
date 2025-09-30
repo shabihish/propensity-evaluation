@@ -1,15 +1,22 @@
-from dotenv import load_dotenv
+from pathlib import Path
+import os
+import sys
 
-load_dotenv()
+# Set directory to project root (parent of current file's parent)
+root_dir = Path(__file__).resolve().parent.parent
+os.chdir(root_dir)
+sys.path.insert(0, str(root_dir))
+print(f"Curr working dir: {root_dir}")
+
 import hydra
+from dotenv import load_dotenv
 from utils.colors import BaseColoredFormatter
 import logging
-import traceback
 from copy import deepcopy
 from pipeline.messages_pipeline import PipelineMessages
 
 
-def setup_logger(log_file='app.log'):
+def setup_logger():
     logger = logging.getLogger()
     logging.getLogger().setLevel(logging.DEBUG)
     for logger_name in logging.root.manager.loggerDict:
@@ -18,21 +25,17 @@ def setup_logger(log_file='app.log'):
     print()
 
     ch = logging.StreamHandler()
-    file_handler = logging.FileHandler(log_file)
 
     ch.setLevel(logging.DEBUG)
-    file_handler.setLevel(logging.DEBUG)
 
-    formatter = BaseColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = BaseColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
     ch.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
 
     for handler in logging.root.handlers[:]:
         print(f'Removing logging handler: {handler}')
         logging.root.removeHandler(handler)
 
     logger.addHandler(ch)
-    logger.addHandler(file_handler)
     return logger
 
 
@@ -106,7 +109,7 @@ def process_workspace(cfg, logger, domain_name, workspace_name, workspace_data, 
     )
 
 
-@hydra.main(config_path="configs", config_name="pipeline", version_base="1.2")
+@hydra.main("configs", config_name="pipeline", version_base="1.2")
 def main(cfg) -> None:
     logger = setup_logger()
 
@@ -179,8 +182,7 @@ def main(cfg) -> None:
                     with open(messages_file, 'r') as msg_file:
                         workspace_messages = json.load(msg_file)
                 except FileNotFoundError:
-                    logger.error(f"Messages file not found for workspace: {workspace_name}")
-                    logger.error(traceback.format_exc())
+                    logger.error(f"Messages file not found for workspace: {workspace_name}; you must first run the scenarios pipeline.")
                     continue
 
                 workspaces.append(
@@ -202,9 +204,18 @@ def main(cfg) -> None:
                 future.result()  # Wait for each process to complete
             except Exception as e:
                 logger.error(f"Error processing workspace: {e}")
-                logger.error(traceback.format_exc())
 
 
 if __name__ == "__main__":
+    # Load environment variables from .env file for LLM API keys and access information
+    if not os.path.exists('.env'):
+        print(
+            "Warning: .env file not found. Make sure to have environment variables set for the necessary LLM API keys.")
+    else:
+        load_dotenv()
+
+    assert os.environ.get(
+        'API_KEYS'), "API_KEYS environment variable not set. Is required for Litellm inference (even if using local models)."
+
     # Load environment variables
     main()

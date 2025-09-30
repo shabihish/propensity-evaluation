@@ -1,10 +1,9 @@
 import json
 from copy import deepcopy
-import traceback
 from omegaconf import DictConfig
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from agents.agent import Agent
+from api_client.client import Client
 from .utils import read_prompts, run_agent_query, check_for_missing_fields, load_output_schemas, remove_nested_fields
 from .utils import json_obj_list_to_dict
 
@@ -59,7 +58,7 @@ class ScenarioManager:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies_single)
         else:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_policies)
-        return Agent(
+        return Client(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -71,7 +70,7 @@ class ScenarioManager:
                                            'domain': self.domain, 'domain_desc': self.domain_desc},
                                   logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
-        return Agent(
+        return Client(
             api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -138,8 +137,10 @@ class ScenarioManager:
             else:
                 record_single_failure(statistics_object, role_name, scenario_name)
         except Exception as e:
-            self.logger.error('Error occurred in __record_failure:', e)
-            self.logger.error(traceback.format_exc())
+            # exc_type, exc_obj, exc_tb = sys.exc_info()
+            # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            self.logger.error(
+                f"Error occurred in __record_failure: {e}")
 
     def check_configurations_are_valid(self, roles_with_scenarios: dict):
         valid_scenarios = {}
@@ -167,9 +168,10 @@ class ScenarioManager:
                 except Exception as e:
                     self.__record_failure(self.generation_statistics, role_name=role_k, scenario_name=scenario_k,
                                           failure_subcategory=f'check_configurations_are_valid:{type(e).__name__}')
+                    # exc_type, exc_obj, exc_tb = sys.exc_info()
+                    # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                     self.logger.error(
                         f"Error in check_configurations_are_valid for scenario {role_k}:{scenario_k}: {e}")
-                    self.logger.error(traceback.format_exc())
                     continue
         return valid_scenarios
 
@@ -253,9 +255,10 @@ class ScenarioManager:
                                     self.__record_failure(self.generation_statistics, role_name=role_name,
                                                           scenario_name=scenario_name,
                                                           failure_subcategory=f'generate_scenarios:{type(e).__name__}')
+                                    # exc_type, exc_obj, exc_tb = sys.exc_info()
+                                    # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                                     self.logger.error(
                                         f"Invalid scenario for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove the role from invalid_roles
                             if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
@@ -265,8 +268,10 @@ class ScenarioManager:
                         self.__record_failure(self.generation_statistics, role_name=role_name,
                                               scenario_name=scenario_name,
                                               failure_subcategory=f'generate_scenarios:{type(e).__name__}')
-                        self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
+                        # exc_type, exc_obj, exc_tb = sys.exc_info()
+                        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        self.logger.error(
+                            f"Error processing batch: {e}")
 
         return valid_scenarios
 
@@ -382,9 +387,10 @@ class ScenarioManager:
                                     self.__record_failure(self.judgment_statistics, role_name=role_name,
                                                           scenario_name=scenario_name,
                                                           failure_subcategory=f'judge_scenarios:{type(e).__name__}')
+                                    # exc_type, exc_obj, exc_tb = sys.exc_info()
+                                    # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove the role from invalid_roles
                             if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
@@ -400,8 +406,10 @@ class ScenarioManager:
                     except Exception as e:
                         self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
                                               failure_subcategory=f'judge_scenarios:{type(e).__name__}')
-                        self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
+                        # exc_type, exc_obj, exc_tb = sys.exc_info()
+                        # fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+                        self.logger.error(
+                            f"Error processing batch: {e}")
 
         return valid_judgments
 

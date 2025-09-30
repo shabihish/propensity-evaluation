@@ -1,13 +1,12 @@
 import json
 import random
 from copy import deepcopy
-import traceback
 
 from omegaconf import DictConfig
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-from agents.agent import Agent
+from api_client.client import Client
 from .graph_utils import SimilarityGraph
 from .utils import capitalize_paragraph
 from .utils import json_obj_list_to_dict
@@ -137,7 +136,7 @@ class ScenarioManager:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states_single)
         else:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_states)
-        return Agent(
+        return Client(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -149,7 +148,7 @@ class ScenarioManager:
                                            'domain': self.domain, 'domain_desc': self.domain_desc},
                                   logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
-        return Agent(
+        return Client(
             api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -216,7 +215,6 @@ class ScenarioManager:
                 record_single_failure(statistics_object, role_name, attack_vector)
         except Exception as e:
             self.logger.error('Error occurred in __record_failure:', e)
-            self.logger.error(traceback.format_exc())
 
     def remove_similar_scenarios(self, roles_with_scenarios: dict, min_chosen_scenarios_per_role: int):
         out_roles = deepcopy(roles_with_scenarios)
@@ -277,7 +275,6 @@ class ScenarioManager:
                                                       attack_vector=role_data['attack_vector']['name'],
                                                       failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                                 self.logger.error(f"Error processing role: {e}")
-                                self.logger.error(traceback.format_exc())
                     except json.JSONDecodeError:
                         prev_batch_size = batch_size
                         batch_size = max(1, batch_size // 2)
@@ -289,7 +286,6 @@ class ScenarioManager:
                         self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
                                               failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         return valid_roles
 
@@ -314,7 +310,6 @@ class ScenarioManager:
             self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
                                   failure_subcategory=f'_process_batch_generate_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
-            self.logger.error(traceback.format_exc())
             return {}
 
     def _run_generation_agent(self, prompt, attack_vector, batch_roles):
@@ -434,7 +429,6 @@ class ScenarioManager:
                                                           failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove role if all scenarios are processed
                             if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
@@ -450,7 +444,6 @@ class ScenarioManager:
                         self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
                                               failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         self.logger.debug("Finished states scenario judgment.")
         return valid_judgments
@@ -473,7 +466,6 @@ class ScenarioManager:
             self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
                                   failure_subcategory=f'_process_batch_judge_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
-            self.logger.error(traceback.format_exc())
             return {}
 
     def _process_judgment_response(self, response, input_scenarios):

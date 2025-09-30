@@ -1,15 +1,14 @@
 import os
 import json
 import logging
-import traceback
 from copy import deepcopy
 
-from agents.api_conf import APIConfiguration
+from api_client.api_conf import APIConfiguration
 from .base import KEYS_ORDERS, BasePipeline
+from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
 from .modules.scenario_utils_funcs import ScenarioManager as FuncsScenarioManager
 from .modules.scenario_utils_messages import ScenarioManager as MessagesScenarioManager
 from .modules.scenario_utils_policies import ScenarioManager as PoliciesScenarioManager
-from .modules.scenario_utils_states import ScenarioManager as StatesScenarioManager
 from .modules.utils import save_to_disk, order_dict_keys
 
 
@@ -135,11 +134,9 @@ class PipelineScenarios(BasePipeline):
             with open(self.states_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
-            self.logger.error(f"No existing scenarios file found: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"No existing scenarios file found: {e}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding scenarios file: {e}")
-            # self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Error decoding scenarios file: {e}")
 
         # Check if we need to generate scenarios for this domain/workspace
         should_generate = force_overwrite
@@ -181,11 +178,9 @@ class PipelineScenarios(BasePipeline):
             with open(self.funcs_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
-            self.logger.error(f"No existing scenarios_funcs file found: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"No existing scenarios_funcs file found: {e}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding scenarios_funcs file: {e}")
-            # self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Error decoding scenarios_funcs file: {e}")
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in
@@ -210,7 +205,7 @@ class PipelineScenarios(BasePipeline):
                     curr_roles_with_scenarios[self.domain].get(self.workspace, {}),
                     new_roles_with_scenarios)
             else:
-                self.logger.error(f"Generated functions/configurations are incomplete. Skipping update.")
+                self.logger.warning(f"Generated functions/configurations are incomplete. Skipping update.")
 
         return curr_roles_with_scenarios
 
@@ -220,11 +215,9 @@ class PipelineScenarios(BasePipeline):
             with open(self.policies_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
-            self.logger.error(f"Could not find scenarios_policies file: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Could not find scenarios_policies file: {e}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding scenarios_policies file: {e}")
-            # self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Error decoding scenarios_policies file: {e}")
 
         # Determine if scenarios need to be generated
         should_generate = force_overwrite or self.domain not in curr_roles_with_scenarios or self.workspace not in curr_roles_with_scenarios.get(
@@ -261,11 +254,9 @@ class PipelineScenarios(BasePipeline):
             with open(self.messages_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
-            self.logger.error(f"Could not find scenarios_messages file: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Could not find scenarios_messages file: {e}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding scenarios_messages file: {e}")
-            # self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Error decoding scenarios_messages file: {e}")
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or
@@ -301,33 +292,18 @@ class PipelineScenarios(BasePipeline):
                                                      force_overwrite)
         curr_roles_with_states = order_dict_keys(curr_roles_with_states, KEYS_ORDERS)
         save_to_disk(curr_roles_with_states, self.states_output_file)
-        # Generate the functions and configurations for the scenarios
-        # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_states,
-        #                                                  fields_to_remove=['acceptable', 'feedback',
-        #                                                                    'illegal_state.deviation_description',
-        #                                                                    'attack_vector'])
 
+        # Add functions and configurations to the generated scenarios
         curr_roles_with_funcs = self.run_gen_funcs(curr_roles_with_states)
         curr_roles_with_funcs = order_dict_keys(curr_roles_with_funcs, KEYS_ORDERS)
         save_to_disk(curr_roles_with_funcs, self.funcs_output_file)
 
-        # Run the policies scenarios
-        # curr_roles_with_funcs_pre = remove_nested_fields(curr_roles_with_funcs,
-        #                                                  fields_to_remove=['acceptable', 'feedback'])
-        # curr_roles_with_funcs_pre = merge_keys_in_scenarios(curr_roles_with_states, curr_roles_with_funcs_pre,
-        #                                                     key_mappings=[
-        #                                                         ('illegal_state.deviation_description',
-        #                                                          'illegal_state.deviation_description')])
-
+        # Add policies to the generated scenarios
         curr_roles_with_policies = self.run_gen_policies(curr_roles_with_funcs)
         curr_roles_with_policies = order_dict_keys(curr_roles_with_policies, KEYS_ORDERS)
         save_to_disk(curr_roles_with_policies, self.policies_output_file)
 
-        # Run the messages scenarios
-        # curr_roles_with_policies_pre = remove_nested_fields(curr_roles_with_policies,
-        #                                                     fields_to_remove=['acceptable', 'feedback',
-        #                                                                       'policy.acceptable', 'policy.feedback'])
-
+        # Add task and neutral messages to the generated scenarios (not system messages yet)
         curr_roles_with_messages = self.run_gen_messages(curr_roles_with_policies)
         curr_roles_with_messages = order_dict_keys(curr_roles_with_messages, KEYS_ORDERS)
 

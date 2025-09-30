@@ -240,6 +240,7 @@ class Client:
             completion_args["custom_llm_provider"] = self._model_provider
             completion_args["caching"] = self.use_cache
 
+        print("API_Key:", session_key)
         try:
             if self.api_proxy == 'litellm':
                 result = litellm.completion(**completion_args)

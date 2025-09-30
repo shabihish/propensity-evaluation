@@ -1,20 +1,22 @@
-import signal
-import sys
+from pathlib import Path
 import os
+import sys
 
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from api_client.api_conf import APIConfiguration
+# Set directory to project root (parent of current file's parent)
+root_dir = Path(__file__).resolve().parent.parent
+os.chdir(root_dir)
+sys.path.insert(0, str(root_dir))
+print(f"Curr working dir: {root_dir}")
 
-from typing import Dict, Any
+
+import signal
+from typing import Dict, Any, List
 import json
 from agent import Agent
 from executor import Executor
 import threading
 import queue
-from ctypes import (
-    c_int16,
-    sizeof
-)
+
 from datetime import datetime
 import time
 from utils.display import (
@@ -23,6 +25,7 @@ from utils.display import (
     display_final_summary
 )
 import concurrent.futures
+from api_client.api_conf import APIConfiguration
 from setproctitle import setproctitle
 
 import contextlib
@@ -38,7 +41,7 @@ __interrupted = False
 __continued = False
 __state_file = f'./state.json'
 __state = {}
-MANAGE_DYNAMIC_STATE = False
+MANAGE_DYNAMIC_STATE = True
 
 
 def kill_subprocesses(sig=signal.SIGKILL):
@@ -59,6 +62,14 @@ def kill_subprocesses(sig=signal.SIGKILL):
             print(f"Process {process.pid} not found.")
         except psutil.AccessDenied:
             print(f"Access denied when trying to kill process {process.pid}.")
+
+    # Wait for all child processes to terminate
+    for process in children:
+        try:
+            process.wait()
+            print(f"Process {process.pid} has terminated.")
+        except psutil.NoSuchProcess:
+            print(f"Process {process.pid} already terminated.")
 
 
 def sigterm_handler(signum, frame):
@@ -164,13 +175,6 @@ if MANAGE_DYNAMIC_STATE:
     print(f"State keys: {list(get_state().keys())}")
 
 
-def c_limits(c_type):
-    signed = c_type(-1).value < c_type(0).value
-    bit_size = sizeof(c_type) * 8
-    signed_limit = 2 ** (bit_size - 1)
-    return (-signed_limit, signed_limit - 1) if signed else (0, 2 * signed_limit - 1)
-
-
 def map_python_type_to_openai_type(value):
     python_to_openai_type = {
         str: "string",
@@ -236,7 +240,7 @@ class PropensityEvaluator:
             self.executor.step(probing_message)
             return
         # Always start with task message
-        print(f"[bold yellow]Initialization system prompt:\n{self.agent.system_prompt}[/bold yellow]")
+        print(f"Initialization system prompt:\n{self.agent.system_prompt}")
 
         initial_message = "Complete the following task: " + self.scenario['messages']['task_message']
         self.stop_condition = self.executor.step(initial_message)
@@ -251,10 +255,10 @@ class PropensityEvaluator:
                 self.target_call_competent = self.agent.target_call_competent
                 if stop_condition:
                     self.stop_condition = stop_condition
-                    print(f"[bold yellow]Stop condition reached.[/bold yellow]")
+                    print(f"Stop condition reached.")
                     break
 
-        print(f"[bold yellow]Scenario run finished.[/bold yellow]")
+        print(f"Scenario run finished.")
 
 
 def load_scenarios(file_path: str) -> Dict:
@@ -396,8 +400,8 @@ def process_category(category, domain, workspace, role, scenario, args, log_dir)
             display_probing_status("interaction")
             evaluator.run_scenario()
             result['interaction_response'] = evaluator.agent.history
-            result['interaction_stop_condition'] = evaluator.stop_condition
-            result['target_call_competent'] = evaluator.target_call_competent
+            result['trigger_called'] = evaluator.stop_condition
+            result['target_called'] = evaluator.target_call_competent
             print(f"Finished processing category: {category}")
             return result, temp_log_file_path
     except Exception as e:
@@ -422,7 +426,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args, execut
     temp_err_files = {}
 
     thread_logdir = str(os.path.join(
-        *[x.replace(' ', '-') for x in [f'{log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role]]
+        *(x.replace(' ', '-') for x in [f'{log_dir}/{args.model_name}_{args.timestamp}/', domain, workspace, role])
     ))
     os.makedirs(thread_logdir, exist_ok=True)
     thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
@@ -447,7 +451,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args, execut
                 if temp_file_path:
                     temp_err_files[category] = temp_file_path
         except Exception as e:
-            print(f"[bold red]Error processing category {category}:[/bold red] {e}")
+            print(f"Error processing category {category}: {e}")
     # Concatenate logs from all temporary files in alphabetical order of categories
     with open(thread_log_filename, 'w') as final_log_file:
         for category in sorted(temp_log_files.keys()):
@@ -473,64 +477,68 @@ def process_scenario(domain, workspace, role, scenario, categories, args, execut
 
 def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
-    parser.add_argument('--run_all', action='store_true', help='Run all scenarios')
-    parser.add_argument('--output_dir', type=str, default='results_final', help='Directory to save results')
-    parser.add_argument('--log_dir', type=str, default='trajectory_logs_final', help='Directory to save logs')
-    parser.add_argument('--input_dir', type=str, default='final', help='Directory to read scenarios from')
+    parser.add_argument('--input_dir', type=str, default='data1/final/', help='directory to read scenarios from')
+    parser.add_argument('--output_dir', type=str, default='evaluation/evaluation_results/',
+                        help='path to save final results in jsonl format')
+    parser.add_argument('--log_dir', type=str, default='evaluation/evaluation_trajectories',
+                        help='path to save per-task trajectory logs')
 
-    parser.add_argument('--model_name', type=str, required=True, help='Name of the model')
-    parser.add_argument('--api_base', type=str, required=True, help='API base URI')
-    parser.add_argument('--model_provider', type=str, default='openai', help='Model provider (openai, gemini, etc.)')
+    parser.add_argument('-p', '--model_provider', type=str, default='openai',
+                        help='model provider (openai, gemini, etc.)')
+    parser.add_argument('-m', '--model_name', type=str, required=True, help='name of the model')
+    parser.add_argument('--api_base', type=str, required=True,
+                        help='OpenAI-compatible API base-URI with port number (if applicable); expected format: https://address:port/v1')
 
-    parser.add_argument('--exp_mode', type=str, default='', help='Experimental setting')
-    parser.add_argument('--use_benign', type=int, choices=[0, 1], required=True, help='Use harmful trigger function')
-    parser.add_argument('--max_workers', type=int, required=True,
-                        help='Maximum number of workers to use; set to 0 for no limit')
-    parser.add_argument('--contd', default=True, action='store_true', help='Continue from the last saved state')
-    parser.add_argument('--timestamp', type=str, required=True, help='Reference timestamp for the run')
+    parser.add_argument('--use_benign', type=int, choices=[0, 1], default=False, required=False,
+                        help='use benign (instead of harmful) trigger function names and descriptions')
+    parser.add_argument('--max_workers', type=int, default=0, required=False,
+                        help='maximum number of workers to use for multiprocessing; use 0 to auto-detect based on CPU cores')
+    parser.add_argument('--no-contd', default=False, action='store_true',
+                        help='do not continue from the last saved state (if any)')
+    parser.add_argument('-t', '--timestamp', type=str, required=False, help='reference timestamp for the run')
 
-    parser.add_argument('--job_id', type=str, default=None, help='HPC job ID for the run. MUST contain names of domains to run (e.g., "bio," "cyber," etc.).')
+    parser.add_argument('-j', '--job_id', type=str, default=None,
+                        help='HPC job ID for the run. MUST contain names of domains to run (e.g., "bio," "cyber," etc.) if provided.')
+
     parser.add_argument('--task_id', type=int, default=0, help='HPC task ID for the run')
-    parser.add_argument('--total_tasks', type=int, default=0, help='Total number of HPC tasks')
+    parser.add_argument('--total_tasks', type=int, default=0,
+                        help='total number of HPC tasks; set to 0 to disable HPC mode')
 
     args = parser.parse_args()
 
     assert isinstance(args.total_tasks, int) and args.total_tasks >= 0, "Total tasks must be a non-negative integer."
     if args.total_tasks:
         # HPC mode enables multi-node runtime management on clusers
-        print("[bold yellow]HPC mode enabled.[/bold yellow]")
+        print("HPC mode enabled.")
         assert args.job_id is not None, "HPC job ID must be provided when HPC mode is enabled."
         assert args.task_id < args.total_tasks, "Task ID must be less than total tasks."
     else:
-        print("[bold yellow]HPC mode disabled.[/bold yellow]")
+        print("HPC mode disabled.")
 
     args.job_id = test_state('job_id', args.job_id)
     if not args.job_id:
         args.job_id = f"bio_chem_cyber_self"
 
-    args.max_workers = test_state('max_workers', args.max_workers)
     args.use_benign = test_state('use_benign', bool(args.use_benign))
-    if args.use_benign:
-        args.exp_mode = 'no_harm'
-    print(args)
 
-    max_workers = args.max_workers if args.max_workers > 0 else c_limits(c_int16)[1]
-    print("Number of workers used: ", max_workers)
+    # Either use the provided max_workers or auto-detect based on # of CPU cores
+    args.max_workers = args.max_workers if args.max_workers > 0 else len(os.sched_getaffinity(0)) * 2
+    args.max_workers = test_state('max_workers', args.max_workers)
+
+    print("Number of workers used: ", args.max_workers)
     print("Using benign tool names: ", args.use_benign)
     print("Model name: ", args.model_name)
 
     args.input_dir = args.input_dir.strip().strip('/')
     args.log_dir = args.log_dir.strip().strip('/')
     args.output_dir = args.output_dir.strip().strip('/')
-    if args.exp_mode != '':
-        args.output_dir += f"_{args.exp_mode}".strip().strip('/')
-        args.log_dir += f"_{args.exp_mode}".strip().strip('/')
 
     args.input_dir = test_state('input_dir', args.input_dir)
     args.log_dir = test_state('log_dir', args.log_dir)
     args.output_dir = test_state('output_dir', args.output_dir)
-    args.exp_mode = test_state('exp_mode', args.exp_mode)
 
+    if not args.timestamp:
+        args.timestamp = str(datetime.now())
     args.timestamp = test_state('timestamp', args.timestamp.strip().replace(':', '-').replace(' ', '-'))
 
     api_conf_args = test_state('api_conf_args', {
@@ -540,6 +548,8 @@ def main():
         "use_cache": False,
     })
     args.api_conf = APIConfiguration(**api_conf_args)
+
+    print("Using args:", args)
 
     default_loaded_workspaces = ([] + (['bio-security.Agricultural-Biotech-Facility',
                                         'bio-security.BSL-3-4-High-Containment-Laboratory',
@@ -578,9 +588,8 @@ def main():
     loaded_workspaces = test_state('loaded_workspaces', default_loaded_workspaces)
 
     domain_stats = {}
-    inputs_dir = os.path.join('..', 'results', args.input_dir)
-    if not os.path.exists(inputs_dir):
-        print(f"[bold red]Input directory does not exist:[/bold red] {inputs_dir}")
+    if not os.path.exists(args.input_dir):
+        print(f"Input directory does not exist: {args.input_dir}")
         sys.exit(1)
 
     if args.total_tasks:
@@ -595,16 +604,16 @@ def main():
     output_file = test_state('output_file', os.path.join(args.output_dir, output_path_initial, output_filename))
 
     completed_categories = set()
-    if args.contd and os.path.exists(output_file):
+    if not args.no_contd and os.path.exists(output_file):
         completed_categories = load_prev_results(output_file)
 
     all_results = test_state('all_results', [])
     processed_categories = test_state('processed_categories', {})
     futures_metadata = test_state('futures_metadata', [])  # List to store futures and their metadata
-    with concurrent.futures.ProcessPoolExecutor(max_workers=max_workers) as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=args.max_workers) as executor:
         all_roles = get_workspaces_and_roles_for_task(
             loaded_workspaces=loaded_workspaces,
-            inputs_dir=inputs_dir,
+            inputs_dir=args.input_dir,
             task_id=args.task_id,
             total_tasks=args.total_tasks
         )
@@ -630,7 +639,7 @@ def main():
 
                 # --- process_scenario logic starts here ---
                 thread_logdir = str(os.path.join(
-                    *[x.replace(' ', '-') for x in [args.log_dir, output_path_initial, domain, workspace, role_name]]
+                    *(x.replace(' ', '-') for x in [args.log_dir, output_path_initial, domain, workspace, role_name])
                 ))
                 os.makedirs(thread_logdir, exist_ok=True)
                 thread_log_filename = os.path.join(thread_logdir, f"{scenario['name']}.log".replace(' ', '-'))
@@ -640,7 +649,7 @@ def main():
                 for category in categories:
                     processing_id = f'{domain}:{workspace}:{role_name}:{scenario["name"]}:{category}'.replace(' ', '-')
                     if processed_categories.get(processing_id, False) or processing_id in completed_categories:
-                        print(f"[bold yellow]Skipping already processed category:[/bold yellow] {processing_id}")
+                        print(f"Skipping already processed category: {processing_id}")
                         continue  # Skip already processed categories
 
                     # Submit the processing of the category to the futures executor
@@ -698,7 +707,7 @@ def main():
                     if temp_file_path:
                         temp_err_files[(scenario['name'], category)] = temp_file_path
             except Exception as e:
-                print(f"[bold red]Error processing category {category} in scenario {scenario['name']}:[/bold red] {e}")
+                print(f"Error processing category {category} in scenario {scenario['name']}: {e}")
 
         # Concatenate logs and save results
         scenario_logs = {}
@@ -748,7 +757,7 @@ def main():
                     cat: {'total': 0, 'triggered': 0, 'triggered_from_task': 0, 'triggered_from_category': 0}
                     for cat in categories}
             domain_stats[domain][category]['total'] += 1
-            if result['interaction_stop_condition']:
+            if result['trigger_called']:
                 domain_stats[domain][category]['triggered'] += 1
                 if result.get('stop_from_task_message', False):
                     domain_stats[domain][category]['triggered_from_task'] += 1
@@ -759,7 +768,15 @@ def main():
 
 if __name__ == '__main__':
     # Load environment variables from .env file for LLM API keys and access information
-    load_dotenv()
-    setproctitle("agentic-main")
+    if not os.path.exists('.env'):
+        print(
+            "Warning: .env file not found. Make sure to have environment variables set for the necessary LLM API keys.")
+    else:
+        load_dotenv()
 
+    assert os.environ.get(
+        'API_KEYS'), "API_KEYS environment variable not set. Is required for Litellm inference (even if using local models)."
+
+    setproctitle("agentic-main")
+    print("To kill all processes in this job, use: \"killall -r agentic*\" or alternatively \"kill $(ps -u $USER -o pid,cmd | grep 'agentic' | grep -v grep | awk '{print $1}')\"")
     main()

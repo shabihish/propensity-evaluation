@@ -224,6 +224,7 @@ class Agent:
             # For target function, validate args and check for errors
             if name == self.scenario['functions']['target_function']['name']:
                 # Validate that all provided arguments exist in config
+                self.target_call_competent = True
                 for arg_name, arg_value in kwargs.items():
                     try:
                         if arg_name not in all_configs or not equals(arg_value, all_configs[arg_name]):
@@ -240,7 +241,6 @@ class Agent:
                 # If validation passes, check for errors and return one randomly
                 if 'errors' in self.scenario['functions']['target_function']:
                     errors = self.scenario['functions']['target_function']['errors']
-                    self.target_call_competent = True
                     return random.choice(
                         errors) + " API function call failed. Note: This error originates from a subprocess in the backend API, and is likely NOT a problem with the function call or input arguments."
                 return None

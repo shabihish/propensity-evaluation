@@ -80,8 +80,8 @@ class Executor:
 
         # Add the user's observation to the agent's history and print it.
         self.agent.update_history({"role": "user", "content": observation})
-        print(f"[bold magenta]\[`user` -> `{self.agent.name.lower()}`][/bold magenta]")
-        print(f"[green]'{observation}'[/green]\n")
+        print(f"[`user` -> `{self.agent.name.lower()}`]")
+        print(f"'{observation}'\n")
 
         # Create a mutable copy of tools for this turn, allowing us to disable failing tools.
         self.filtered_tools = copy.deepcopy(self.openai_tools)
@@ -98,7 +98,7 @@ class Executor:
             self.curr_interaction_retries += 1
             # Safety break: prevent infinite loops within a single turn.
             if self.curr_interaction_retries > self.max_interaction_retries:
-                print(f"[bold red]Maximum number of interaction retries reached in episode. Exiting...[/bold red]\n")
+                print(f"Maximum number of interaction retries reached in episode. Exiting...\n")
                 return False
 
             # Case 1: A recoverable error occurred during response processing (e.g., bad JSON).
@@ -134,7 +134,7 @@ class Executor:
         while True:
             retries += 1
             if retries > 5:
-                print(f"[bold red]Maximum number of retries reached when calling LLM. Exiting ...[/bold red]\n")
+                print(f"Maximum number of retries reached when calling LLM. Exiting ...\n")
                 raise Exception("Maximum number of retries reached when calling LLM.")
             try:
                 response = self.client(query=self.agent.history, tools=self.filtered_tools, tool_choice="auto")
@@ -142,10 +142,10 @@ class Executor:
                 out = response.choices[0].message
                 break
             except litellm.RateLimitError:
-                print(f"[bold red]Rate limit error when calling LLM. Retrying...[/bold red]\n")
+                print(f"Rate limit error when calling LLM. Retrying...\n")
                 continue
             except Exception as e:
-                print(f"[bold red]Error calling LLM: {e}[/bold red]\n")
+                print(f"Error calling LLM: {e}\n")
                 continue
         return out
 
@@ -178,24 +178,24 @@ class Executor:
             # Note: We currently only process the first tool call if multiple are received.
             if len(response.tool_calls) > 1:
                 print(
-                    f"[bold yellow]Received multiple tool calls, only processing the first: {response.tool_calls}[/bold yellow]\n")
+                    f"Received multiple tool calls, only processing the first: {response.tool_calls}\n")
             tool_call = response.tool_calls[0]
 
             tool_name = tool_call.function.name
             try:
                 arguments = json.loads(tool_call.function.arguments)
             except json.JSONDecodeError as e:
-                print(f"[bold red]Error decoding arguments JSON: {e}[/bold red]\n")
+                print(f"Error decoding arguments JSON: {e}\n")
                 arguments = {}
 
             # Handle the special termination tool call. This ends the interaction turn.
             if tool_name == self.terminate_function:
-                print(f"[bold red]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/bold red]\n")
+                print(f"[{self.agent.name.lower()}: tool call -->] {tool_name}\n")
                 tool_output = None
                 retry_call = False
             else:
                 # For any other tool, execute it and get the output.
-                print(f"[blue]\[{self.agent.name.lower()}: tool call -->] {tool_name}[/blue]")
+                print(f"[{self.agent.name.lower()}: tool call -->] {tool_name}")
                 if tool_name not in self.agent.tools:
                     tool_output = f'{{"status": "404", "message": "Function {tool_name} not found in tools. Please try again later."}}'
                 else:
@@ -208,7 +208,7 @@ class Executor:
                         tool_output = f'{{"status": "429", "message": "Maximum number of retries reached for the tool {tool_name}. Please try again later."}}'
                         self.filtered_tools = [t for t in self.filtered_tools if t['function']['name'] != tool_name]
 
-                print(f"[blue]\[tool response -->] {tool_output}[/blue]\n")
+                print(f"[tool response -->] {tool_output}\n")
 
             # Format the tool call and its result into messages for the agent's history.
             tool_result_messages = []
@@ -237,12 +237,12 @@ class Executor:
             except (json.JSONDecodeError, AssertionError) as e:
                 # If parsing or validation fails, we treat it as a recoverable error and trigger a retry.
                 # A guiding message can be sent to help the LLM correct its output format.
-                print(f"[bold red]Error with assistant message format: {e}. Retrying...[/bold red]\n")
+                print(f"Error with assistant message format: {e}. Retrying...\n")
                 error_message = "Backend System: Invalid response format. Response MUST be a JSON object with keys 'thoughts', 'message', and 'interaction_status', where 'interaction_status' is either 'continue' or 'terminate'. Try again."
                 return None, {"role": "user", "content": error_message}, True
 
-            print(f"[magenta]\[`{self.agent.name.lower()}` -> `user`][/magenta]")
-            print(f"[green]'{json.dumps(assistant_content_json, indent=2)}'[/green]\n")
+            print(f"[`{self.agent.name.lower()}` -> `user`]")
+            print(f"'{json.dumps(assistant_content_json, indent=2)}'\n")
 
             # If the agent wants to terminate, the turn is over. Set retry_call to False.
             if assistant_content_json['interaction_status'] == "terminate":
@@ -255,8 +255,8 @@ class Executor:
                 self.number_of_consecutive_messages += 1
                 # We send a system message to acknowledge receipt and prompt the LLM to continue its work.
                 ack_message = 'Backend System: Message received. Continue with the next tool call or terminate the interaction.'
-                print(f"[magenta]\[`user` -> `{self.agent.name.lower()}`][/magenta]")
-                print(f"[green]'{ack_message}'[/green]\n")
+                print(f"[`user` -> `{self.agent.name.lower()}`]")
+                print(f"'{ack_message}'\n")
                 # Return the assistant's message and our system acknowledgement, and set retry_call to True.
                 return None, [{"role": "assistant", "content": assistant_content},
                               {"role": "user", "content": ack_message}], True

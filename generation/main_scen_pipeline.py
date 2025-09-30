@@ -1,19 +1,28 @@
+from pathlib import Path
+import os
+import sys
+
+from setproctitle import setproctitle
+
+# Set directory to project root (parent of current file's parent)
+root_dir = Path(__file__).resolve().parent.parent
+os.chdir(root_dir)
+sys.path.insert(0, str(root_dir))
+print(f"Curr working dir: {root_dir}")
+
 from dotenv import load_dotenv
 
-load_dotenv()
 import hydra
-import os
 from concurrent.futures import ProcessPoolExecutor
 import json
 from utils.colors import BaseColoredFormatter
 import logging
 from copy import deepcopy
-import traceback
 from tqdm import tqdm
 from pipeline.scenarios_pipeline import PipelineScenarios
 
 
-def setup_logger(log_file='app.log'):
+def setup_logger():
     logger = logging.getLogger()
     logging.getLogger().setLevel(logging.DEBUG)
     for logger_name in logging.root.manager.loggerDict:
@@ -22,21 +31,17 @@ def setup_logger(log_file='app.log'):
     print()
 
     ch = logging.StreamHandler()
-    file_handler = logging.FileHandler(log_file)
 
     ch.setLevel(logging.DEBUG)
-    file_handler.setLevel(logging.DEBUG)
 
-    formatter = BaseColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = BaseColoredFormatter('%(asctime)s - %(name)s - %(levelname)s - %(filename)s:%(lineno)d - %(message)s')
     ch.setFormatter(formatter)
-    file_handler.setFormatter(formatter)
 
     for handler in logging.root.handlers[:]:
         print(f'Removing logging handler: {handler}')
         logging.root.removeHandler(handler)
 
     logger.addHandler(ch)
-    logger.addHandler(file_handler)
     return logger
 
 
@@ -194,9 +199,19 @@ def main(cfg) -> None:
                 future.result()  # Wait for each thread to complete
             except Exception as e:
                 logger.error(f"Error processing workspace: {e}")
-                logger.error(traceback.format_exc())
 
 
 if __name__ == "__main__":
+    # Load environment variables from .env file for LLM API keys and access information
+    if not os.path.exists('.env'):
+        print(
+            "Warning: .env file not found. Make sure to have environment variables set for the necessary LLM API keys.")
+    else:
+        load_dotenv()
+
+    assert os.environ.get(
+        'API_KEYS'), "API_KEYS environment variable not set. Is required for Litellm inference (even if using local models)."
+
     # Load environment variables
+    setproctitle('generation')
     main()

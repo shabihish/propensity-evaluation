@@ -1,9 +1,8 @@
 import json
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor, as_completed
 from copy import deepcopy
-import traceback
 import os
-from agents.agent import Agent
+from api_client.client import Client
 from .utils import read_prompts, run_agent_query
 from .utils import json_obj_list_to_dict, remove_nested_fields, filter_fields_for_roles, rename_nested_fields, \
     append_function_to_matching_fields
@@ -149,7 +148,7 @@ class MessagesScenarioManager:
         # output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages_single)
         output_schema = generator_output_schema
 
-        return Agent(
+        return Client(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -172,7 +171,7 @@ class MessagesScenarioManager:
 
         output_schema = judge_output_schema
 
-        return Agent(
+        return Client(
             api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -286,7 +285,6 @@ class MessagesScenarioManager:
                                 except Exception as e:
                                     self.logger.error(
                                         f"Invalid message for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove the role from invalid_roles
                             if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
@@ -294,7 +292,6 @@ class MessagesScenarioManager:
 
                     except Exception as e:
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         return valid_messages
 
@@ -459,7 +456,6 @@ class MessagesScenarioManager:
                                 except Exception as e:
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove the role from invalid_roles
                             if role_name in invalid_roles and len(invalid_roles[role_name]['scenarios']) == 0:
@@ -468,7 +464,6 @@ class MessagesScenarioManager:
 
                     except Exception as e:
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         return valid_judgments
 
@@ -895,7 +890,6 @@ class MessagesScenarioManager:
                             f"New messages for category {category_name} at level {msg_level_index}: {json.dumps(new_messages, indent=2)}")
             except Exception as e:
                 self.logger.error(f"Error printing new_messages: {e}")
-                self.logger.error(traceback.format_exc())
                 self.logger.error(f"Current roles: {curr_roles}")
                 exit()
             try:
@@ -981,7 +975,6 @@ class MessagesScenarioManager:
                 msg_level_index += 1
             except Exception as e:
                 self.logger.error(f"Error processing category '{category_name}' at level {msg_level_index}: {e}")
-                self.logger.error(traceback.format_exc())
                 msg_level_index = max(0, msg_level_index - 1)
 
         return out_roles
@@ -1021,6 +1014,5 @@ class MessagesScenarioManager:
                 except Exception as e:
                     if logging:
                         self.logger.error(f"Error processing category '{category_name}': {e}")
-                        self.logger.error(traceback.format_exc())
 
         return roles_with_scenarios

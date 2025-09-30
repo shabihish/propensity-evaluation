@@ -1,10 +1,9 @@
 import json
 import logging
-import traceback
 from copy import deepcopy
 import os
 
-from agents.api_conf import APIConfiguration
+from api_client.api_conf import APIConfiguration
 from .base import KEYS_ORDERS, BasePipeline
 from .modules.scenario_utils_messages_single import MessagesScenarioManager
 from .modules.utils import save_to_disk, order_dict_keys
@@ -81,11 +80,9 @@ class PipelineMessages(BasePipeline):
             with open(self.single_messages_output_file, 'r') as f:
                 curr_roles_with_scenarios = json.load(f)
         except FileNotFoundError as e:
-            self.logger.error(f"Could not find scenarios_messages_single file: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Could not find scenarios_messages_single file: {e}")
         except json.JSONDecodeError as e:
-            self.logger.error(f"Error decoding scenarios_messages_single file: {e}")
-            self.logger.error(traceback.format_exc())
+            self.logger.warning(f"Error decoding scenarios_messages_single file: {e}")
 
         # Determine if scenarios need to be generated
         should_generate = (force_overwrite or self.domain not in curr_roles_with_scenarios or
@@ -123,11 +120,12 @@ class PipelineMessages(BasePipeline):
                     new_roles_with_scenarios
                 )
             else:
-                self.logger.error(f"Generated messages are incomplete. Skipping update.")
+                self.logger.warning(f"Generated messages are incomplete. Skipping update.")
 
         return curr_roles_with_scenarios
 
     def run(self, roles: dict, force_overwrite=False):
+        # Add system messages (applying pressure) to the scenarios from the previous steps
         curr_roles_with_messages = self.run_gen_messages(roles, force_overwrite)
         curr_roles_with_messages = order_dict_keys(curr_roles_with_messages, KEYS_ORDERS)
 

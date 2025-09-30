@@ -1,12 +1,9 @@
 import json
 import os
-import re
 import traceback
-from lark.utils import is_id_start
 
-from agents.agent import Agent
+from api_client.client import Client
 from utils.litellm_utils import get_response_content
-from copy import deepcopy
 
 
 def save_to_disk(data: dict, file_path: str):
@@ -114,7 +111,7 @@ def validate_response(response, schema):
 
 
 
-def run_agent_query(prompt, agent: Agent, logger, n_retries=5, to_json=False, json_transform_keys: list = None):
+def run_agent_query(prompt, agent: Client, logger, n_retries=5, to_json=False, json_transform_keys: list = None):
     num_retries = n_retries
     # while num_retries >= 0:
     #     try:

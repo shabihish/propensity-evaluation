@@ -1,10 +1,9 @@
 import json
 from copy import deepcopy
-import traceback
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from omegaconf import DictConfig
-from agents.agent import Agent
+from api_client.client import Client
 from .utils import read_prompts, save_to_disk, run_agent_query, check_for_missing_fields, load_output_schemas
 from .utils import json_obj_list_to_dict, remove_nested_fields
 
@@ -78,7 +77,7 @@ class ScenarioManager:
         else:
             output_schema = load_output_schemas(self.output_schemas_conf.scenarios_gen_messages)
 
-        return Agent(
+        return Client(
             api_conf=self.api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -90,7 +89,7 @@ class ScenarioManager:
                                            'domain': self.domain, 'domain_desc': self.domain_desc},
                                   logger=self.logger)
         output_schema = load_output_schemas(self.output_schemas_conf.judge_scenarios)
-        return Agent(
+        return Client(
             api_conf=self.judge_api_conf,
             sys_prompt=sys_prompt,
             output_schema=output_schema,
@@ -158,7 +157,6 @@ class ScenarioManager:
                 record_single_failure(statistics_object, role_name, scenario_name)
         except Exception as e:
             self.logger.error('Error occurred in __record_failure:', e)
-            self.logger.error(traceback.format_exc())
 
     def generate_scenarios(self, input_roles: dict):
         """
@@ -247,7 +245,6 @@ class ScenarioManager:
                                                           failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                                     self.logger.error(
                                         f"Invalid scenario for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove role if all scenarios are processed
                             if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
@@ -265,7 +262,6 @@ class ScenarioManager:
                         self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
                                               failure_subcategory=f'generate_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         self.logger.debug("Finished messages (task/neutral) scenario generation.")
         return valid_scenarios
@@ -313,7 +309,6 @@ class ScenarioManager:
             self.__record_failure(self.generation_statistics, batch_roles=batch_roles,
                                   failure_subcategory=f'_process_batch_generate_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_generate_scenarios: {e}")
-            self.logger.error(traceback.format_exc())
             return {}
 
     def judge_scenarios(self, input_scenarios: dict):
@@ -386,7 +381,6 @@ class ScenarioManager:
                                                           failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                                     self.logger.error(
                                         f"Invalid judgment for role '{role_name}', scenario '{scenario_name}': {e}")
-                                    self.logger.error(traceback.format_exc())
 
                             # Remove role if all scenarios are processed
                             if role_name in invalid_roles and not invalid_roles[role_name]['scenarios']:
@@ -403,7 +397,6 @@ class ScenarioManager:
                         self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
                                               failure_subcategory=f'judge_scenarios:{type(e).__name__}')
                         self.logger.error(f"Error processing batch: {e}")
-                        self.logger.error(traceback.format_exc())
 
         self.logger.debug("Finished messages (task/neutral) scenario judgment.")
         return valid_judgments
@@ -438,7 +431,6 @@ class ScenarioManager:
             self.__record_failure(self.judgment_statistics, batch_roles=batch_roles,
                                   failure_subcategory=f'_process_batch_judge_scenarios:{type(e).__name__}')
             self.logger.error(f"Error in _process_batch_judge_scenarios: {e}")
-            self.logger.error(traceback.format_exc())
             return {}
 
     def _store_final_statistics(self, accepted_scenarios: dict):

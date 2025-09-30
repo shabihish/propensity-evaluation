@@ -41,7 +41,7 @@ inputs:
 
 
 prompts:
-  base_dir: "res/prompts"
+  base_dir: "generation/res/prompts"
   scenarios_general_body: "${prompts.base_dir}/scenarios_general_body.ini"
   scenarios_agents_states: "${prompts.base_dir}/scenarios_agents_states.ini"
   scenarios_agents_funcs: "${prompts.base_dir}/scenarios_agents_funcs.ini"
@@ -52,7 +52,7 @@ prompts:
   judge_agents: "${prompts.base_dir}/judge_agents.ini"
 
 output_schemas:
-  base_dir: "res/output_schemas"
+  base_dir: "generation/res/output_schemas"
   scenarios_gen_states: "${output_schemas.base_dir}/scenarios_gen_states.json"
   scenarios_gen_states_single: "${output_schemas.base_dir}/scenarios_gen_states_single.json"
   scenarios_gen_funcs: "${output_schemas.base_dir}/scenarios_gen_funcs.json"
@@ -67,7 +67,7 @@ output_schemas:
   judge_single_messages: "${output_schemas.base_dir}/judge_single_messages.json"
 
 object_storage:
-  base_dir: "output"
+  base_dir: "generation_output/"
   scenarios_states_fname: "scenarios_states.json"
   scenarios_funcs_fname: "scenarios_funcs.json"
   scenarios_policies_fname: "scenarios_policies.json"
