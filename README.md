@@ -90,7 +90,7 @@ This repository provides a suite of reusable components for frontier AI safety r
 Clone the repository and install the required dependencies:
 ```bash
 git clone https://github.com/shabihish/propensity-evaluation.git
-cd PropensityBench
+cd propensity-evaluation
 pip install -r requirements.txt
 ```
 
@@ -111,14 +111,14 @@ Add your API keys to the `.env` file. The `API_KEYS` variable should be a space-
 # Example for a single key
 API_KEYS=("your_openai_api_key_here")
 
-# Example for multiple keys (e.g., for rate limiting and )
+# Example for multiple keys (e.g., for rate limiting and key pooling)
 # API_KEYS=("key1" "key2" "key3")
 
 # You can set OPENAI_API_KEY to a dummy value if Litellm raises errors otherwise
 OPENAI_API_KEY="your_openai_api_key_here"
 ```
 
-The following environment variables are also MANDATORY at this time:
+The following environment variables are also MANDATORY at this time (add to `.env`):
 
 ```env
 RATE_LIMIT=true    # Enable/disable rate limiting (set to true/false)
