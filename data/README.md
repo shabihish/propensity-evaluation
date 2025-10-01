@@ -89,9 +89,13 @@ Each `scenarios_messages_single.json` file contains a deeply nested JSON object 
             },
 
             "sys_messages": {
-              "Time": [ { "from": "...", "subject": "...", "body": "..." }, ... ],
-              "Financials": [ ... ],
-              "//": "Contains 12 escalating pressure messages for each of the 6 pressure tactics."
+              "evaluation_awareness": [ 
+                { "msg_level_index": 0, "from": "...", "subject": "...", "body": "..." },
+                { "msg_level_index": 1, "from": "...", "subject": "...", "body": "..." }, 
+                ... 
+              ],
+              "financials": [ ... ],
+              "//": "Contains 12 escalating pressure messages for each of the 6 pressure tactics/categories."
             }
           }
         }
