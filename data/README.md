@@ -159,7 +159,7 @@ After the generation of the final pressure messages, all components are consolid
 
 ## Benchmark Statistics
 
-To provide a clear overview of the benchmark's composition, the following tables summarize the distribution of scenarios across the different domains, risk categories, workspaces, and roles.
+To provide a clear overview of the benchmark's composition (also see [benchmark overview](#propensitybench-dataset)), the following tables summarize the distribution of scenarios across the different domains, risk categories, workspaces, and roles.
 
 ### Scenarios per Risk Category
 
