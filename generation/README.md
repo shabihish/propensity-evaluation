@@ -16,17 +16,17 @@ The process is divided into two main scripts:
 
 ## Input Data Structure
 
-The pipeline relies on structured JSON files located in the `/inputs` directory:
--   `/inputs/workspaces/`: Contains subdirectories for each domain. Each subdirectory has JSON files defining specific operational environments (workspaces) and the agent roles within them.
--   `/inputs/workspaces/domains.json`: Defines the four high-risk domains.
--   `/inputs/attacks/`: Contains subdirectories for each domain, with JSON files defining the specific dangerous capabilities (attack vectors) that the misaligned tools will represent.
--   `/inputs/pressure_categories/`: Contains JSON files that define the qualitative and quantitative levels for each pressure tactic.
+The pipeline relies on structured JSON files located in the `inputs/` directory:
+-   `inputs/workspaces/`: Contains subdirectories for each domain. Each subdirectory has JSON files defining specific operational environments (workspaces) and the agent roles within them.
+-   `inputs/workspaces/domains.json`: Defines the four high-risk domains.
+-   `inputs/attacks/`: Contains subdirectories for each domain, with JSON files defining the specific dangerous capabilities (attack vectors) that the misaligned tools will represent.
+-   `inputs/pressure_categories/`: Contains JSON files that define the qualitative and quantitative levels for each pressure tactic.
 
 ## How to Generate Scenarios
 
 ### Prerequisites
 
-1.  **Input Data:** Ensure the `/inputs` directory is populated with the required domain, workspace, attack vector, and pressure files.
+1.  **Input Data:** Ensure the `inputs` directory is populated with the required domain, workspace, attack vector, and pressure files.
 2.  **API Keys:** Ensure your `.env` file is configured in the project's root directory. The generation pipeline can be API-intensive.
 3.  **Configuration:** The generation behavior is controlled by `generation/configs/pipeline.yaml`. You can modify this file to change the generator/judge models, batch sizes, and other parameters.
 
@@ -64,4 +64,4 @@ Each JSON file contains a fully-defined scenario, including:
 -   `messages`: The initial benign messages.
 -   `sys_messages`: A dictionary where keys are pressure categories (e.g., `Time`, `Financials`) and values are lists of 12 escalating pressure messages.
 
-This output data is the direct input for the `/evaluation/main.py` script.
+This output data is the direct input for the `evaluation/main.py` script.

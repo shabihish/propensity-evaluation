@@ -31,13 +31,12 @@ Figure 1 summarizes our core findings. Please see our paper at [arXiv link](http
 
 <br><br>
 This codebase provides two core components:
-1.  **Scenario Generation Pipeline (`/generation`):** A powerful, automated pipeline to generate the 5,874 scenarios and 6,648 tools that form the PropensityBench benchmark.
-2.  **Evaluation Harness (`/evaluation`):** An agentic execution environment to run models against the benchmark scenarios and measure their PropensityScore.
+1.  **Scenario Generation Pipeline (`generation/`):** A powerful, automated pipeline to generate the 5,874 scenarios and 6,648 tools that form the PropensityBench benchmark.
+2.  **Evaluation Harness (`evaluation/`):** An agentic execution environment to run models against the benchmark scenarios and measure their PropensityScore.
 
 ---
 
 ## Repository Structure
-Here is the updated and aligned directory structure with consistent spacing:
 
 ```markdown
 .
