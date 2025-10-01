@@ -36,7 +36,7 @@ data/
 
 ## Final Scenario Schema
 
-Each `scenarios_messages_single.json` file contains a deeply nested JSON object that fully defines all scenarios for a given workspace. Below is a breakdown of the key fields.
+Each `scenarios_messages_single.json` file contains a deeply nested JSON object that fully defines all scenarios for a given workspace. Below is a breakdown of the key fields. This is the ONLY file required for evaluation within each workspace, and contains the complete set of scenarios with all necessary fields defined under that workspace.
 
 ```json
 {
@@ -107,26 +107,33 @@ Each `scenarios_messages_single.json` file contains a deeply nested JSON object 
 Our scenario generation pipeline (`generation/`) is a multi-stage process. The files below represent the state of the scenarios after each major stage. They are typically found in the `generation_output/` directory (or your configured output directory) and are useful for debugging the pipeline or for researchers who wish to use only certain components of our generated data.
 
 #### 1. `scenarios_states.json`
--   **Content:** The output of Stage 1. Contains the foundational narrative of each scenario.
+-   **Content:** The output of Stage 1 of the generation pipeline. Contains the foundational narrative of each scenario.
 -   **Key Fields:** `name`, `description`, and `states` (`initial_state`, `target_state`, `illegal_state`).
 -   **Purpose:** This file defines the core objective and conflict of each scenario before any interactive elements are added.
 
 #### 2. `scenarios_funcs.json`
--   **Content:** The output of Stage 2. Enriches the states with interactive tools and environmental parameters.
+-   **Content:** The output of Stage 2 of the generation pipeline. Enriches the states with interactive tools and environmental parameters.
 -   **Key Fields Added:** `functions` (defining all tools) and `configurations` (defining the environment state).
 -   **Purpose:** This file makes the scenarios operational by defining the agent's capabilities and the world it interacts with.
 
 #### 3. `scenarios_policies.json`
--   **Content:** The output of Stage 3. Adds the rules and context that govern the agent's behavior.
+-   **Content:** The output of Stage 3 of the generation pipeline. Adds the rules and context that govern the agent's behavior.
 -   **Key Fields Added:** `policy` (containing descriptions of the role, duties, prohibitions, and consequences).
 -   **Purpose:** This file grounds the agent in its role, creating the ethical dilemma it will face.
 
 #### 4. `scenarios_messages.json`
--   **Content:** The output of Stage 4 (Part 1). Adds the initial, non-pressure-related messages.
+-   **Content:** The output of Stage 4 of the generation pipeline. Adds the initial, non-pressure-related messages.
 -   **Key Fields Added:** `messages` (`task_message`, `neutral_sys_messages`).
 -   **Purpose:** This file provides the initial prompt that starts the agent's simulation loop. The `scenarios_messages_single.json` file is the final version after the next step.
 
-After the generation of the final pressure messages, all of these components are consolidated into the final `scenarios_messages_single.json` file, which is the canonical version of the benchmark used for evaluation.
+#### 5. `scenarios_messages_single.json`
+-   **Content:** The output of Stage 5 of the generation pipeline. Adds system messages, to the outputs of stage 4, which are pressure messages for each of the six pressure tactics (Time, Financials, etc.).
+-   **Key Fields Added:** `sys_messages` (`evaluation-awareness`, `financials`, ...). Each pressure category contains 12 messages with strictly increasing pressure levels.
+- **Key Fields in Each Message:** Each message is an object with `msg_level_index`, `from`, `subject`, and `body` fields.
+-   **Purpose:** This file completes the scenario definitions by providing the escalating pressure messages that will be used to test the agent's alignment under stress.
+
+
+After the generation of the final pressure messages, all components are consolidated into the final `scenarios_messages_single.json` file, which is the canonical version of the benchmark used for evaluation.
 
 
 
