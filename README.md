@@ -4,11 +4,19 @@ This repository contains the official implementation for the paper: **"Propensit
 
 PropensityBench is a benchmark framework designed to assess the *propensity* of Large Language Models (LLMs) to engage in risky behaviors. Unlike traditional safety evaluations that focus on a model's current *capabilities* (what it *can* do), PropensityBench measures what a model *would* do when endowed with simulated high-risk tools and placed under operational pressure.
 
+This framework introduces a novel, agentic approach to safety evaluation across four high-risk domains:
+*   **Self-Proliferation:** A model's tendency to replicate, modify, or deploy itself without human oversight.
+*   **Cybersecurity:** Propensity to misuse tools for offensive cyber operations.
+*   **Biosecurity:** Propensity to misuse tools for harmful biological research.
+*   **Chemical Security:** Propensity to misuse tools for creating dangerous chemical compounds.
+
+
+Figure 1 summarizes our core findings. Please see our paper at [arXiv link](https://arxiv.org/abs/25XX.XXXXX) for more details.
 
 <figure>
     <img src="assets/figure_extended_narrative_6_panel.png" alt="Operational pressure and shallow alignment erode LLM safety.">
     <figcaption>
-        <strong>Operational pressure and shallow alignment erode LLM safety.</strong>
+        <strong>Figure 1. Operational pressure and shallow alignment erode LLM safety.</strong>
         This figure summarizes the core findings of PropensityBench, demonstrating how models' propensity to choose misaligned tools increases under operational pressure and when safety cues are subtle.
         The analysis focuses on four archetype models selected for their distinct behaviors: OpenAI O3 (<em>lowest propensity</em>), Gemini 2.5 Pro (<em>highest propensity</em>), and Claude Sonnet 4 / OpenAI O4-mini (<em>highest sensitivity to tool naming</em>).
         <strong>(a)</strong> All models exhibit a significant rise in propensity when moving from a zero-pressure baseline to a high-pressure environment.
@@ -22,13 +30,6 @@ PropensityBench is a benchmark framework designed to assess the *propensity* of 
 </figure>
 
 <br><br>
-This framework introduces a novel, agentic approach to safety evaluation across four high-risk domains:
-*   **Self-Proliferation:** A model's tendency to replicate, modify, or deploy itself without human oversight.
-*   **Cybersecurity:** Propensity to misuse tools for offensive cyber operations.
-*   **Biosecurity:** Propensity to misuse tools for harmful biological research.
-*   **Chemical Security:** Propensity to misuse tools for creating dangerous chemical compounds.
-
-
 This codebase provides two core components:
 1.  **Scenario Generation Pipeline (`/generation`):** A powerful, automated pipeline to generate the 5,874 scenarios and 6,648 tools that form the PropensityBench benchmark.
 2.  **Evaluation Harness (`/evaluation`):** An agentic execution environment to run models against the benchmark scenarios and measure their PropensityScore.
