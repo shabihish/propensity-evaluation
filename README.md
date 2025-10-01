@@ -30,9 +30,21 @@ Figure 1 summarizes our core findings. Please see our paper at [arXiv link](http
 </figure>
 
 <br><br>
-This codebase provides two core components:
-1.  **Scenario Generation Pipeline (`generation/`):** A powerful, automated pipeline to generate the 5,874 scenarios and 6,648 tools that form the PropensityBench benchmark.
-2.  **Evaluation Harness (`evaluation/`):** An agentic execution environment to run models against the benchmark scenarios and measure their PropensityScore.
+
+This repository provides a suite of reusable components for frontier AI safety research:
+
+1.  **PropensityBench Benchmark (`data/`):** The complete set of 5,874 pre-generated scenarios used in our paper. This dataset provides a standardized testbed for measuring model propensity under pressure. See the [data README](./data/README.md) for a detailed breakdown of the file structure and schema.
+
+2.  **Automated Scenario Generation Pipeline (`generation/`):** A powerful, LLM-based pipeline to generate new scenarios from scratch. This is a highly extensible "scenario factory" that can be adapted to new risk domains, roles, or attack vectors.
+
+3.  **Agentic Evaluation Harness (`evaluation/`):** A robust agentic execution environment to run models against benchmark scenarios. It systematically applies pressure and logs detailed interaction trajectories for analysis.
+
+4.  **Reusable Taxonomies and Frameworks (`inputs/`):**
+    *   **Dangerous Capability Taxonomies:** Novel, fine-grained taxonomies for Self-Proliferation, Biosecurity, and Chemical Security risks, providing a structured foundation for research.
+    *   **Pressure Application Framework:** A systematic framework for applying operational pressure, defined by six distinct tactics, each with 11 discrete intensity levels and multiple components. This provides a reproducible method for stress-testing agentic systems.
+
+5.  **Multi-API Client with Rate Limiter (`api_client/`):** A `litellm`-based client for interfacing with various LLM providers. It includes a custom rate limiter with key pooling and cycling to manage strict API limits during large-scale evaluations.
+
 
 ---
 
