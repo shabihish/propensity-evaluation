@@ -21,7 +21,7 @@ The evaluation process is orchestrated by `main.py`. For each scenario and press
 
 ### Prerequisites
 
-1.  **Scenario Data:** You need the generated benchmark scenarios. Place them in a directory (e.g., `data/final/`). The harness expects a nested directory structure: `<input_dir>/<domain>/<workspace>/scenarios_messages_single.json`.
+1.  **Scenario Data:** You need the generated benchmark scenarios. Place them in a directory (e.g., `data/final/`). The harness expects a nested directory structure: `<input_dir>/<domain>/<workspace>/scenarios_messages_single.json`. See the [data README](../data/README.md) for details.
 2.  **API Keys:** Ensure your `.env` file is configured in the project's root directory. See the main [README](../README.md) for details.
 
 ### Command-Line Usage
@@ -34,33 +34,33 @@ python evaluation/main.py [OPTIONS]
 
 #### Key Arguments:
 
-*   `--model_name` ( **required**): The identifier for the model you want to evaluate (e.g., `o3-mini`, `gemini-2.5-pro`).
-*   `--api_base` ( **required**): The base URL for the model's API endpoint (e.g., `https://api.openai.com/v1`).
-*   `--model_provider` ( **required**): The provider name as expected by `litellm` (e.g., `openai`, `gemini`).
-*   `--input_dir`: Path to the directory containing the scenario data. (Default: `data/final/`)
-*   `--output_dir`: Path to save the final JSONL results. (Default: `evaluation/evaluation_results/`)
-*   `--log_dir`: Path to save detailed agent-environment interaction logs (trajectories). (Default: `evaluation/evaluation_trajectories`)
-*   `--use_benign`: Use benign names for misaligned tools instead of harmful ones to test for shallow alignment. Pass `1` to enable. (Default: `0` - harmful names).
-*   `--max_workers`: Number of parallel processes to run. (Default: `0` - auto-detects based on CPU cores).
-*   `--job_id`: A string identifier for the run, used for organizing output files. Can be used to filter domains (e.g., `"bio_cyber"` will only run biosecurity and cybersecurity domains).
+*   `--model-name` ( **required**): The identifier for the model you want to evaluate (e.g., `o3-mini`, `gemini-2.5-pro`).
+*   `--api-base` ( **required**): The base URL for the model's API endpoint (e.g., `https://api.openai.com/v1`).
+*   `--model-provider` ( **required**): The provider name as expected by `litellm` (e.g., `openai`, `gemini`).
+*   `--input-dir`: Path to the directory containing the scenario data. (Default: `data/final/`)
+*   `--output-dir`: Path to save the final JSONL results. (Default: `evaluation/evaluation_results/`)
+*   `--log-dir`: Path to save detailed agent-environment interaction logs (trajectories). (Default: `evaluation/evaluation_trajectories`)
+*   `--use-benign`: Use benign names for misaligned tools instead of harmful ones to test for shallow alignment. Pass `1` to enable. (Default: `0` - harmful names).
+*   `--max-workers`: Number of parallel processes to run. (Default: `0` - auto-detects based on CPU cores).
+*   `--job-id`: A string identifier for the run, used for organizing output files. Can be used to filter domains (e.g., `"bio_cyber"` will only run biosecurity and cybersecurity domains).
 
 ### Examples
 
 **Example 1: Evaluate OpenAI's `o3-mini`**
 
-This command evaluates the `o3-mini` model using harmful tool names and saves the results in a timestamped directory.
+This command evaluates the `o3-mini` model using harmful tool names for the `bio` and `cyber` risk domains and saves the results in a timestamped directory.
 
 ```bash
 python evaluation/main.py \
     --model_name "o3-mini" \
     --api_base "https://api.openai.com/v1" \
     --model_provider "openai" \
-    --job_id "o3-mini-harmful-run"
+    --job_id "o3-mini-harmful-run-bio-cyber"
 ```
 
 **Example 2: Evaluate Google's `gemini-2.5-pro` with Benign Tool Names**
 
-This command tests for shallow alignment by using benign tool names.
+This command tests for shallow alignment by using benign tool names. The evaluation is run for the `self-proliferation` risk domain only. 
 
 ```bash
 python evaluation/main.py \
@@ -68,7 +68,7 @@ python evaluation/main.py \
     --api_base "https://generativelanguage.googleapis.com/v1beta" \
     --model_provider "gemini" \
     --use_benign 1 \
-    --job_id "gemini-2.5-pro-benign-run"
+    --job_id "gemini-2.5-pro-benign-run-self"
 ```
 
 ### Understanding the Output
@@ -81,4 +81,3 @@ python evaluation/main.py \
     *   For each scenario, a `.log` file is created (e.g., `<log_dir>/.../<scenario_name>.log`).
     *   This file contains the complete, turn-by-turn interaction history between the agent and the environment, including system prompts, pressure messages, agent reasoning, and tool calls. It is invaluable for qualitative analysis and debugging.
       *   There will be further `.err` files created under the same directories if errors occur during execution.
-```
