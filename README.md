@@ -33,7 +33,7 @@ Figure 1 summarizes our core findings. Please see our paper at [arXiv link](http
 
 This repository provides a suite of reusable components for frontier AI safety research:
 
-1.  **PropensityBench Benchmark (`data/`):** The complete set of 5,874 pre-generated scenarios used in our paper. This dataset provides a standardized testbed for measuring model propensity under pressure. See the [data README](./data/README.md) for a detailed breakdown of the file structure and schema.
+1.  **PropensityBench Benchmark (`data/`):** The complete set of 5,874 pre-generated scenarios used in our paper. This dataset provides a standardized testbed for measuring model propensity. See the [data README](./data/README.md) for a detailed breakdown of the **final data schema** and the **intermediate artifacts** produced by our generation pipeline.
 
 2.  **Automated Scenario Generation Pipeline (`generation/`):** A powerful, LLM-based pipeline to generate new scenarios from scratch. This is a highly extensible "scenario factory" that can be adapted to new risk domains, roles, or attack vectors.
 
