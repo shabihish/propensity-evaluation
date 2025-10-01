@@ -29,15 +29,18 @@ Figure 1 summarizes our core findings. Please see our paper at [arXiv link](http
     </figcaption>
 </figure>
 
-<br><br>
+
+---
+
+## Contributions & Components
 
 This repository provides a suite of reusable components for frontier AI safety research:
 
-1.  **PropensityBench Benchmark (`data/`):** The complete set of 5,874 pre-generated scenarios used in our paper. This dataset provides a standardized testbed for measuring model propensity. See the [data README](./data/README.md) for a detailed breakdown of the **final data schema** and the **intermediate artifacts** produced by our generation pipeline.
+1.  **PropensityBench Benchmark (`data/`):** The complete set of 979 pre-generated scenarios (979 * 6 = 5,874 test cases in total) used in our paper. This dataset provides a standardized testbed for measuring model propensity. See the [data README](./data/README.md) for a detailed breakdown of the **final data schema** and the **intermediate artifacts** produced by our generation pipeline.
 
-2.  **Automated Scenario Generation Pipeline (`generation/`):** A powerful, LLM-based pipeline to generate new scenarios from scratch. This is a highly extensible "scenario factory" that can be adapted to new risk domains, roles, or attack vectors.
+2.  **Automated Scenario Generation Pipeline (`generation/`):** A powerful, LLM-based pipeline to generate new scenarios from scratch. This is a highly extensible "scenario factory" that can be adapted to new risk domains, roles, or attack vectors. See the [generation README](./generation/README.md) for more information.
 
-3.  **Agentic Evaluation Harness (`evaluation/`):** A robust agentic execution environment to run models against benchmark scenarios. It systematically applies pressure and logs detailed interaction trajectories for analysis.
+3.  **Agentic Evaluation Harness (`evaluation/`):** A robust agentic execution environment to run models against benchmark scenarios. It systematically applies pressure and logs detailed interaction trajectories for analysis. See the [evaluation README](./evaluation/README.md) for more information.
 
 4.  **Reusable Taxonomies and Frameworks (`inputs/`):**
     *   **Dangerous Capability Taxonomies:** Novel, fine-grained taxonomies for Self-Proliferation, Biosecurity, and Chemical Security risks, providing a structured foundation for research.
