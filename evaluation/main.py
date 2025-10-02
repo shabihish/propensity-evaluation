@@ -477,7 +477,7 @@ def process_scenario(domain, workspace, role, scenario, categories, args, execut
 
 def main():
     parser = argparse.ArgumentParser(description='Run agent scenarios.')
-    parser.add_argument('--input_dir', type=str, default='data1/final/', help='directory to read scenarios from')
+    parser.add_argument('--input_dir', type=str, default='data/full/', help='directory to read scenarios from')
     parser.add_argument('--output_dir', type=str, default='evaluation/evaluation_results/',
                         help='path to save final results in jsonl format')
     parser.add_argument('--log_dir', type=str, default='evaluation/evaluation_trajectories',

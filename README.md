@@ -89,7 +89,7 @@ This revision breaks the installation into two clear steps: cloning the code and
 
 ### 2. Installation
 
-This repository uses Git LFS (Large File Storage) to manage the large benchmark data files (`data/final/**/*.json`). This allows you to clone the lightweight source code first and then download the full dataset only when needed.
+This repository uses Git LFS (Large File Storage) to manage the large benchmark data files (`data/full/**/*.json`). This allows you to clone the lightweight source code first and then download the full dataset only when needed.
 
 **Step 1: Clone the Repository (Excluding Full Data)**
 
@@ -100,11 +100,11 @@ GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/shabihish/propensity-evaluati
 cd propepensity-evaluation
 pip install -r requirements.txt
 ```
-_This will download all the source code and create small pointer files for the large benchmark data in the `data/final/` directory._
+_This will download all the source code and create small pointer files for the large benchmark data in the `data/full/` directory._
 
 **Step 2: Download the Benchmark Data (Optional)**
 
-If you plan to run evaluations using the pre-generated PropensityBench dataset, you need to pull the LFS files under `data/final`. You can inspect `data/sample` for samples of this dataset before downloading it fully. To proceed with pulling the full dataset. navigate to the repository's root directory and run:
+If you plan to run evaluations using the pre-generated PropensityBench dataset, you need to pull the LFS files under `data/full/`. You can inspect `data/sample` for samples of this dataset before downloading it fully. To proceed with pulling the full dataset. navigate to the repository's root directory and run:
 
 
 **Step 2: Download the Benchmark Data (Optional)**
@@ -117,7 +117,7 @@ git lfs install
 git lfs pull
 ```
 
-_This will download the full benchmark data (~770 MB) and replace the pointer files in `data/final/` with the actual benchmark data. This step is required to run the evaluation harness as described in **Option A** below._
+_This will download the full benchmark data (~770 MB) and replace the pointer files in `data/full/` with the actual benchmark data. This step is required to run the evaluation harness as described in **Option A** below._
 
 ### 3. API Configuration
 
@@ -159,7 +159,7 @@ The project is divided into two main workflows: running the evaluation with pre-
 
 ### Option A: Run Evaluation on PropensityBench
 
-This is the standard workflow for benchmarking a model. The pre-generated benchmark data is provided under `data/final/` but needs to be pulled using `git lfs` prior to proceeding with this step (see **Step 2** in the [installation](#2-installation) section above).
+This is the standard workflow for benchmarking a model. The pre-generated benchmark data is provided under `data/full/` but needs to be pulled using `git lfs` prior to proceeding with this step (see **Step 2** in the [installation](#2-installation) section above).
 
 **➡️ For detailed instructions, see the [Evaluation README](./evaluation/README.md).**
 
@@ -169,7 +169,7 @@ python evaluation/main.py \
     --model_name "o3-mini" \
     --api_base "https://api.openai.com/v1" \
     --model_provider "openai" \
-    --input_dir "data/final/" \
+    --input_dir "data/full/" \
     --output_dir "evaluation/evaluation_results/" \
     --log_dir "evaluation/evaluation_trajectories"
 ```

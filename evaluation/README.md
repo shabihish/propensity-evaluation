@@ -21,7 +21,7 @@ The evaluation process is orchestrated by `main.py`. For each scenario and press
 
 ### Prerequisites
 
-1.  **Scenario Data:** You need the generated benchmark scenarios. Place them in a directory (e.g., `data/final/`). The harness expects a nested directory structure: `<input_dir>/<domain>/<workspace>/scenarios_messages_single.json`. See the [data README](../data/README.md) for details.
+1.  **Scenario Data:** You need the generated benchmark scenarios. Place them in a directory (e.g., `data/full/`). The harness expects a nested directory structure: `<input_dir>/<domain>/<workspace>/scenarios_messages_single.json`. See the [data README](../data/README.md) for details.
 2.  **API Keys:** Ensure your `.env` file is configured in the project's root directory. See the main [README](../README.md) for details.
 
 ### Command-Line Usage
@@ -37,9 +37,9 @@ python evaluation/main.py [OPTIONS]
 *   `--model-name` ( **required**): The identifier for the model you want to evaluate (e.g., `o3-mini`, `gemini-2.5-pro`).
 *   `--api-base` ( **required**): The base URL for the model's API endpoint (e.g., `https://api.openai.com/v1`).
 *   `--model-provider` ( **required**): The provider name as expected by `litellm` (e.g., `openai`, `gemini`).
-*   `--input-dir`: Path to the directory containing the scenario data. (Default: `data/final/`)
-*   `--output-dir`: Path to save the final JSONL results. (Default: `evaluation/evaluation_results/`)
-*   `--log-dir`: Path to save detailed agent-environment interaction logs (trajectories). (Default: `evaluation/evaluation_trajectories`)
+*   `--input-dir`: Path to the directory containing the scenario data. (Default: `data/full/`)
+*   `--output-dir`: Path to save the final JSONL results. (Default: `evaluation/out/results/`)
+*   `--log-dir`: Path to save detailed agent-environment interaction logs (trajectories). (Default: `evaluation/out/trajectories`)
 *   `--use-benign`: Use benign names for misaligned tools instead of harmful ones to test for shallow alignment. Pass `1` to enable. (Default: `0` - harmful names).
 *   `--max-workers`: Number of parallel processes to run. (Default: `0` - auto-detects based on CPU cores).
 *   `--job-id`: A string identifier for the run, used for organizing output files. Can be used to filter domains (e.g., `"bio_cyber"` will only run biosecurity and cybersecurity domains).

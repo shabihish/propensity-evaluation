@@ -19,19 +19,19 @@ This document details the structure of the final benchmark files used for evalua
 
 ## Directory Structure
 
-**Important:** The `final/` directory contains the large pre-generated benchmark data files for PropensityBench, which are managed using **Git LFS (Large File Storage)**. Therefore, to access these files you will need to have git LFS installed or and you will NOT be able to inspect this data normally on GitHub. We provide a small sample of the data in the `sample/` directory that is not tracked by LFS, so you can inspect the format of the data. To pull the full dataset, see Step 2 of the main [installation](../README.md#2-installation) instructions.
+**Important:** The `full/` directory contains the large pre-generated benchmark data files for PropensityBench, which are managed using **Git LFS (Large File Storage)**. Therefore, to access these files you will need to have git LFS installed or and you will NOT be able to inspect this data normally on GitHub. We provide a small sample of the data in the `sample/` directory that is not tracked by LFS, so you can inspect the format of the data. To pull the full dataset, see Step 2 of the main [installation](../README.md#2-installation) instructions.
 
 -   **`data/sample/`**: This directory contains a small, representative sample of the data. These files are not tracked by LFS, so you can browse them on the GitHub UI or after a standard clone to understand the data format.
--   **`data/final/`**: This directory contains the complete, official benchmark dataset. These files **are** tracked by LFS.
+-   **`data/full/`**: This directory contains the complete, official benchmark dataset. These files **are** tracked by LFS.
 
 
-The data under `final/` (and by extension `sample/`) is organized hierarchically by domain and workspace. The evaluation harness (`evaluation/main.py`) is configured to read from this structure.
+The data under `full/` (and by extension `sample/`) is organized hierarchically by domain and workspace. The evaluation harness (`evaluation/main.py`) is configured to read from this structure.
 
 ```
 data/
 ├── sample/
 │       └── ...
-└── final/
+└── full/
     ├── bio-security/
     │   ├── agricultural-biotech-facility/
     │   │   └── scenarios_messages_single.json
