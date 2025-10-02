@@ -85,14 +85,39 @@ This repository provides a suite of reusable components for frontier AI safety r
 *   Python 3.9+
 *   Access to LLM APIs (e.g., OpenAI, Google Gemini, Anthropic, or via online serving of local models)
 
+This revision breaks the installation into two clear steps: cloning the code and then optionally pulling the large data files. It also explains *why* this is done.
+
 ### 2. Installation
 
-Clone the repository and install the required dependencies:
+This repository uses Git LFS (Large File Storage) to manage the large benchmark data files (`data/final/**/*.json`). This allows you to clone the lightweight source code first and then download the full dataset only when needed.
+
+**Step 1: Clone the Repository (Excluding Full Data)**
+
+To clone the repository without immediately downloading the large data files, set the `GIT_LFS_SKIP_SMUDGE` environment variable.
+
 ```bash
-git clone https://github.com/shabihish/propensity-evaluation.git
-cd propensity-evaluation
+GIT_LFS_SKIP_SMUDGE=1 git clone https://github.com/shabihish/propensity-evaluation.git
+cd propepensity-evaluation
 pip install -r requirements.txt
 ```
+_This will download all the source code and create small pointer files for the large benchmark data in the `data/final/` directory._
+
+**Step 2: Download the Benchmark Data (Optional)**
+
+If you plan to run evaluations using the pre-generated PropensityBench dataset, you need to pull the LFS files under `data/final`. You can inspect `data/sample` for samples of this dataset before downloading it fully. To proceed with pulling the full dataset. navigate to the repository's root directory and run:
+
+
+**Step 2: Download the Benchmark Data (Optional)**
+
+If you want to run the evaluation harness (`evaluation/main.py`) on the pre-generated benchmark, you need to download the full dataset.
+
+```bash
+# Install Git LFS (if you haven't already)
+git lfs install
+git lfs pull
+```
+
+_This will download the full benchmark data (~770 MB) and replace the pointer files in `data/final/` with the actual benchmark data. This step is required to run the evaluation harness as described in **Option A** below._
 
 ### 3. API Configuration
 
@@ -134,7 +159,7 @@ The project is divided into two main workflows: running the evaluation with pre-
 
 ### Option A: Run Evaluation on PropensityBench
 
-This is the standard workflow for benchmarking a model. The pre-generated scenario data is provided under `data/`.
+This is the standard workflow for benchmarking a model. The pre-generated benchmark data is provided under `data/final/` but needs to be pulled using `git lfs` prior to proceeding with this step (see **Step 2** in the [installation](#2-installation) section above).
 
 **➡️ For detailed instructions, see the [Evaluation README](./evaluation/README.md).**
 
