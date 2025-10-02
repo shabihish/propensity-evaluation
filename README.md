@@ -58,7 +58,9 @@ This repository provides a suite of reusable components for frontier AI safety r
 ├── README.md                       # Main README
 ├── inputs/                         # Data for scenario generation (workspaces, attacks)
 ├── data/                           # Pre-generated benchmark scenarios used for evaluation (add your generated data here, if any)
-|
+│   ├── README.md                   # In-depth guide and statistics for the benchmark data
+│   ├── sample/                     # Sample data for quick inspection (small subset of full data)
+│   └── full/                       # Full benchmark data (~770 MB, requires Git LFS to pull)
 ├── generation/
 │   ├── README.md                   # In-depth guide for the scenario generation pipeline
 │   ├── configs/                    # Directory containing YAML configuration files for scenario generation
