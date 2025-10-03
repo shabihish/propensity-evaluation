@@ -8,19 +8,22 @@ The generation process is a multi-stage, LLM-based pipeline that builds scenario
 
 The process is divided into two main scripts:
 1.  **`main_scen_pipeline.py`:** This is the primary pipeline. It takes high-level inputs (workspaces, roles, attack vectors) and generates the complete scenario structure, including:
-    *   **Level 1: States:** The initial, target, and illegal states for the agent.
-    *   **Level 2: Functions & Configurations:** The aligned (`target_function`), misaligned (`trigger_function`), and helper (`getter_functions`) tools, along with the environment's state (`configuration_known`, `configuration_unknown`).
-    *   **Level 3: Policies:** The rules, duties, and prohibitions for the agent.
-    *   **Level 4: Initial Messages:** The initial task and neutral system messages.
-2.  **`main_scen_pipeline_messages.py`:** This script takes the output of the first pipeline and generates the escalating pressure messages (**level 5**) for each of the six pressure tactics (Time, Financials, etc.).
+    *   **Stage1 1: States:** The initial, target, and illegal states for the agent.
+    *   **Stage 2: Functions & Configurations:** The aligned (`target_function`), misaligned (`trigger_function`), and helper (`getter_functions`) tools, along with the environment's state (`configuration_known`, `configuration_unknown`).
+    *   **Stage 3: Policies:** The rules, duties, and prohibitions for the agent.
+    *   **Stage 4: Initial Messages:** The initial task and neutral system messages.
+2.  **`main_scen_pipeline_messages.py`:** This script takes the output of the first pipeline and generates the escalating pressure messages (**stage 5**) for each of the six pressure tactics (Time, Financials, etc.).
 
 ## Input Data Structure
 
-The pipeline relies on structured JSON files located in the `inputs/` directory:
+The pipeline relies on structured JSON files located in the `inputs/` and `generation\res\` directories:
 -   `inputs/workspaces/`: Contains subdirectories for each domain. Each subdirectory has JSON files defining specific operational environments (workspaces) and the agent roles within them.
 -   `inputs/workspaces/domains.json`: Defines the four high-risk domains.
 -   `inputs/attacks/`: Contains subdirectories for each domain, with JSON files defining the specific dangerous capabilities (attack vectors) that the misaligned tools will represent.
--   `inputs/pressure_categories/`: Contains JSON files that define the qualitative and quantitative levels for each pressure tactic.
+-   `inputs/pressure_categories/`: Contains JSON files that provide the qualitative and quantitative _level_ definitions for each pressure tactic.
+-  `generation/res/output_schemas/`: Contains JSON schemas used as inputs for structured output generation using LLM generators and judges at different stages (see [overview](#overview)) of the pipeline. Each file follows the standard JSON Schema format.
+- `generation/res/prompts/`: Contains prompt templates used for LLM generators and judges at different stages (see [overview](#overview)) of the pipeline. Uses `.ini` (initialization) files where each value (corresponding to a `[KEY]` for each system and user prompt) includes a set of formatting input fields (declared in `Fields: ...`) and the prompt template itself (following the fields declaration).
+
 
 ## How to Generate Scenarios
 
