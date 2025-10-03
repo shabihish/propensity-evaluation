@@ -98,7 +98,7 @@ This repository uses Git LFS (Large File Storage) to manage the large benchmark 
 To clone the repository without immediately downloading the large data files, we use the `GIT_LFS_SKIP_SMUDGE` environment variable and set `--filter=blob:none`.
 
 ```bash
-GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none https://github.com/shabihish/propensity-evaluation.git
+GIT_LFS_SKIP_SMUDGE=1 git clone --filter=blob:none https://github.com/UdariMadhu/propensity-evaluation.git
 cd propepensity-evaluation
 pip install -r requirements.txt
 ```
