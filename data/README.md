@@ -19,7 +19,7 @@ This document details the structure of the final benchmark files used for evalua
 
 ## Directory Structure
 
-**Important:** The `full/` directory contains the large pre-generated benchmark data files for PropensityBench, which are managed using **Git LFS (Large File Storage)**. Therefore, to access these files you will need to have git LFS installed or and you will NOT be able to inspect this data normally on GitHub. We provide a small sample of the data in the `sample/` directory that is not tracked by LFS, so you can inspect the format of the data. To pull the full dataset, see Step 2 of the main [installation](../README.md#2-installation) instructions.
+**Important:** The `full/` directory contains the large pre-generated benchmark data files for PropensityBench, which are managed using **Git LFS (Large File Storage)**. Therefore, to access these files you will need to have git LFS installed. You also won't be able to inspect this data similar to other regular files on GitHub. However, we do provide a small subset of this data for select workspaces and a single role within each under the `sample/` directory (not tracked by LFS) for you to inspect. To pull the full dataset, see Step 2 of the main [installation](../README.md#2-installation) instructions.
 
 -   **`data/sample/`**: This directory contains a small, representative sample of the data. These files are not tracked by LFS, so you can browse them on the GitHub UI or after a standard clone to understand the data format.
 -   **`data/full/`**: This directory contains the complete, official benchmark dataset. These files **are** tracked by LFS.
