@@ -10,9 +10,9 @@ Across the following dimensions:
 - 4 high-risk domains (biosecurity, chemical security, cybersecurity, and self-proliferation)
 - 32 distinct workspaces (environments) within those domains
 - 161 unique agent roles within those workspaces
-- 30 unique attack vectors (dangerous capabilities)
+- 50 unique hazardous capabilities (also referred to as attack vectors in our code)
 
-See [benchmark statistics](#benchmark-statistics) for a detailed breakdown of the scenario distribution across domains, workspaces, roles, and risk categories.
+See [benchmark statistics](#benchmark-statistics) for a detailed breakdown of the scenario distribution across domains, workspaces, roles, and hazardous capabilities.
 
 This document details the structure of the final benchmark files used for evaluation, as well as the intermediate artifacts produced by our multi-stage scenario generation pipeline (not required for evaluation).
 
@@ -169,44 +169,44 @@ After the generation of the final pressure messages, all components are consolid
 
 ## Benchmark Statistics
 
-To provide a clear overview of the benchmark's composition (also see [benchmark overview](#propensitybench-dataset)), the following tables summarize the distribution of scenarios across the different domains, risk categories, workspaces, and roles.
+To provide a clear overview of the benchmark's composition (also see [benchmark overview](#propensitybench-dataset)), the following tables summarize the distribution of scenarios across the different domains, hazardous capabilities, workspaces, and roles.
 
-### Scenarios per Risk Category
+### Scenarios per Hazardous Capability
 
-This table shows the number of scenarios generated for each of the 30 fine-grained risk categories (dangerous capabilities) within the four high-risk domains.
+This table shows the number of scenarios generated for our hazardous capabilities within the four high-risk domains. For cybersecurity, while our fine-grained hazardous capabilities correspond the MITRE ATT&CK® techniques, the following table groups them under the higher-level tactics for brevity.
 
-| Domain              | Risk Category                                              | Scenarios |
-| ------------------- | ---------------------------------------------------------- | --------- |
-| **Bio-security**    | ePPP                                                       | 25        |
-|                     | Targeted Bioinformatics Collection and Exploitation        | 31        |
-|                     | Expanding Public Access to High-Risk Knowledge             | 45        |
-|                     | Dual-Use virology                                          | 26        |
-|                     | Bioweapons & Bioterrorism                                  | 25        |
-|                     | Reverse Genetics                                           | 29        |
-|                     | Viral Vector Research                                      | 13        |
-|                     | Detection Evasion                                          | 40        |
-| **Chemical-security** | Preservation Infrastructure                                | 31        |
-|                     | Resource Procurement                                       | 28        |
-|                     | Detection Circumvention                                    | 34        |
-|                     | Refinement Enhancement                                     | 38        |
-|                     | Delivery System Development                                | 33        |
-|                     | Validation Methods                                         | 39        |
-|                     | Small Molecule Design                                      | 30        |
-|                     | Synthesis Capability                                       | 29        |
-| **Cyber-security**  | Impact                                                     | 47        |
-|                     | Persistence                                                | 38        |
-|                     | Privilege Escalation                                       | 30        |
-|                     | Defense Evasion                                            | 38        |
-|                     | Credential Access                                          | 45        |
-|                     | Execution                                                  | 38        |
-|                     | Initial Access                                             | 45        |
-| **Self-proliferation**| Resource Acquisition and Management                        | 35        |
-|                     | Agent Replication through Self-Duplication                 | 26        |
-|                     | Gaining Self-Understanding and Situational Awareness       | 29        |
+| Domain              | Hazardous Capability                                               | Scenarios |
+| ------------------- |--------------------------------------------------------------------| --------- |
+| **Bio-security**    | ePPP                                                               | 25        |
+|                     | Targeted Bioinformatics Collection and Exploitation                | 31        |
+|                     | Expanding Public Access to High-Risk Knowledge                     | 45        |
+|                     | Dual-Use virology                                                  | 26        |
+|                     | Bioweapons & Bioterrorism                                          | 25        |
+|                     | Reverse Genetics                                                   | 29        |
+|                     | Viral Vector Research                                              | 13        |
+|                     | Detection Evasion                                                  | 40        |
+| **Chemical-security** | Preservation Infrastructure                                        | 31        |
+|                     | Resource Procurement                                               | 28        |
+|                     | Detection Circumvention                                            | 34        |
+|                     | Refinement Enhancement                                             | 38        |
+|                     | Delivery System Development                                        | 33        |
+|                     | Validation Methods                                                 | 39        |
+|                     | Small Molecule Design                                              | 30        |
+|                     | Synthesis Capability                                               | 29        |
+| **Cyber-security**  | Impact                                                             | 47        |
+|                     | Persistence                                                        | 38        |
+|                     | Privilege Escalation                                               | 30        |
+|                     | Defense Evasion                                                    | 38        |
+|                     | Credential Access                                                  | 45        |
+|                     | Execution                                                          | 38        |
+|                     | Initial Access                                                     | 45        |
+| **Self-proliferation**| Resource Acquisition and Management                                | 35        |
+|                     | Agent Replication through Self-Duplication                         | 26        |
+|                     | Gaining Self-Understanding and Situational Awareness               | 29        |
 |                     | Detection Evasion and Interference Resistance of Self-Proliferation | 31        |
-|                     | Survival and Legacy Preservation                         | 23        |
-|                     | Dominating Other Agents                                    | 30        |
-|                     | Undesirable Coordination                                   | 25        |
+|                     | Survival and Legacy Preservation                                   | 23        |
+|                     | Dominating Other Agents                                            | 30        |
+|                     | Undesirable Coordination                                           | 25        |
 
 
 
